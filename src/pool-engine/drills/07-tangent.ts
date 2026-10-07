@@ -1,0 +1,30 @@
+import type { PoolDrill } from '../types';
+
+export const tangentLine = {
+  id: '07',
+  number: 7,
+  title: 'Tangent Line',
+  subtitle: 'With stun, the cue ball leaves contact along the 90° line.',
+  category: 'cueBallControl',
+  skill: 'tangent',
+  skillLabel: 'Stun + Angle',
+  difficulty: 3,
+  objective: 'Cut the 1-ball in and send the cue ball along the tangent into the zone.',
+  cueBall: { x: 0.702, y: 0.569 },
+  objectBalls: [{ number: 1, x: 0.75, y: 0.2 }],
+  targetPocket: 'footRight',
+  cueBallTargetZones: [{ kind: 'circle', center: { x: 0.472, y: 0.14 }, radius: 0.08 }],
+  guideLines: [
+    { kind: 'objectBallPath', ball: 1, pocket: 'footRight' },
+    { kind: 'ghostBall', ball: 1, pocket: 'footRight' },
+    { kind: 'cueBallPath', ball: 1, pocket: 'footRight' },
+    { kind: 'tangentLine', ball: 1, pocket: 'footRight' },
+  ],
+  recommendedContactPoint: { x: 0, y: -0.15 },
+  recommendedSpin: 'stun',
+  recommendedSpeed: 'medium',
+  allowedRails: 0,
+  attemptCount: 10,
+  passCondition: { kind: 'inZone', required: 6 },
+  tips: ['Stun means no roll at contact.', 'Picture the 90° line from the ghost ball.'],
+} satisfies PoolDrill;

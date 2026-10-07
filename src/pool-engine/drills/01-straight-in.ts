@@ -1,0 +1,25 @@
+import type { PoolDrill } from '../types';
+
+export const straightIn = {
+  id: '01',
+  number: 1,
+  title: 'Straight-In',
+  subtitle: 'Groove a straight stroke on a dead-straight pot.',
+  category: 'shotMaking',
+  skill: 'straightStroke',
+  skillLabel: 'Potting',
+  difficulty: 1,
+  objective: 'Pocket the 1-ball. Cue ball position does not matter.',
+  cueBall: { x: 0.392, y: 0.608 },
+  objectBalls: [{ number: 1, x: 0.75, y: 0.25 }],
+  targetPocket: 'footRight',
+  cueBallTargetZones: [],
+  guideLines: [{ kind: 'objectBallPath', ball: 1, pocket: 'footRight' }],
+  recommendedContactPoint: { x: 0, y: 0 },
+  recommendedSpin: 'center',
+  recommendedSpeed: 'medium',
+  allowedRails: 0,
+  attemptCount: 10,
+  passCondition: { kind: 'pocketed', required: 7 },
+  tips: ['Keep the stroke straight through the ball.', 'No spin needed.', 'Focus on center-ball contact.'],
+} satisfies PoolDrill;

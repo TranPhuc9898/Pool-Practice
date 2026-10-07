@@ -1,0 +1,25 @@
+import type { PoolDrill } from '../types';
+
+export const drawControl = {
+  id: '05',
+  number: 5,
+  title: 'Draw',
+  subtitle: 'Pull the cue ball back toward you.',
+  category: 'cueBallControl',
+  skill: 'draw',
+  skillLabel: 'Cue Ball Control',
+  difficulty: 2,
+  objective: 'Pocket the 1-ball and draw back into the zone.',
+  cueBall: { x: 0.29, y: 0.533 },
+  objectBalls: [{ number: 1, x: 0.6, y: 0.3 }],
+  targetPocket: 'footRight',
+  cueBallTargetZones: [{ kind: 'circle', center: { x: 0.436, y: 0.423 }, radius: 0.08 }],
+  guideLines: [{ kind: 'objectBallPath', ball: 1, pocket: 'footRight' }],
+  recommendedContactPoint: { x: 0, y: -0.5 },
+  recommendedSpin: 'draw',
+  recommendedSpeed: 'medium',
+  allowedRails: 0,
+  attemptCount: 10,
+  passCondition: { kind: 'inZone', required: 6 },
+  tips: ['Aim below center, keep the cue level.', 'Smooth acceleration beats power.'],
+} satisfies PoolDrill;

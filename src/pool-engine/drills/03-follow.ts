@@ -1,0 +1,26 @@
+import type { PoolDrill } from '../types';
+
+export const followControl = {
+  id: '03',
+  number: 3,
+  title: 'Follow',
+  subtitle: 'Roll the cue ball forward one diamond.',
+  category: 'cueBallControl',
+  skill: 'follow',
+  skillLabel: 'Cue Ball Control',
+  difficulty: 2,
+  objective: 'Pocket the 1-ball and follow into the zone about one diamond forward.',
+  cueBall: { x: 0.56, y: 0.66 },
+  objectBalls: [{ number: 1, x: 0.75, y: 0.375 }],
+  targetPocket: 'footRight',
+  cueBallTargetZones: [{ kind: 'circle', center: { x: 0.814, y: 0.277 }, radius: 0.08 }],
+  guideLines: [{ kind: 'objectBallPath', ball: 1, pocket: 'footRight' }],
+  recommendedContactPoint: { x: 0, y: 0.4 },
+  recommendedSpin: 'follow',
+  recommendedSpeed: 'medium',
+  allowedRails: 0,
+  attemptCount: 10,
+  passCondition: { kind: 'inZone', required: 7 },
+  tips: ['Aim one tip above center.', 'Let the cue follow through; do not jab.'],
+  difficultyModifiers: { cueDistanceDiamonds: [1, 1.5, 2, 2.5] },
+} satisfies PoolDrill;

@@ -1,0 +1,9 @@
+{
+  "name": "pool-table",
+  "version": "0.1.0",
+  "description": "Native pool table renderer",
+  "main": "index.ts",
+  "license": "UNLICENSED",
+  "author": "pool-training",
+  "homepage": "https://example.invalid"
+}

@@ -1,0 +1,36 @@
+import type { PoolDrill } from '../types';
+
+export const followDistance = {
+  id: '04',
+  number: 4,
+  title: 'Follow Distance',
+  subtitle: 'Same shot, four distances. Control how far, not just forward.',
+  category: 'cueBallControl',
+  skill: 'followDistance',
+  skillLabel: 'Speed + Follow',
+  difficulty: 2,
+  objective: 'Follow into each zone in turn: ½, 1, 1½, then 2 diamonds.',
+  cueBall: { x: 0.524, y: 0.7 },
+  objectBalls: [{ number: 1, x: 0.3, y: 0.4 }],
+  targetPocket: 'footLeft',
+  cueBallTargetZones: [
+    { kind: 'circle', center: { x: 0.272, y: 0.362 }, radius: 0.055, label: '½' },
+    { kind: 'circle', center: { x: 0.228, y: 0.304 }, radius: 0.055, label: '1' },
+    { kind: 'circle', center: { x: 0.184, y: 0.245 }, radius: 0.055, label: '1½' },
+    { kind: 'circle', center: { x: 0.14, y: 0.187 }, radius: 0.055, label: '2' },
+  ],
+  guideLines: [{ kind: 'objectBallPath', ball: 1, pocket: 'footLeft' }],
+  recommendedContactPoint: { x: 0, y: 0.4 },
+  recommendedSpin: 'follow',
+  recommendedSpeed: 'soft',
+  allowedRails: 0,
+  attemptCount: 12,
+  passCondition: { kind: 'inZone', required: 8 },
+  tips: ['Keep the tip height fixed. Change only speed.'],
+  rounds: [
+    { title: '½ diamond', zone: 0, spin: 'follow' },
+    { title: '1 diamond', zone: 1, spin: 'follow' },
+    { title: '1½ diamonds', zone: 2, spin: 'follow' },
+    { title: '2 diamonds', zone: 3, spin: 'follow' },
+  ],
+} satisfies PoolDrill;

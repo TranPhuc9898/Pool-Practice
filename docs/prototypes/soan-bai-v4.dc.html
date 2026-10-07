@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Soạn bài</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#000}
+a{color:#D8B451}a:hover{color:#E8C76A}
+button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s cubic-bezier(.23,1,.32,1),background-color .12s ease-out,opacity .12s ease-out}
+button:active:not(:disabled){transform:scale(.97)}
+button:disabled{cursor:default}
+button:focus-visible,.pw:focus-visible{outline:2px solid #D8B451;outline-offset:3px}
+.pw{-webkit-appearance:none;appearance:none;background:transparent;margin:0;height:28px}
+.pw::-webkit-slider-runnable-track{height:28px;background:transparent}
+.pw::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;border-radius:50%;background:#FFFFFF;border:0;box-shadow:0 1px 2px rgba(0,0,0,.3),0 3px 10px rgba(0,0,0,.35)}
+.pw::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:#FFFFFF;border:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0;margin:-1px}
+.seg{flex:1;height:28px;border:0;background:transparent;color:rgba(235,235,245,.6);font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;font-size:14px;font-weight:500;letter-spacing:-.15px;border-radius:14px;position:relative;z-index:1;padding:0}
+.seg[aria-pressed="true"]{color:#FFFFFF;font-weight:600}
+.seg:active:not(:disabled){transform:none}
+.seg:active:not(:disabled):not([aria-pressed="true"]){color:rgba(235,235,245,.85)}
+.pill{transition:transform .14s cubic-bezier(.23,1,.32,1)}
+.sheet{transition:transform .3s cubic-bezier(.23,1,.32,1),visibility 0s linear 0s}
+.sheet[data-open="false"]{transition:transform .24s cubic-bezier(.23,1,.32,1),visibility 0s linear .24s}
+.dim{transition:opacity .24s ease-out}
+.glassbtn{border:0.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.1);color:#F5F5F7;-webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.fl{font-family:Outfit,system-ui;font-size:11px;font-weight:600;letter-spacing:1.2px}
+.dl{display:grid;grid-template-columns:76px minmax(0,1fr);gap:10px 12px;margin:0;font-size:15px;line-height:20px}
+.dl dt{color:rgba(235,235,245,.6);font-size:13px;font-weight:500;padding-top:1px}
+.dl dd{margin:0;min-width:0}
+@media (prefers-reduced-motion: reduce){button{transition:none}button:active:not(:disabled){transform:none}.pill{transition:none}
+.sheet,.sheet[data-open="false"]{transform:none!important;transition:opacity .2s ease-out,visibility 0s linear .2s}.sheet[data-open="true"]{transition:opacity .2s ease-out}.sheet[data-open="false"]{opacity:0}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #0B0B0C; color: #F5F5F7; font-family: 'Outfit', -apple-system, system-ui, sans-serif; font-variant-numeric: tabular-nums">
+
+  <!-- Thanh điều hướng: nút lùi kính tròn, tiêu đề hai dòng mang luôn cú đang soạn. -->
+  <div style="position: absolute; top: 54px; left: 0; right: 0; height: 44px; display: flex; align-items: center; justify-content: center">
+    <button class="glassbtn" aria-label="Quay lại bài tập" style="position: absolute; left: 16px; top: 0; width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; padding: 0">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+    </button>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 1px; font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif">
+      <div style="font-size: 17px; font-weight: 600; letter-spacing: -0.4px">Soạn bài</div>
+      <div style="font-size: 12px; font-weight: 400; color: rgba(235,235,245,0.6)">{{subtitle}}</div>
+    </div>
+    <!-- Thẻ bài là kết quả của cú, không phải một góc nhìn, nên ra khỏi segmented và mở bằng sheet. -->
+    <button class="glassbtn" aria-label="Xem thẻ bài" onClick="{{openCard}}" style="position: absolute; right: 16px; top: 0; width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; padding: 0">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"></rect><path d="M9 8h6M9 12h6M9 16h3.5"></path></svg>
+    </button>
+  </div>
+
+  <!-- Ba góc nhìn của cùng một cú. Capsule như segmented iOS 26, chữ hệ thống, thumb trượt 140ms. -->
+  <div role="group" aria-label="Cách xem" style="position: absolute; top: 110px; left: 16px; right: 16px; height: 32px; box-sizing: border-box; padding: 2px; border-radius: 16px; background: rgba(118,118,128,0.24); display: flex">
+    <div class="pill" style="position: absolute; top: 2px; left: 2px; width: 118px; height: 28px; border-radius: 14px; background: rgba(255,255,255,0.2); box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.25), 0 2px 6px rgba(0,0,0,0.25); transform: translateX({{segX}}px)"></div>
+    <button class="seg" aria-pressed="{{seg.table}}" onClick="{{viewTable}}">Bàn</button>
+    <button class="seg" aria-pressed="{{seg.top}}" onClick="{{viewTop}}">Từ trên</button>
+    <button class="seg" aria-pressed="{{seg.back}}" onClick="{{viewBack}}">Từ sau bi</button>
+  </div>
+
+  <!-- Bàn: đơn vị inch trong viewBox, 61 × 111 tính cả băng. -->
+  <svg width="194" height="352" viewBox="0 0 61 111" style="position: absolute; top: 154px; left: 98px; display: {{disp.table}}" aria-label="{{tableLabel}}" role="img">
+    <defs>
+      <radialGradient id="gCue" cx="0.38" cy="0.32" r="0.75"><stop offset="0" stop-color="#FFFFFF"></stop><stop offset="0.55" stop-color="#F1EFEA"></stop><stop offset="1" stop-color="#B3AEA4"></stop></radialGradient>
+      <radialGradient id="gOne" cx="0.38" cy="0.32" r="0.75"><stop offset="0" stop-color="#FFE58A"></stop><stop offset="0.55" stop-color="#F2BC1A"></stop><stop offset="1" stop-color="#946900"></stop></radialGradient>
+      <radialGradient id="gHalo"><stop offset="0" stop-color="#D8B451" stop-opacity="0.55"></stop><stop offset="1" stop-color="#D8B451" stop-opacity="0"></stop></radialGradient>
+      <clipPath id="feltClip"><rect x="0" y="0" width="50" height="100"></rect></clipPath>
+    </defs>
+    <rect x="0" y="0" width="61" height="111" rx="3.2" fill="#151517" stroke="rgba(255,255,255,0.07)" stroke-width="0.15"></rect>
+    <rect x="4" y="4" width="53" height="103" rx="0.6" fill="{{felt}}"></rect>
+    <rect x="4" y="4" width="53" height="103" rx="0.6" fill="rgba(0,0,0,0.24)"></rect>
+    <rect x="5.5" y="5.5" width="50" height="100" fill="{{felt}}"></rect>
+    <g fill="rgba(216,180,81,0.55)">
+      <circle cx="2.2" cy="18" r="0.32"></circle><circle cx="2.2" cy="30.5" r="0.32"></circle><circle cx="2.2" cy="43" r="0.32"></circle><circle cx="2.2" cy="68" r="0.32"></circle><circle cx="2.2" cy="80.5" r="0.32"></circle><circle cx="2.2" cy="93" r="0.32"></circle>
+      <circle cx="58.8" cy="18" r="0.32"></circle><circle cx="58.8" cy="30.5" r="0.32"></circle><circle cx="58.8" cy="43" r="0.32"></circle><circle cx="58.8" cy="68" r="0.32"></circle><circle cx="58.8" cy="80.5" r="0.32"></circle><circle cx="58.8" cy="93" r="0.32"></circle>
+      <circle cx="18" cy="2.2" r="0.32"></circle><circle cx="30.5" cy="2.2" r="0.32"></circle><circle cx="43" cy="2.2" r="0.32"></circle>
+      <circle cx="18" cy="108.8" r="0.32"></circle><circle cx="30.5" cy="108.8" r="0.32"></circle><circle cx="43" cy="108.8" r="0.32"></circle>
+    </g>
+    <g fill="#050506">
+      <circle cx="4.8" cy="4.8" r="2.3"></circle><circle cx="56.2" cy="4.8" r="2.3"></circle>
+      <circle cx="4.8" cy="106.2" r="2.3"></circle><circle cx="56.2" cy="106.2" r="2.3"></circle>
+      <circle cx="3.9" cy="55.5" r="2"></circle><circle cx="57.1" cy="55.5" r="2"></circle>
+    </g>
+    <circle cx="56.2" cy="4.8" r="3.1" fill="none" stroke="#D8B451" stroke-width="0.3"></circle>
+
+    <g transform="translate(5.5 5.5)">
+      <g clip-path="url(#feltClip)" visibility="{{guidesVis}}" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="{{aimD}}" stroke="#FFFFFF" stroke-opacity="0.24" stroke-width="0.12"></path>
+        <g visibility="{{pathVis}}">
+          <path d="{{cueD}}" stroke="{{cueCol}}" stroke-opacity="0.9" stroke-width="0.18" stroke-dasharray="1.1 0.7"></path>
+          <circle cx="{{stopX}}" cy="{{stopY}}" r="1.125" fill="{{cueCol}}" fill-opacity="0.1" stroke="{{cueCol}}" stroke-opacity="0.8" stroke-width="0.13" visibility="{{stopVis}}"></circle>
+          <path d="{{tanD}}" stroke="#D8B451" stroke-opacity="0.55" stroke-width="0.12" stroke-dasharray="0.6 0.6"></path>
+        </g>
+        <path d="{{obD}}" stroke="#FFFFFF" stroke-width="0.24" stroke-dasharray="0.8 0.55" visibility="{{obOkVis}}"></path>
+        <g visibility="{{obShortVis}}">
+          <path d="{{obShortD}}" stroke="#FF453A" stroke-width="0.22"></path>
+          <path d="{{obRestD}}" stroke="#FF453A" stroke-opacity="0.35" stroke-width="0.14" stroke-dasharray="0.5 0.5"></path>
+          <circle cx="{{obStopX}}" cy="{{obStopY}}" r="1.125" stroke="#FF453A" stroke-width="0.14" stroke-dasharray="0.45 0.32"></circle>
+        </g>
+        <circle cx="{{ghostX}}" cy="{{ghostY}}" r="1.125" fill="#FFFFFF" fill-opacity="0.07" stroke="#FFFFFF" stroke-opacity="{{ghostOp}}" stroke-width="{{ghostW}}" stroke-dasharray="0.45 0.32"></circle>
+      </g>
+
+      <g transform="translate({{obX}} {{obY}})" opacity="{{obOp}}">
+        <circle cx="0.22" cy="0.32" r="1.125" fill="#000000" fill-opacity="0.35"></circle>
+        <circle cx="0" cy="0" r="1.125" fill="url(#gOne)"></circle>
+        <circle cx="0" cy="0" r="0.42" fill="#FFFFFF" fill-opacity="0.92"></circle>
+      </g>
+      <g transform="translate({{cueX}} {{cueY}})" opacity="{{cueOp}}">
+        <circle cx="0.22" cy="0.32" r="1.125" fill="#000000" fill-opacity="0.35"></circle>
+        <circle cx="0" cy="0" r="1.125" fill="url(#gCue)"></circle>
+      </g>
+
+      <g visibility="{{guidesVis}}">
+        <circle cx="{{contactX}}" cy="{{contactY}}" r="1.1" fill="url(#gHalo)"></circle>
+        <circle cx="{{contactX}}" cy="{{contactY}}" r="0.36" fill="#D8B451" stroke="#000000" stroke-opacity="0.6" stroke-width="0.06"></circle>
+      </g>
+    </g>
+  </svg>
+
+  <!-- Nhìn từ trên: phóng quanh bi 1, trục dọc là hướng bi cái đi tới ghost. -->
+  <div style="position: absolute; top: 154px; left: 16px; width: 358px; height: 352px; display: {{disp.top}}">
+    <svg width="358" height="306" viewBox="0 0 358 306" style="display: block; border-radius: 20px" role="img" aria-label="{{tp.label}}">
+      <defs>
+        <linearGradient id="gFigT" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0D1820"></stop><stop offset="1" stop-color="{{felt}}"></stop></linearGradient>
+        <radialGradient id="gVig" cx="0.5" cy="0.55" r="0.75"><stop offset="0.3" stop-color="#000000" stop-opacity="0"></stop><stop offset="1" stop-color="#000000" stop-opacity="0.5"></stop></radialGradient>
+      </defs>
+      <rect width="358" height="306" fill="url(#gFigT)"></rect>
+      <rect width="358" height="306" fill="url(#gVig)"></rect>
+      <g fill="none" stroke-linecap="round">
+        <path d="{{tp.potD}}" stroke="rgba(127,199,154,0.75)" stroke-width="1.5"></path>
+        <path d="{{tp.aimD}}" stroke="rgba(255,255,255,0.5)" stroke-width="1.2" stroke-dasharray="2 4"></path>
+        <path d="{{tp.tanD}}" stroke="rgba(216,180,81,0.35)" stroke-width="1" stroke-dasharray="4 4"></path>
+      </g>
+      <polygon points="{{tp.arrow}}" fill="rgba(127,199,154,0.9)"></polygon>
+      <text class="fl" x="{{tp.potLx}}" y="{{tp.potLy}}" text-anchor="{{tp.potLa}}" fill="rgba(127,199,154,0.95)">VỀ LỖ</text>
+
+      <g transform="translate({{tp.cbX}} {{tp.cbY}})" opacity="0.55">
+        <ellipse cx="{{tp.shX}}" cy="{{tp.shY}}" rx="{{tp.R}}" ry="{{tp.Ry}}" fill="#000000" fill-opacity="0.35"></ellipse>
+        <circle r="{{tp.R}}" fill="url(#gCue)"></circle>
+      </g>
+      <text class="fl" x="{{tp.cbLx}}" y="{{tp.cbLy}}" text-anchor="{{tp.sideA}}" fill="rgba(244,241,232,0.7)">BI TRẮNG</text>
+
+      <g transform="translate({{tp.oX}} {{tp.oY}})">
+        <ellipse cx="{{tp.shX}}" cy="{{tp.shY}}" rx="{{tp.R}}" ry="{{tp.Ry}}" fill="#000000" fill-opacity="0.35"></ellipse>
+        <circle r="{{tp.R}}" fill="url(#gOne)"></circle>
+        <circle r="{{tp.Rn}}" fill="#FFFFFF"></circle>
+        <text y="{{tp.numY}}" text-anchor="middle" font-family="Outfit, system-ui" font-weight="600" font-size="{{tp.numS}}" fill="#111111">1</text>
+      </g>
+
+      <circle cx="{{tp.gX}}" cy="{{tp.gY}}" r="{{tp.R}}" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.85)" stroke-width="1.5" stroke-dasharray="5 4"></circle>
+      <path d="{{tp.plus}}" stroke="rgba(255,255,255,0.95)" stroke-width="1.5" stroke-linecap="round"></path>
+      <circle cx="{{tp.cX}}" cy="{{tp.cY}}" r="{{tp.haloR}}" fill="url(#gHalo)"></circle>
+      <circle cx="{{tp.cX}}" cy="{{tp.cY}}" r="{{tp.dotR}}" fill="#D8B451" stroke="rgba(0,0,0,0.6)" stroke-width="1"></circle>
+
+      <g font-family="Outfit, system-ui" font-size="11" font-weight="600" fill="rgba(255,255,255,0.75)" text-anchor="middle">
+        <text x="{{tp.r1x}}" y="{{tp.r1y}}">R</text>
+        <text x="{{tp.r2x}}" y="{{tp.r2y}}">R</text>
+      </g>
+
+      <g visibility="{{tp.phiVis}}">
+        <path d="{{tp.arcD}}" fill="none" stroke="rgba(216,180,81,0.8)" stroke-width="1.2"></path>
+        <path d="{{tp.refD}}" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1" stroke-dasharray="2 3"></path>
+        <text class="fl" x="{{tp.phiX}}" y="{{tp.phiY}}" text-anchor="middle" fill="#D8B451">{{tp.phiT}}</text>
+      </g>
+      <g visibility="{{tp.kVis}}">
+        <path d="{{tp.kDash}}" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1" stroke-dasharray="2 3"></path>
+        <path d="{{tp.kBar}}" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1"></path>
+        <text class="fl" x="{{tp.kX}}" y="{{tp.kY}}" text-anchor="middle" fill="rgba(255,255,255,0.85)">{{tp.kT}}</text>
+      </g>
+      <text class="fl" x="{{tp.gLx}}" y="{{tp.gLy}}" text-anchor="{{tp.sideA}}" fill="rgba(255,255,255,0.7)">GHOST</text>
+    </svg>
+    <div style="margin-top: 10px; font-size: 13px; line-height: 18px; color: rgba(235,235,245,0.6)"><span style="color: #F5F5F7; font-weight: 500">{{tp.say}}</span> {{tp.comp}}</div>
+  </div>
+
+  <!-- Nhìn từ sau bi cái, ngang tầm bi: chiếu lên mặt phẳng vuông với đường cơ. -->
+  <div style="position: absolute; top: 154px; left: 16px; width: 358px; height: 352px; display: {{disp.back}}">
+    <svg width="358" height="306" viewBox="0 0 358 306" style="display: block; border-radius: 20px" role="img" aria-label="{{sv.label}}">
+      <defs>
+        <linearGradient id="gFigB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0D1820"></stop><stop offset="0.55" stop-color="{{felt}}"></stop><stop offset="1" stop-color="{{felt}}"></stop></linearGradient>
+        <clipPath id="obClip"><circle cx="{{sv.oX}}" cy="{{sv.cy}}" r="{{sv.R}}"></circle></clipPath>
+        <filter id="cueBlur" x="-50%" y="-10%" width="200%" height="120%"><feGaussianBlur stdDeviation="5"></feGaussianBlur></filter>
+      </defs>
+      <rect width="358" height="306" fill="url(#gFigB)"></rect>
+      <rect width="358" height="306" fill="url(#gVig)"></rect>
+
+      <g transform="translate({{sv.oX}} {{sv.cy}})">
+        <ellipse cx="{{sv.shX}}" cy="{{sv.shY}}" rx="{{sv.R}}" ry="{{sv.Ry}}" fill="#000000" fill-opacity="0.35"></ellipse>
+        <circle r="{{sv.R}}" fill="url(#gOne)"></circle>
+        <circle r="{{sv.Rn}}" fill="#FFFFFF"></circle>
+        <text y="{{sv.numY}}" text-anchor="middle" font-family="Outfit, system-ui" font-weight="600" font-size="{{sv.numS}}" fill="#111111">1</text>
+      </g>
+      <circle clip-path="url(#obClip)" cx="{{sv.gX}}" cy="{{sv.cy}}" r="{{sv.R}}" fill="rgba(216,180,81,0.3)"></circle>
+      <circle cx="{{sv.gX}}" cy="{{sv.cy}}" r="{{sv.R}}" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.85)" stroke-width="1.5" stroke-dasharray="5 4"></circle>
+      <path d="{{sv.plus}}" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" stroke-linecap="round"></path>
+
+      <path d="{{sv.lineD}}" stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-dasharray="2 4"></path>
+      <polygon points="{{sv.cue.all}}" fill="rgba(0,0,0,0.5)" filter="url(#cueBlur)" transform="translate({{sv.cueSh}} 6)"></polygon>
+      <polygon points="{{sv.cue.butt}}" fill="#16100D"></polygon>
+      <polygon points="{{sv.cue.joint}}" fill="#C4C8CE"></polygon>
+      <polygon points="{{sv.cue.shaft}}" fill="#D6B584"></polygon>
+      <polygon points="{{sv.cue.ferrule}}" fill="#ECE7DA"></polygon>
+      <polygon points="{{sv.cue.tip}}" fill="#3F6DA8"></polygon>
+      <polygon points="{{sv.cue.l}}" fill="rgba(0,0,0,0.35)"></polygon>
+      <polygon points="{{sv.cue.r}}" fill="rgba(0,0,0,0.45)"></polygon>
+      <polygon points="{{sv.cue.hi}}" fill="rgba(255,255,255,0.22)"></polygon>
+
+      <circle cx="{{sv.cX}}" cy="{{sv.cy}}" r="{{sv.haloR}}" fill="url(#gHalo)"></circle>
+      <circle cx="{{sv.cX}}" cy="{{sv.cy}}" r="{{sv.dotR}}" fill="#D8B451" stroke="rgba(0,0,0,0.6)" stroke-width="1"></circle>
+      <text class="fl" x="{{sv.cX}}" y="{{sv.cLy}}" text-anchor="middle" fill="#D8B451">ĐIỂM CHẠM</text>
+      <text class="fl" x="{{sv.gLx}}" y="{{sv.gLy}}" text-anchor="{{sv.gLa}}" fill="rgba(255,255,255,0.7)" visibility="{{sv.gVis}}">GHOST</text>
+      <text class="fl" x="{{sv.tLx}}" y="{{sv.tLy}}" text-anchor="{{sv.tLa}}" fill="rgba(244,241,232,0.7)" visibility="{{sv.tVis}}">{{sv.tT}}</text>
+    </svg>
+    <div style="margin-top: 10px; font-size: 13px; line-height: 18px; color: rgba(235,235,245,0.6)"><span style="color: #F5F5F7; font-weight: 500">{{sv.say}}</span> {{sv.more}}</div>
+  </div>
+
+  <!-- Bảng cú đánh: thẻ nổi, bo đồng tâm với góc máy. -->
+  <div style="position: absolute; left: 8px; right: 8px; bottom: 8px; height: 318px; box-sizing: border-box; padding: 20px 20px 26px; border-radius: 36px; background: #1C1C1E; border: 0.5px solid rgba(255,255,255,0.08); box-shadow: 0 -8px 32px rgba(0,0,0,0.45); display: flex; flex-direction: column; gap: 0">
+
+    <div style="height: 128px; display: flex; gap: 12px; align-items: center">
+      <!-- Mặt bi cái 2D: dọc là cao thấp, ngang là phê. Viền là 0.6R, chấm ra khỏi viền theo hướng nào cũng là trượt cơ. -->
+      <div style="position: relative; width: 150px; height: 128px; flex: none; touch-action: none; cursor: grab" onPointerDown="{{padDown}}" onPointerMove="{{padMove}}" onPointerUp="{{padUp}}" onPointerCancel="{{padUp}}">
+        <svg width="150" height="128" viewBox="0 0 150 128" style="display: block; overflow: visible" aria-hidden="true">
+          <defs>
+            <radialGradient id="gFace" cx="0.4" cy="0.34" r="0.72"><stop offset="0" stop-color="#FFFFFF"></stop><stop offset="0.6" stop-color="#ECE9E2"></stop><stop offset="1" stop-color="#BDB8AE"></stop></radialGradient>
+          </defs>
+          <circle cx="62" cy="64" r="44" fill="url(#gFace)" stroke="{{faceStroke}}" stroke-width="{{faceStrokeW}}"></circle>
+          <line x1="62" y1="24" x2="62" y2="104" stroke="#000000" stroke-opacity="0.12" stroke-width="1" stroke-dasharray="2 3"></line>
+          <line x1="22" y1="64" x2="102" y2="64" stroke="#000000" stroke-opacity="0.12" stroke-width="1" stroke-dasharray="2 3"></line>
+          <line x1="55" y1="{{lbl.lan.tick}}" x2="69" y2="{{lbl.lan.tick}}" stroke="#000000" stroke-opacity="0.28" stroke-width="1.2" stroke-linecap="round"></line>
+          <g visibility="{{lbl.stun.vis}}">
+            <line x1="55" y1="{{lbl.stun.tick}}" x2="69" y2="{{lbl.stun.tick}}" stroke="#000000" stroke-opacity="0.28" stroke-width="1.2" stroke-linecap="round"></line>
+            <path d="{{lbl.stun.lead}}" fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="1"></path>
+            <text x="118" y="{{lbl.stun.ty}}" font-size="12" font-weight="500" fill="{{lbl.stun.col}}" font-family="Outfit, system-ui">Stun</text>
+          </g>
+          <path d="{{lbl.lan.lead}}" fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="1"></path>
+          <text x="118" y="{{lbl.lan.ty}}" font-size="12" font-weight="500" fill="{{lbl.lan.col}}" font-family="Outfit, system-ui">Lăn</text>
+          <path d="{{lbl.tam.lead}}" fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="1"></path>
+          <text x="118" y="{{lbl.tam.ty}}" font-size="12" font-weight="500" fill="{{lbl.tam.col}}" font-family="Outfit, system-ui">Tâm</text>
+          <line x1="{{gearX}}" y1="58" x2="{{gearX}}" y2="70" stroke="#D8B451" stroke-opacity="0.9" stroke-width="1.6" stroke-linecap="round" visibility="{{gearVis}}"></line>
+          <circle cx="{{dotX}}" cy="{{dotY}}" r="9" fill="{{dotFill}}" fill-opacity="0.18"></circle>
+          <circle cx="{{dotX}}" cy="{{dotY}}" r="6.5" fill="{{dotFill}}" stroke="#FFFFFF" stroke-width="2"></circle>
+        </svg>
+        <input class="sr" type="range" min="-84" max="84" step="1" value="{{tipYPct}}" onChange="{{onTipYInput}}" aria-label="Điểm đánh cao thấp" aria-valuetext="{{tipText}}">
+        <input class="sr" type="range" min="-84" max="84" step="1" value="{{tipXPct}}" onChange="{{onTipXInput}}" aria-label="Phê trái phải" aria-valuetext="{{sideText}}">
+      </div>
+
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+        <div style="font-size: 13px; font-weight: 500; color: rgba(235,235,245,0.6)">Điểm đánh</div>
+        <div style="font-size: 26px; font-weight: 600; letter-spacing: -0.5px; line-height: 30px; color: {{tipColor}}">{{tipText}}</div>
+        <div style="font-size: 15px; font-weight: 500; line-height: 20px; color: {{sideColor}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{sideText}}</div>
+        <div style="display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 500; line-height: 20px; color: #F5F5F7">
+          <span style="width: 8px; height: 8px; border-radius: 4px; flex: none; background: {{spinDot}}"></span>
+          <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{spinText}}</span>
+        </div>
+        <div style="font-size: 13px; font-weight: 500; line-height: 18px; color: {{statusColor}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{statusText}}</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 14px; height: 62px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; justify-content: space-between; height: 24px">
+        <label for="power" style="font-size: 15px; font-weight: 500; color: rgba(235,235,245,0.6)">Lực</label>
+        <div style="display: flex; align-items: center; gap: 8px">
+          <span style="font-size: 17px; font-weight: 600">{{speedText}}</span>
+          <span style="font-size: 12px; font-weight: 600; color: #D8B451; background: rgba(216,180,81,0.14); border-radius: 10px; padding: 3px 9px">{{powerWord}}</span>
+        </div>
+      </div>
+      <div style="position: relative; height: 28px">
+        <div style="position: absolute; left: 0; right: 0; top: 11px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12)"></div>
+        <div style="position: absolute; left: 0; top: 11px; height: 6px; border-radius: 3px; background: #D8B451; width: {{fillW}}px"></div>
+        <div style="position: absolute; top: 22px; width: 2px; height: 5px; border-radius: 1px; background: rgba(255,255,255,0.32); left: {{t0x}}px"></div>
+        <div style="position: absolute; top: 22px; width: 2px; height: 5px; border-radius: 1px; background: rgba(255,255,255,0.32); left: {{t1x}}px"></div>
+        <div style="position: absolute; top: 22px; width: 2px; height: 5px; border-radius: 1px; background: rgba(255,255,255,0.32); left: {{t2x}}px"></div>
+        <div style="position: absolute; top: 22px; width: 2px; height: 5px; border-radius: 1px; background: rgba(255,255,255,0.32); left: {{t3x}}px"></div>
+        <input id="power" class="pw" type="range" min="0" max="1000" step="1" value="{{pwPos}}" onChange="{{onPower}}" aria-valuetext="{{pwText}}" style="position: absolute; left: 0; top: 0; width: 100%">
+      </div>
+    </div>
+
+    <div style="margin-top: 18px; height: 50px; display: flex; gap: 10px">
+      <button aria-pressed="{{pathsPressed}}" onClick="{{togglePaths}}" style="height: 50px; padding: 0 18px; border-radius: 25px; border: 0; background: {{pathsBg}}; color: #F5F5F7; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 500">
+        <sc-if value="{{paths}}" hint-placeholder-val="{{true}}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        </sc-if>
+        <sc-if value="{{pathsOff}}" hint-placeholder-val="{{false}}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7c2 0 3.7.7 5.1 1.6M21.2 10.4c.5.9.8 1.6.8 1.6s-3.6 7-10 7c-2 0-3.7-.7-5.1-1.6"></path><path d="M4 4l16 16"></path></svg>
+        </sc-if>
+        <span>Đường đi</span>
+      </button>
+      <button onClick="{{shoot}}" disabled="{{shootDisabled}}" style="flex: 1; height: 50px; border-radius: 25px; border: 0; background: #D8B451; color: #1B1504; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 17px; font-weight: 600; opacity: {{shootOpacity}}">
+        <sc-if value="{{playing}}" hint-placeholder-val="{{false}}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+          <span>Dừng</span>
+        </sc-if>
+        <sc-if value="{{idle}}" hint-placeholder-val="{{true}}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"></path></svg>
+          <span>Đánh</span>
+        </sc-if>
+      </button>
+    </div>
+  </div>
+
+  <!-- Thẻ bài trong sheet nổi: dim nền vì là modal, chạm nền hay Xong để đóng. Swift dùng .sheet hệ thống, có kéo xuống sẵn. -->
+  <div class="dim" onClick="{{closeCard}}" style="position: absolute; inset: 0; background: rgba(0,0,0,0.45); opacity: {{sheet.dim}}; pointer-events: {{sheet.pe}}"></div>
+  <div class="sheet" data-open="{{sheet.open}}" role="dialog" aria-modal="true" aria-label="Thẻ bài" style="position: absolute; left: 8px; right: 8px; bottom: 8px; box-sizing: border-box; padding: 6px 20px 26px; border-radius: 36px; background: #1C1C1E; border: 0.5px solid rgba(255,255,255,0.1); box-shadow: 0 -10px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 12px; transform: translateY({{sheet.y}}); visibility: {{sheet.vis}}">
+    <div style="align-self: center; width: 36px; height: 5px; border-radius: 3px; background: rgba(235,235,245,0.3)"></div>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 1px; color: #D8B451">{{card.eyebrow}}</div>
+      <button onClick="{{closeCard}}" style="height: 30px; padding: 0 14px; border-radius: 15px; border: 0; background: rgba(118,118,128,0.24); color: #F5F5F7; font-size: 15px; font-weight: 600">Xong</button>
+    </div>
+    <div style="margin-top: -6px; font-size: 24px; font-weight: 600; letter-spacing: -0.4px">{{card.title}}</div>
+    <div style="font-size: 15px; line-height: 20px; color: #F5F5F7">{{card.goal}}</div>
+    <dl class="dl">
+      <dt>Đặt bi</dt><dd>{{card.place}}</dd>
+      <dt>Cú gợi ý</dt><dd>{{card.shot}}</dd>
+      <dt>Bù ngắm</dt><dd>{{card.comp}}</dd>
+      <dt>Bi trắng</dt><dd>{{card.cue}}</dd>
+    </dl>
+    <div style="margin-top: 4px; font-size: 12px; line-height: 16px; color: rgba(235,235,245,0.45)">Toạ độ (a, b): đứng đầu break nhìn về phía xếp bi. a đếm diamond từ băng trái (0–4), b từ băng trên (0–8). Bàn 9 ft: 1 diamond = 31.75 cm.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"felt":{"editor":"color","default":"#1E5A87","options":["#1E5A87","#2B6A4E","#3B3F78","#6A2F2F"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  static K = {
+    IN: 0.0254, GR: 9.81, MS: 0.2, MR: 0.01, E: 0.8, EB: 0.95, W: 50, H: 100, BR: 1.125,
+    TIPMAX: 0.6, PADMAX: 0.84, VMIN: 0.3, VMAX: 4.5,
+    // Squirt ở phê 0.5R, shaft thường. Cùng giá trị mặc định với Aim Lab.
+    SQ: 2.5,
+    CUE: [30, 75], OBJ: [34, 30], POCKET: [50, 0],
+    POCKETS: [[0, 0], [50, 0], [0, 50], [50, 50], [0, 100], [50, 100]],
+    MARKS: [0.7, 1.4, 2.5, 3.8],
+    // Pad: tâm (62, 64), bán kính 44 điểm = 0.6R.
+    PX: 62, PY: 64, PR: 44,
+    VIEWS: ['table', 'top', 'back'],
+  };
+
+  constructor(props) {
+    super(props);
+    this.state = { tipX: 0, tipY: -0.3, speed: 1.6, paths: true, rt: null, view: 'table', card: false };
+    this.memo = {};
+    this.stunMemo = {};
+    this.lastGear = null;
+    this.padDown = (e) => {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      this.padRect = e.currentTarget.getBoundingClientRect();
+      this.padDrag = true;
+      this.stopReplay();
+      this.padSet(e.clientX, e.clientY);
+    };
+    this.padMove = (e) => { if (this.padDrag) this.padSet(e.clientX, e.clientY); };
+    this.padUp = () => { this.padDrag = false; };
+    this.onTipYInput = (e) => { this.stopReplay(); this.setState({ tipY: Number(e.target.value) / 100 }); };
+    this.onTipXInput = (e) => { this.stopReplay(); this.setState({ tipX: Number(e.target.value) / 100 }); };
+    this.onPower = (e) => {
+      const K = Component.K, pos = Number(e.target.value) / 1000;
+      const v = K.VMIN + pos * pos * (K.VMAX - K.VMIN);
+      this.stopReplay();
+      this.setState({ speed: Math.round(v * 10) / 10 });
+    };
+    this.togglePaths = () => this.setState({ paths: !this.state.paths });
+    this.shoot = () => this.play();
+    this.viewTable = () => this.setState({ view: 'table' });
+    this.viewTop = () => { this.stopReplay(); this.setState({ view: 'top' }); };
+    this.viewBack = () => { this.stopReplay(); this.setState({ view: 'back' }); };
+    this.openCard = () => { this.stopReplay(); this.setState({ card: true }); };
+    this.closeCard = () => this.setState({ card: false });
+  }
+
+  componentWillUnmount() {
+    if (this.raf) cancelAnimationFrame(this.raf);
+    clearTimeout(this.timer);
+  }
+
+  // Kéo tự do trong mặt bi, kẹp theo bán kính 0.84R. Ra khỏi viền 0.6R là trượt cơ.
+  padSet(clientX, clientY) {
+    const K = Component.K, r = this.padRect, sc = r.height / 128;
+    let x = (clientX - (r.left + K.PX * sc)) / (K.PR * sc) * K.TIPMAX;
+    let y = -(clientY - (r.top + K.PY * sc)) / (K.PR * sc) * K.TIPMAX;
+    const l = Math.hypot(x, y);
+    if (l > K.PADMAX) { x = x / l * K.PADMAX; y = y / l * K.PADMAX; }
+    x = Math.round(x * 100) / 100; y = Math.round(y * 100) / 100;
+    for (const dv of [0, 0.4, this.stunTip(this.state.speed)]) if (dv != null && Math.abs(y - dv) < 0.025) y = dv;
+    for (const dv of [0, this.lastGear]) if (dv != null && Math.abs(x - dv) < 0.025) x = dv;
+    this.setState({ tipX: x, tipY: y });
+  }
+
+  unit(x, y) { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; }
+  dot(a, b) { return a[0] * b[0] + a[1] * b[1]; }
+  // y hướng xuống như trên màn. left là bên trái hướng đi, right là bên phải.
+  left(a) { return [a[1], -a[0]]; }
+  right(a) { return [-a[1], a[0]]; }
+  // Phê phải (t > 0) đẩy bi cái sang trái hướng cơ. Cùng công thức rot() của Aim Lab.
+  rot(a, t) { return [a[0] * Math.cos(t) + a[1] * Math.sin(t), -a[0] * Math.sin(t) + a[1] * Math.cos(t)]; }
+
+  geo() {
+    if (this.g) return this.g;
+    const K = Component.K, C = K.CUE, O = K.OBJ, P = K.POCKET;
+    const d = this.unit(P[0] - O[0], P[1] - O[1]);
+    const G = [O[0] - d[0] * 2 * K.BR, O[1] - d[1] * 2 * K.BR];
+    const a = this.unit(G[0] - C[0], G[1] - C[1]);
+    const cosc = a[0] * d[0] + a[1] * d[1];
+    let tn = [-d[1], d[0]];
+    if (tn[0] * a[0] + tn[1] * a[1] < 0) tn = [-tn[0], -tn[1]];
+    const contact = [O[0] - d[0] * K.BR, O[1] - d[1] * K.BR];
+    this.g = { d, G, a, tn, cosc, contact, L: Math.hypot(G[0] - C[0], G[1] - C[1]), cut: Math.acos(Math.min(1, cosc)) * 180 / Math.PI };
+    return this.g;
+  }
+
+  // Bi trượt rồi lăn. w là vận tốc tương đương của spin; ma sát kéo độ trượt v − w về 0 nhanh gấp 3.5 lần v.
+  sim(p0, v, w, o) {
+    const K = Component.K, dt = 1 / 240, k = K.MS * K.GR * dt;
+    let x = p0[0], y = p0[1], vx = v[0], vy = v[1], wx = w[0], wy = w[1];
+    let t = 0, s = 0, n = 0, sunk = false, reached = false;
+    const ts = [0], pts = [[x, y]];
+    while (n++ < 240 * 20) {
+      const sp = Math.hypot(vx, vy);
+      if (sp < 0.004) break;
+      const ux = vx - wx, uy = vy - wy, us = Math.hypot(ux, uy);
+      if (us > 3.5 * k) {
+        vx -= k * ux / us; vy -= k * uy / us;
+        wx += 2.5 * k * ux / us; wy += 2.5 * k * uy / us;
+      } else {
+        const r = Math.max(0, sp - K.MR * K.GR * dt) / sp;
+        vx *= r; vy *= r; wx = vx; wy = vy;
+      }
+      const dx = vx * dt / K.IN, dy = vy * dt / K.IN;
+      x += dx; y += dy; s += Math.hypot(dx, dy); t += dt;
+      if (o.rails) {
+        const vx0 = vx, vy0 = vy;
+        if (x < K.BR) { x = 2 * K.BR - x; vx = -K.E * vx; } else if (x > K.W - K.BR) { x = 2 * (K.W - K.BR) - x; vx = -K.E * vx; }
+        if (y < K.BR) { y = 2 * K.BR - y; vy = -K.E * vy; } else if (y > K.H - K.BR) { y = 2 * (K.H - K.BR) - y; vy = -K.E * vy; }
+        // Mép băng ở gần độ cao bi rời băng không trượt, nên coi như bi lăn đều ngay sau băng, giống cueRun bên Swift.
+        // Giữ spin cũ thì spin chạy ngược hướng mới, ma sát bẻ cong đường và hãm gắt sau mỗi băng.
+        if (vx !== vx0 || vy !== vy0) { wx = vx; wy = vy; }
+      }
+      if (o.limit != null && s >= o.limit) reached = true;
+      if (o.pockets && K.POCKETS.some((q) => Math.hypot(q[0] - x, q[1] - y) < 2.4)) sunk = true;
+      if (n % 4 === 0 || reached || sunk) { ts.push(t); pts.push([x, y]); }
+      if (reached || sunk) break;
+    }
+    return { ts, pts, t, s, v: [vx, vy], w: [wx, wy], reached, sunk };
+  }
+
+  // Chỉ dùng cho vạch Stun: cú không phê, ngắm thẳng ghost.
+  approach(tip, speed) {
+    const g = this.geo(), f0 = 2.5 * tip;
+    return this.sim(Component.K.CUE, [g.a[0] * speed, g.a[1] * speed], [g.a[0] * f0 * speed, g.a[1] * f0 * speed], { limit: g.L });
+  }
+
+  fAt(ap) {
+    const a = this.geo().a, va = ap.v[0] * a[0] + ap.v[1] * a[1];
+    return (ap.w[0] * a[0] + ap.w[1] * a[1]) / va;
+  }
+
+  // Điểm đánh cho stun đúng lúc chạm, ở lực đang chọn. Không có nếu kéo hết 0.6R vẫn còn lăn.
+  stunTip(speed) {
+    if (this.stunMemo.k === speed) return this.stunMemo.v;
+    const K = Component.K;
+    const fc = (t) => { const ap = this.approach(t, speed); return ap.reached ? this.fAt(ap) : null; };
+    let lo = -K.TIPMAX, hi = 0, v = null;
+    const flo = fc(lo);
+    if (flo != null && flo < 0) {
+      for (let i = 0; i < 16; i++) {
+        const m = (lo + hi) / 2, f = fc(m);
+        if (f == null || f < 0) lo = m; else hi = m;
+      }
+      v = (lo + hi) / 2;
+    }
+    this.stunMemo = { k: speed, v };
+    return v;
+  }
+
+  // Một cú với hướng cơ `aim` (rad). Squirt lệch đường bi cái, va chạm có throw theo mô hình của Aim Lab:
+  // μ giữa hai bi giảm theo tốc độ trượt mặt tiếp xúc, lực ngang không vượt quá mức làm mặt tiếp xúc hết trượt.
+  hit(aim, tipX, tipY, speed) {
+    const K = Component.K, D = 2 * K.BR, C = K.CUE, O = K.OBJ;
+    const stick = [Math.cos(aim), Math.sin(aim)];
+    const sq = (K.SQ * Math.PI / 180) * Math.max(-1.1, Math.min(1.1, tipX / 0.5));
+    const L = this.rot(stick, sq);
+    const rel = [C[0] - O[0], C[1] - O[1]];
+    const bq = this.dot(L, rel), disc = bq * bq - (this.dot(rel, rel) - D * D);
+    if (disc < 0 || -bq - Math.sqrt(disc) < 0) return null;
+    const sHit = -bq - Math.sqrt(disc);
+    const ap = this.sim(C, [L[0] * speed, L[1] * speed], [L[0] * 2.5 * tipY * speed, L[1] * 2.5 * tipY * speed], { limit: sHit });
+    const base = { aim, stick, L, sq: sq * 180 / Math.PI, ap };
+    if (!ap.reached) return { ...base, short: 'cue' };
+    const P = [C[0] + L[0] * sHit, C[1] + L[1] * sHit];
+    ap.pts[ap.pts.length - 1] = P;
+    const n = this.unit(O[0] - P[0], O[1] - P[1]), t = this.left(n);
+    const v = ap.v, W = ap.w;
+    const slipH = this.dot(v, t) + 2.5 * tipX * speed, slipV = this.dot(W, n), slip = Math.hypot(slipH, slipV);
+    const Jn = (1 + K.EB) / 2 * this.dot(v, n);
+    const mu = 9.951e-3 + 0.108 * Math.exp(-1.088 * slip);
+    const F = Math.min(mu * Jn, slip / 7);
+    const Fh = slip > 1e-9 ? F * slipH / slip : 0, Fv = slip > 1e-9 ? F * slipV / slip : 0;
+    const obV = [n[0] * Jn + t[0] * Fh, n[1] * Jn + t[1] * Fh];
+    const cueV = [v[0] - n[0] * Jn - t[0] * Fh, v[1] - n[1] * Jn - t[1] * Fh];
+    const cueW = [W[0] - n[0] * 2.5 * Fv, W[1] - n[1] * 2.5 * Fv];
+    const toP = this.unit(K.POCKET[0] - O[0], K.POCKET[1] - O[1]), ob = this.unit(obV[0], obV[1]);
+    const err = Math.atan2(toP[0] * ob[1] - toP[1] * ob[0], this.dot(toP, ob));
+    return {
+      ...base, P, n, obV, cueV, cueW, err,
+      throwDeg: Math.atan2(Fh, Jn) * 180 / Math.PI,
+      // Phê làm mặt tiếp xúc hết trượt ngang: throw bằng 0.
+      gear: -this.dot(v, t) / (2.5 * speed),
+      fC: this.dot(W, L) / this.dot(v, L),
+    };
+  }
+
+  // Tìm hướng cơ cho bi 1 vào đúng tâm lỗ, có tính throw và squirt (secant từ hướng ngắm ghost).
+  solve(tipX, tipY, speed) {
+    const a = this.geo().a;
+    let a0 = Math.atan2(a[1], a[0]), r0 = this.hit(a0, tipX, tipY, speed);
+    if (!r0 || r0.short) return r0;
+    let a1 = a0 + 0.0035, r1 = this.hit(a1, tipX, tipY, speed);
+    for (let i = 0; i < 14 && r1 && !r1.short; i++) {
+      if (Math.abs(r1.err) < 1e-5) break;
+      const den = r1.err - r0.err;
+      if (Math.abs(den) < 1e-12) break;
+      const a2 = a1 - r1.err * (a1 - a0) / den;
+      a0 = a1; r0 = r1; a1 = a2; r1 = this.hit(a1, tipX, tipY, speed);
+    }
+    return r1;
+  }
+
+  shot(tipX, tipY, speed) {
+    const key = tipX.toFixed(3) + '|' + tipY.toFixed(3) + '|' + speed.toFixed(2);
+    if (this.memo.key === key) return this.memo.val;
+    const K = Component.K;
+    let val = { slip: Math.hypot(tipX, tipY) > K.TIPMAX + 1e-3 };
+    if (!val.slip) {
+      const h = this.solve(tipX, tipY, speed);
+      if (!h || h.short) {
+        val = { ap: h && h.ap, short: 'cue' };
+      } else {
+        const post = this.sim(h.P, h.cueV, h.cueW, { rails: true, pockets: true });
+        const dP = Math.hypot(K.POCKET[0] - K.OBJ[0], K.POCKET[1] - K.OBJ[1]) - K.BR;
+        const ob = this.sim(K.OBJ, h.obV, [0, 0], { limit: dP });
+        val = { h, ap: h.ap, fC: h.fC, post, ob, gap: ob.reached ? 0 : dP - ob.s };
+      }
+    }
+    this.memo = { key, val };
+    return val;
+  }
+
+  tracks(s) {
+    const t0 = s.ap.t;
+    const cue = { ts: s.ap.ts.slice(), pts: s.ap.pts.slice(), sink: false };
+    for (let i = 1; i < s.post.ts.length; i++) { cue.ts.push(t0 + s.post.ts[i]); cue.pts.push(s.post.pts[i]); }
+    cue.sink = s.post.sunk;
+    const ob = { ts: s.ob.ts.map((t) => t0 + t), pts: s.ob.pts, sink: s.ob.reached };
+    return { cue, ob, end: Math.max(cue.ts[cue.ts.length - 1], ob.ts[ob.ts.length - 1]) };
+  }
+
+  at(tr, t) {
+    const ts = tr.ts, p = tr.pts, n = ts.length - 1;
+    if (t <= ts[0]) return p[0];
+    if (t >= ts[n]) return p[n];
+    let lo = 0, hi = n;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ts[m] <= t) lo = m; else hi = m; }
+    const k = (t - ts[lo]) / Math.max(ts[hi] - ts[lo], 1e-6);
+    return [p[lo][0] + (p[hi][0] - p[lo][0]) * k, p[lo][1] + (p[hi][1] - p[lo][1]) * k];
+  }
+
+  // Rơi lỗ: mờ trong 150ms sau khi tới miệng lỗ.
+  fade(tr, t) { return tr.sink ? 1 - Math.min(Math.max((t - tr.ts[tr.ts.length - 1]) / 0.15, 0), 1) : 1; }
+
+  stopReplay() {
+    if (this.raf) cancelAnimationFrame(this.raf);
+    clearTimeout(this.timer);
+    this.raf = null;
+    if (this.state.rt != null) this.setState({ rt: null });
+  }
+
+  // Chạy cú đúng thời gian vật lý, luôn trên Bàn. Giảm động: hiện thẳng vị trí cuối, giữ 1.2s.
+  play() {
+    if (this.state.rt != null) { this.stopReplay(); return; }
+    const s = this.shot(this.state.tipX, this.state.tipY, this.state.speed);
+    if (s.slip || s.short) return;
+    this.tr = this.tracks(s);
+    const end = this.tr.end;
+    if (this.state.view !== 'table' || this.state.card) this.setState({ view: 'table', card: false });
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      this.setState({ rt: end + 1 });
+      this.timer = setTimeout(() => this.setState({ rt: null }), 1200);
+      return;
+    }
+    const start = performance.now();
+    const step = () => {
+      const t = (performance.now() - start) / 1000;
+      if (t > end + 0.6) { this.raf = null; this.setState({ rt: null }); return; }
+      this.setState({ rt: t });
+      this.raf = requestAnimationFrame(step);
+    };
+    this.raf = requestAnimationFrame(step);
+  }
+
+  // Độ lệch điểm ngắm so với tâm bi 1, đo vuông góc đường cơ, đơn vị R. Dương là ngắm sang phải tâm bi 1.
+  aimK(stick) {
+    const K = Component.K, O = K.OBJ, C = K.CUE;
+    return -this.dot([O[0] - C[0], O[1] - C[1]], this.right(stick)) / K.BR;
+  }
+
+  aimSay(k) {
+    const a = Math.abs(k), side = k > 0 ? 'phải' : 'trái';
+    if (a < 0.06) return 'Ngắm tâm vào tâm bi 1.';
+    if (a < 0.94) return 'Ngắm cách tâm bi 1 ' + a.toFixed(2) + 'R về bên ' + side + '.';
+    if (a <= 1.06) return 'Ngắm đúng mép ' + side + ' bi 1.';
+    return 'Ngắm ra ngoài mép ' + side + ' bi 1 ' + (a - 1).toFixed(2) + 'R.';
+  }
+
+  // Hình nhìn từ trên, 358 × 306. Port drawTop() của Aim Lab sang toạ độ SVG.
+  topFig(g, s) {
+    const K = Component.K, R = K.BR, Wd = 358, Ht = 306, O = K.OBJ, f = g.a, rt = this.right(f);
+    const f1 = (n) => n.toFixed(1);
+    const loc = (p) => { const d = [p[0] - O[0], p[1] - O[1]]; return [this.dot(d, rt), this.dot(d, f)]; };
+    const gh = loc(g.G), ct = loc(g.contact);
+    const sc = Math.min(Wd / (7.6 * R), Ht / (9.4 * R)), Rp = R * sc;
+    const cx = Wd / 2 - gh[0] / 2 * sc, cy = Ht * 0.36;
+    const P = (q) => [cx + q[0] * sc, cy - q[1] * sc];
+    const Op = P([0, 0]), Gp = P(gh), Cp = P(ct);
+    const uS = [this.dot(g.d, rt), -this.dot(g.d, f)];
+    const far = [Op[0] + uS[0] * Rp * 2.9, Op[1] + uS[1] * Rp * 2.9];
+    const ang = Math.atan2(uS[1], uS[0]), ca = Math.cos(ang), sa = Math.sin(ang);
+    const rp = (x, y) => f1(far[0] + x * ca - y * sa) + ',' + f1(far[1] + x * sa + y * ca);
+    const side = gh[0] >= 0 ? 1 : -1;
+    const cb = [Gp[0], Gp[1] + Rp * 2.9];
+    const tS = [-uS[1], uS[0]];
+    let nS = [-uS[1], uS[0]];
+    if (nS[1] < 0 || (Math.abs(nS[1]) < 1e-6 && nS[0] < 0)) nS = [-nS[0], -nS[1]];
+    const pk = Rp * 0.16;
+    const out = {
+      R: f1(Rp), Ry: f1(Rp * 0.9), shX: f1(Rp * 0.18), shY: f1(Rp * 0.28), Rn: f1(Rp * 0.48), numS: f1(Rp * 0.62), numY: f1(Rp * 0.22),
+      oX: f1(Op[0]), oY: f1(Op[1]), gX: f1(Gp[0]), gY: f1(Gp[1]), cX: f1(Cp[0]), cY: f1(Cp[1]),
+      dotR: f1(Math.max(3.5, Rp * 0.1)), haloR: f1(Math.max(3.5, Rp * 0.1) * 3),
+      potD: 'M' + f1(Gp[0]) + ' ' + f1(Gp[1]) + ' L' + f1(far[0]) + ' ' + f1(far[1]),
+      arrow: rp(0, 0) + ' ' + rp(-8, -4) + ' ' + rp(-8, 4),
+      potLx: f1(far[0] + uS[0] * 12), potLy: f1(far[1] + uS[1] * 12 + 4), potLa: uS[0] > 0.3 ? 'start' : uS[0] < -0.3 ? 'end' : 'middle',
+      aimD: 'M' + f1(Gp[0]) + ' ' + Ht + ' L' + f1(Gp[0]) + ' ' + f1(Gp[1]),
+      cbX: f1(cb[0]), cbY: f1(cb[1]), cbLx: f1(cb[0] + side * (Rp + 8)), cbLy: f1(cb[1] + 4),
+      sideA: side > 0 ? 'start' : 'end',
+      tanD: 'M' + f1(Gp[0] - tS[0] * Rp * 2.2) + ' ' + f1(Gp[1] - tS[1] * Rp * 2.2) + ' L' + f1(Gp[0] + tS[0] * Rp * 2.2) + ' ' + f1(Gp[1] + tS[1] * Rp * 2.2),
+      plus: 'M' + f1(Gp[0] - pk) + ' ' + f1(Gp[1]) + ' h' + f1(2 * pk) + ' M' + f1(Gp[0]) + ' ' + f1(Gp[1] - pk) + ' v' + f1(2 * pk),
+      r1x: f1((Gp[0] + Cp[0]) / 2 + nS[0] * 11), r1y: f1((Gp[1] + Cp[1]) / 2 + nS[1] * 11 + 4),
+      r2x: f1((Cp[0] + Op[0]) / 2 + nS[0] * 11), r2y: f1((Cp[1] + Op[1]) / 2 + nS[1] * 11 + 4),
+      gLx: f1(Gp[0] + side * (Rp + 8)), gLy: f1(Gp[1] + 4),
+      phiVis: 'hidden', arcD: 'M0 0', refD: 'M0 0', phiX: 0, phiY: 0, phiT: '',
+      kVis: 'hidden', kDash: 'M0 0', kBar: 'M0 0', kX: 0, kY: 0, kT: '',
+    };
+    if (g.cut > 1.5) {
+      const a0 = -Math.PI / 2;
+      let dA = ang - a0;
+      while (dA > Math.PI) dA -= 2 * Math.PI;
+      while (dA < -Math.PI) dA += 2 * Math.PI;
+      const rr = Rp * 1.45, a1 = a0 + dA, am = a0 + dA / 2;
+      out.phiVis = 'visible';
+      out.arcD = 'M' + f1(Gp[0] + rr * Math.cos(a0)) + ' ' + f1(Gp[1] + rr * Math.sin(a0)) + ' A' + f1(rr) + ' ' + f1(rr) + ' 0 0 ' + (dA > 0 ? 1 : 0) + ' ' + f1(Gp[0] + rr * Math.cos(a1)) + ' ' + f1(Gp[1] + rr * Math.sin(a1));
+      out.refD = 'M' + f1(Gp[0]) + ' ' + f1(Gp[1]) + ' L' + f1(Gp[0]) + ' ' + f1(Gp[1] - rr - 4);
+      out.phiX = f1(Gp[0] + Math.cos(am) * (rr + 16)); out.phiY = f1(Gp[1] + Math.sin(am) * (rr + 16) + 4);
+      out.phiT = 'φ ' + Math.round(g.cut) + '°';
+    }
+    const k = Math.abs(gh[0]) / R;
+    if (k > 0.12) {
+      const yb = Op[1] - Rp - 22;
+      out.kVis = 'visible';
+      out.kDash = 'M' + f1(Op[0]) + ' ' + f1(Op[1] - Rp) + ' V' + f1(yb - 4) + ' M' + f1(Gp[0]) + ' ' + f1(Gp[1] - Rp * 0.2) + ' V' + f1(yb - 4);
+      out.kBar = 'M' + f1(Op[0]) + ' ' + f1(yb) + ' H' + f1(Gp[0]);
+      out.kX = f1((Op[0] + Gp[0]) / 2); out.kY = f1(yb - 8); out.kT = 'k = ' + k.toFixed(2) + 'R';
+    }
+    out.label = 'Nhìn từ trên: bi 1, ghost, điểm chạm, bi trắng, góc cắt ' + Math.round(g.cut) + ' độ.';
+    out.say = this.aimSay(this.aimK(g.a));
+    out.comp = 'Tâm bi trắng phải tới đúng tâm ghost, đường cơ đi qua tâm ghost, không qua chấm gold.';
+    if (s.h) {
+      const diff = Math.abs(this.aimK(s.h.stick)) - Math.abs(this.aimK(g.a));
+      const nums = 'Throw ' + Math.abs(s.h.throwDeg).toFixed(1) + '° · squirt ' + Math.abs(s.h.sq).toFixed(1) + '°';
+      out.comp = Math.abs(diff) > 0.02 ? nums + ': ngắm ' + (diff > 0 ? 'mỏng' : 'dày') + ' hơn ghost ' + Math.abs(diff).toFixed(2) + 'R.' : nums + ': ngắm đúng ghost.';
+    }
+    return out;
+  }
+
+  // Hình nhìn từ sau bi cái, 358 × 306. Port drawShooter() của Aim Lab. Đường cơ là đường đã bù throw và squirt.
+  backFig(g, s, tipX) {
+    const K = Component.K, R = K.BR, Wd = 358, Ht = 306, C = K.CUE;
+    const f1 = (n) => n.toFixed(1);
+    const stick = s.h ? s.h.stick : g.a, rt = this.right(stick);
+    const proj = (p) => this.dot([p[0] - C[0], p[1] - C[1]], rt);
+    const xOb = proj(K.OBJ), xG = proj(g.G), xC = proj(g.contact);
+    const xs = [xOb, 0, xG];
+    const lo = Math.min(...xs) - R * 1.3, hi = Math.max(...xs) + R * 1.3;
+    const sc = Math.min(Ht * 0.4 / (2 * R), Wd * 0.9 / (hi - lo));
+    const X = (x) => Wd / 2 + (x - (lo + hi) / 2) * sc;
+    const cy = Ht * 0.36, Rp = R * sc;
+    // Cơ nằm đúng chỗ đầu cơ chạm bi cái: lệch theo phê.
+    const x0 = X(tipX * R), tipY = cy + Rp * 1.9, tw = Rp * 0.46, bw = Rp * 2.1, Lc = Ht - tipY;
+    const Yb = (t) => tipY + Lc * t, Wb = (t) => tw + (bw - tw) * t;
+    const band = (t0, t1, a = 0, b = 1) => {
+      const w0 = Wb(t0), w1 = Wb(t1);
+      return [[x0 - w0 / 2 + w0 * a, Yb(t0)], [x0 - w0 / 2 + w0 * b, Yb(t0)], [x0 - w1 / 2 + w1 * b, Yb(t1)], [x0 - w1 / 2 + w1 * a, Yb(t1)]]
+        .map((p) => f1(p[0]) + ',' + f1(p[1])).join(' ');
+    };
+    const pk = Rp * 0.16, gS = Math.sign(xG - xOb) || 1;
+    const sinC = Math.sin(g.cut * Math.PI / 180), band2 = 2 * (1 - sinC);
+    const fr = 1 - sinC, marks = [[1, 'full ball'], [0.875, '⅞ ball'], [0.75, '¾ ball'], [0.5, '½ ball'], [0.25, '¼ ball'], [0.125, '⅛ ball']];
+    let best = marks[0];
+    for (const m of marks) if (Math.abs(m[0] - fr) < Math.abs(best[0] - fr)) best = m;
+    const gLx = X(xG) + gS * (Rp + 8), gFits = gLx + gS * 50 > 2 && gLx + gS * 50 < Wd - 2;
+    const tSide = tipX >= 0 ? 1 : -1;
+    return {
+      R: f1(Rp), Ry: f1(Rp * 0.9), shX: f1(Rp * 0.18), shY: f1(Rp * 0.28), Rn: f1(Rp * 0.48), numS: f1(Rp * 0.62), numY: f1(Rp * 0.22),
+      cy: f1(cy), oX: f1(X(xOb)), gX: f1(X(xG)), cX: f1(X(xC)),
+      plus: 'M' + f1(X(xG) - pk) + ' ' + f1(cy) + ' h' + f1(2 * pk) + ' M' + f1(X(xG)) + ' ' + f1(cy - pk) + ' v' + f1(2 * pk),
+      dotR: f1(Math.max(4, Rp * 0.11)), haloR: f1(Math.max(4, Rp * 0.11) * 3), cLy: f1(cy - Rp - 12),
+      lineD: 'M' + f1(X(0)) + ' ' + f1(cy - Rp * 1.25) + ' V' + Ht,
+      cueSh: f1(bw * 0.12),
+      cue: {
+        all: band(0.02, 1), tip: band(0, 0.05), ferrule: band(0.05, 0.15), shaft: band(0.15, 0.52), joint: band(0.52, 0.57), butt: band(0.57, 1),
+        l: band(0, 1, 0, 0.14), r: band(0, 1, 0.86, 1), hi: band(0, 1, 0.26, 0.38),
+      },
+      gVis: Math.abs(xG - xOb) > R * 0.15 ? 'visible' : 'hidden',
+      gLx: f1(gFits ? gLx : X(xG)), gLy: f1(gFits ? cy + 4 : cy + Rp + 16), gLa: gFits ? (gS > 0 ? 'start' : 'end') : 'middle',
+      tVis: Math.abs(tipX) >= 0.03 ? 'visible' : 'hidden',
+      tLx: f1(x0 + tSide * (tw / 2 + 10)), tLy: f1(tipY + 8), tLa: tSide > 0 ? 'start' : 'end',
+      tT: 'PHÊ ' + (tipX > 0 ? 'PHẢI ' : 'TRÁI ') + Math.abs(tipX).toFixed(2) + 'R',
+      label: 'Nhìn từ sau bi cái: bi 1, ghost chồng ' + band2.toFixed(2) + ' bán kính, điểm chạm.',
+      say: g.cut < 0.3 ? 'Cú thẳng: ghost trùng khít bi 1.' : 'Ghost chồng lên bi 1 một dải ' + band2.toFixed(2) + 'R (' + (Math.abs(best[0] - fr) < 0.04 ? '' : '≈ ') + best[1] + ').',
+      more: 'Chấm gold nằm giữa dải chồng. Vạch đứt là đường cơ đã bù throw và squirt.',
+    };
+  }
+
+  renderVals() {
+    const K = Component.K, g = this.geo();
+    const { tipX, tipY, speed, paths, rt, view } = this.state;
+    const felt = this.props.felt ?? '#1E5A87';
+    const s = this.shot(tipX, tipY, speed);
+    const playing = rt != null && !!this.tr;
+    const vis = (b) => (b ? 'visible' : 'hidden');
+    const f2 = (n) => n.toFixed(2);
+    const poly = (pts) => (pts && pts.length > 1 ? 'M' + pts.map((p) => f2(p[0]) + ' ' + f2(p[1])).join(' L') : 'M0 0');
+    const red = '#FF453A', secondary = 'rgba(235,235,245,0.6)';
+
+    // Spin lúc chạm: draw, stun, follow. Cùng ngưỡng với PoolEditorGuides.spinIndex.
+    const kind = s.fC == null ? 1 : s.fC < -0.05 ? 0 : s.fC < 0.12 ? 1 : 2;
+    const spinCols = ['#C3A6FF', '#FFFFFF', '#8EE0B0'];
+    const ran = !s.slip && !s.short;
+    const cueCol = ran && s.post.sunk ? red : spinCols[kind];
+    this.lastGear = ran && Math.abs(s.h.gear) < K.TIPMAX ? Math.round(s.h.gear * 100) / 100 : null;
+
+    let statusText, statusColor = red;
+    if (s.slip) statusText = 'Trượt cơ, bi cái nảy lên';
+    else if (s.short) statusText = 'Bi cái không tới bi 1';
+    else if (!s.ob.reached) statusText = 'Thiếu lực, hụt lỗ ' + Math.max(1, Math.round(s.gap)) + '"';
+    else if (s.post.sunk) statusText = 'Bi 1 vào, bi cái rơi lỗ';
+    else { statusText = 'Bi 1 vào lỗ · bi cái đi ' + Math.round(s.post.s) + '"'; statusColor = secondary; }
+
+    let spinText = 'Không mô phỏng', spinDot = 'rgba(235,235,245,0.3)';
+    if (ran) {
+      spinDot = spinCols[kind];
+      // Đánh thấp mà tới nơi đã lăn: draw tắt dọc đường, nói thẳng ra để không đọc như lỗi.
+      spinText = kind === 0 ? 'Draw lúc chạm' : kind === 1 ? 'Stun lúc chạm' : tipY < -0.05 ? 'Hết draw lúc chạm' : s.fC > 0.9 ? 'Lăn tròn lúc chạm' : 'Follow lúc chạm';
+    } else if (s.short) spinText = 'Bi cái dừng trước';
+
+    const tipText = Math.abs(tipY) < 0.005 ? 'Ngang tâm' : (tipY > 0 ? 'Cao ' : 'Thấp ') + Math.abs(tipY).toFixed(2) + 'R';
+    const nearGear = this.lastGear != null && Math.abs(tipX - this.lastGear) < 0.005 && Math.abs(tipX) >= 0.01;
+    let sideText = Math.abs(tipX) < 0.005 ? 'Không phê' : 'Phê ' + (tipX > 0 ? 'phải ' : 'trái ') + Math.abs(tipX).toFixed(2) + 'R';
+    if (nearGear) sideText += ' · hết throw';
+
+    // Pad: tâm (62, 64), bán kính 44 = 0.6R.
+    const pxOf = (t) => K.PX + (t / K.TIPMAX) * K.PR, py = (t) => K.PY - (t / K.TIPMAX) * K.PR;
+    const edge = (y) => K.PX + Math.sqrt(Math.max(0, K.PR * K.PR - (y - K.PY) * (y - K.PY))) + 3;
+    const stun = this.stunTip(speed);
+    const near = (v) => v != null && Math.abs(tipY - v) < 0.005;
+    const stunShow = stun != null && Math.abs(stun) > 0.06;
+    // Nhãn vạch: giữ cách nhau ít nhất 15 điểm, kéo dây dẫn từ mép bi ra chữ.
+    const marks = [{ id: 'lan', v: 0.4 }, { id: 'tam', v: 0 }];
+    if (stunShow) marks.push({ id: 'stun', v: stun });
+    marks.forEach((m) => { m.tick = py(m.v); m.y = m.tick; });
+    marks.sort((a, b) => a.tick - b.tick);
+    for (let i = 1; i < marks.length; i++) marks[i].y = Math.max(marks[i].y, marks[i - 1].y + 15);
+    for (let i = marks.length - 1; i >= 0; i--) {
+      const cap = i === marks.length - 1 ? 122 : marks[i + 1].y - 15;
+      marks[i].y = Math.min(marks[i].y, cap);
+    }
+    const lbl = { stun: { vis: 'hidden', tick: K.PY, lead: 'M0 0', ty: 0, col: secondary } };
+    for (const m of marks) {
+      lbl[m.id] = {
+        vis: 'visible', tick: f2(m.tick), ty: f2(m.y + 4),
+        lead: 'M' + f2(edge(m.tick)) + ' ' + f2(m.tick) + ' L114 ' + f2(m.y),
+        col: near(m.v) ? '#F5F5F7' : secondary,
+      };
+    }
+
+    // Lực: thang căn bậc hai, phần chậm rộng ra vì đó là chỗ cần chỉnh mịn.
+    const pos = (v) => Math.sqrt(Math.max(v - K.VMIN, 0) / (K.VMAX - K.VMIN));
+    const travel = 334 - 28;
+    const tx = (v) => 14 + pos(v) * travel - 1;
+    const powerWord = speed < 0.45 ? 'Chạm nhẹ' : speed < 0.89 ? 'Chậm' : speed < 1.9 ? 'Vừa' : speed < 3.2 ? 'Nhanh' : 'Mạnh';
+
+    let cue = K.CUE, ob = K.OBJ, cueOp = 1, obOp = 1;
+    if (playing) {
+      cue = this.at(this.tr.cue, rt); ob = this.at(this.tr.ob, rt);
+      cueOp = this.fade(this.tr.cue, rt); obOp = this.fade(this.tr.ob, rt);
+    }
+
+    const obStop = ran && !s.ob.reached ? s.ob.pts[s.ob.pts.length - 1] : K.OBJ;
+    const stop = ran ? s.post.pts[s.post.pts.length - 1] : g.G;
+    const tanEnd = [g.G[0] + g.tn[0] * 12, g.G[1] + g.tn[1] * 12];
+    const segI = K.VIEWS.indexOf(view);
+    const disp = {};
+    K.VIEWS.forEach((v) => { disp[v] = v === view ? 'block' : 'none'; });
+    const seg = {};
+    K.VIEWS.forEach((v) => { seg[v] = v === view ? 'true' : 'false'; });
+
+    // Thẻ bài: diamond tính từ băng trái và băng trên, làm tròn ⅛.
+    const FR = ['', '⅛', '¼', '⅜', '½', '⅝', '¾', '⅞'];
+    const dv = (v) => { const e = Math.round(v * 8), w = Math.floor(e / 8), fr = FR[e % 8]; return w === 0 && fr ? fr : w + fr; };
+    const dia = (p) => '(' + dv(p[0] / K.W * 4) + ', ' + dv(p[1] / K.H * 8) + ')';
+    const tipName = tipY >= 0.3 ? 'Follow, cao ' + tipY.toFixed(2) + 'R' : tipY > 0.05 ? 'Lăn, cao ' + tipY.toFixed(2) + 'R'
+      : tipY > -0.05 ? 'Tâm bi' : tipY > -0.35 ? 'Stun, thấp ' + (-tipY).toFixed(2) + 'R' : 'Draw, thấp ' + (-tipY).toFixed(2) + 'R';
+    const speedWord = speed < 1.2 ? 'nhẹ' : speed < 2.6 ? 'vừa' : speed < 4 ? 'mạnh' : 'rất mạnh';
+    let compText = 'Không tính được: ' + statusText.toLowerCase() + '.';
+    if (s.h) {
+      const diff = Math.abs(this.aimK(s.h.stick)) - Math.abs(this.aimK(g.a));
+      compText = (Math.abs(diff) > 0.02 ? (diff > 0 ? 'Mỏng' : 'Dày') + ' hơn ghost ' + Math.abs(diff).toFixed(2) + 'R' : 'Ngắm đúng ghost')
+        + ' · throw ' + Math.abs(s.h.throwDeg).toFixed(1) + '°, squirt ' + Math.abs(s.h.sq).toFixed(1) + '°';
+    }
+    const card = {
+      eyebrow: 'BẢN NHÁP · CHƯA LƯU',
+      title: 'Cắt ' + Math.round(g.cut) + '° vào góc',
+      goal: 'Bi 1 vào góc trên phải.' + (ran && !s.post.sunk ? ' Bi trắng dừng đúng vòng.' : ''),
+      place: 'Trắng ' + dia(K.CUE) + ' · Bi 1 ' + dia(K.OBJ) + ' → góc trên phải',
+      shot: tipName + (Math.abs(tipX) >= 0.03 ? ', phê ' + (tipX > 0 ? 'phải ' : 'trái ') + Math.abs(tipX).toFixed(2) + 'R' : '') + ' · ' + speed.toFixed(1) + ' m/s, lực ' + speedWord,
+      comp: compText,
+      cue: !ran ? '—' : s.post.sunk ? 'Rơi lỗ, cú hỏng' : 'Dừng ở ' + dia(stop) + ', đi ' + Math.round(s.post.s) + '"',
+    };
+
+    return {
+      felt,
+      subtitle: 'Bi 1 → góc trên phải · cắt ' + Math.round(g.cut) + '°',
+      segX: segI * 118, seg, disp,
+      viewTable: this.viewTable, viewTop: this.viewTop, viewBack: this.viewBack,
+      openCard: this.openCard, closeCard: this.closeCard,
+      sheet: { open: this.state.card ? 'true' : 'false', y: this.state.card ? '0' : 'calc(100% + 16px)', vis: this.state.card ? 'visible' : 'hidden', dim: this.state.card ? 1 : 0, pe: this.state.card ? 'auto' : 'none' },
+      tp: this.topFig(g, s),
+      sv: this.backFig(g, s, s.slip ? 0 : tipX),
+      card,
+
+      tableLabel: 'Bàn: bi cái, bi 1, lỗ góc trên phải. ' + statusText,
+      guidesVis: vis(!playing),
+      pathVis: vis(paths && ran),
+      stopVis: vis(ran && !s.post.sunk),
+      aimD: poly([K.CUE, ran ? s.h.P : g.G]),
+      cueD: ran ? poly(s.post.pts) : 'M0 0',
+      cueCol,
+      stopX: f2(stop[0]), stopY: f2(stop[1]),
+      tanD: g.cut > 1 ? poly([g.G, tanEnd]) : 'M0 0',
+      obOkVis: vis(paths && (s.slip || s.short || s.ob.reached)),
+      obD: poly([K.OBJ, K.POCKET]),
+      obShortVis: vis(paths && ran && !s.ob.reached),
+      obShortD: poly([K.OBJ, obStop]),
+      obRestD: poly([obStop, K.POCKET]),
+      obStopX: f2(obStop[0]), obStopY: f2(obStop[1]),
+      ghostX: f2(g.G[0]), ghostY: f2(g.G[1]),
+      // Tắt đường đi thì ghost là thứ chính trên bàn, nét đậm hơn.
+      ghostOp: paths ? 0.85 : 1, ghostW: paths ? 0.13 : 0.2,
+      contactX: f2(g.contact[0]), contactY: f2(g.contact[1]),
+      cueX: f2(cue[0]), cueY: f2(cue[1]), cueOp,
+      obX: f2(ob[0]), obY: f2(ob[1]), obOp,
+
+      dotX: f2(pxOf(tipX)), dotY: f2(py(tipY)),
+      dotFill: s.slip ? red : '#3F6DA8',
+      faceStroke: s.slip ? red : 'rgba(255,255,255,0.25)',
+      faceStrokeW: s.slip ? 2 : 1,
+      lbl,
+      gearX: f2(pxOf(this.lastGear ?? 0)), gearVis: vis(this.lastGear != null && Math.abs(this.lastGear) > 0.03),
+      tipYPct: Math.round(tipY * 100), tipXPct: Math.round(tipX * 100),
+      tipText, sideText,
+      tipColor: s.slip ? red : '#F5F5F7',
+      sideColor: s.slip ? red : Math.abs(tipX) < 0.005 ? secondary : nearGear ? '#D8B451' : '#F5F5F7',
+      spinText, spinDot, statusText, statusColor,
+
+      speedText: speed.toFixed(1) + ' m/s',
+      pwText: speed.toFixed(1) + ' mét mỗi giây, ' + powerWord,
+      powerWord,
+      pwPos: Math.round(pos(speed) * 1000),
+      fillW: 14 + pos(speed) * travel,
+      t0x: tx(K.MARKS[0]), t1x: tx(K.MARKS[1]), t2x: tx(K.MARKS[2]), t3x: tx(K.MARKS[3]),
+
+      paths, pathsOff: !paths,
+      pathsPressed: paths ? 'true' : 'false',
+      pathsBg: paths ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.08)',
+      playing, idle: !playing,
+      shootDisabled: !ran,
+      shootOpacity: ran ? 1 : 0.4,
+
+      padDown: this.padDown, padMove: this.padMove, padUp: this.padUp,
+      onTipYInput: this.onTipYInput, onTipXInput: this.onTipXInput, onPower: this.onPower,
+      togglePaths: this.togglePaths, shoot: this.shoot,
+    };
+  }
+}
+</script>
+</body>
+</html>

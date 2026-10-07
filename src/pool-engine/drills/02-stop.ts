@@ -1,0 +1,26 @@
+import type { PoolDrill } from '../types';
+
+export const stopShot = {
+  id: '02',
+  number: 2,
+  title: 'Stop Shot',
+  subtitle: 'Learn to kill the cue ball after contact.',
+  category: 'cueBallControl',
+  skill: 'stop',
+  skillLabel: 'Cue Ball Control',
+  difficulty: 1,
+  objective: 'Pocket the 1-ball and stop the cue ball inside the target zone.',
+  cueBall: { x: 0.518, y: 0.518 },
+  objectBalls: [{ number: 1, x: 0.25, y: 0.25 }],
+  targetPocket: 'footLeft',
+  cueBallTargetZones: [{ kind: 'circle', center: { x: 0.27, y: 0.27 }, radius: 0.08 }],
+  guideLines: [{ kind: 'objectBallPath', ball: 1, pocket: 'footLeft' }],
+  recommendedContactPoint: { x: 0, y: -0.15 },
+  recommendedSpin: 'stun',
+  recommendedSpeed: 'medium',
+  allowedRails: 0,
+  attemptCount: 10,
+  passCondition: { kind: 'inZone', required: 7 },
+  tips: ['Hit just below center.', 'The cue ball must still be sliding when it reaches the 1-ball.'],
+  difficultyModifiers: { zoneScale: [1, 0.8, 0.6, 0.4] },
+} satisfies PoolDrill;

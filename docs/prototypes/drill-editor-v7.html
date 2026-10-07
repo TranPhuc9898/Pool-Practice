@@ -1,0 +1,1358 @@
+<title>Drill Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: một cột tài liệu. Đầu trang là prototype điện thoại dọc chạy được, cạnh đó là cách thử. Dưới là luật cú đánh, tư duy bài tập và bảng cổng chay-apple. Black Precision, chỉ một theme tối. */
+:root{
+  --bg:#040404; --surface:#0D0D0D; --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --fg:#F2F1EC; --fg2:rgba(242,241,236,.64); --fg3:rgba(242,241,236,.42);
+  --gold:#D8B451; --gold-ink:#17120A; --red:#FF6961; --orange:#FF9F0A;
+  --font:'Outfit', -apple-system, 'SF Pro Text', system-ui, sans-serif;
+  --mono:ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color-scheme:dark;
+}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--font);font-size:16px;line-height:1.55;padding-inline:16px;padding-block:28px 72px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:64px}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:700}
+h1{font-size:clamp(34px,5vw,52px);letter-spacing:-.02em;line-height:1.02}
+h2{font-size:26px;letter-spacing:-.01em;line-height:1.15}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3);font-weight:600}
+.lede{color:var(--fg2);max-width:62ch;font-size:17px}
+section{display:flex;flex-direction:column;gap:20px;min-width:0}
+.head{display:flex;flex-direction:column;gap:8px}
+.muted{color:var(--fg2)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+code{background:rgba(255,255,255,.06);padding:1px 5px;border-radius:5px}
+.bad{color:var(--red)} .warn{color:var(--orange)}
+
+/* ---------- Prototype ---------- */
+.hero-grid{display:grid;gap:32px;align-items:start}
+@media (min-width:880px){.hero-grid{grid-template-columns:360px 1fr}}
+.stage{position:relative;width:100%;max-width:360px;margin:0 auto}
+.side{display:flex;flex-direction:column;gap:22px;min-width:0}
+.device{position:absolute;left:0;top:0;width:414px;height:868px;transform-origin:0 0;border-radius:58px;background:#1A1A1A;box-shadow:inset 0 0 0 1.5px #2C2C2C,0 30px 80px rgba(0,0,0,.7)}
+.screen{position:absolute;left:12px;top:12px;width:390px;height:844px;border-radius:47px;overflow:hidden;background:#040404;touch-action:none;user-select:none;-webkit-user-select:none;font-family:var(--font)}
+.screen svg{position:absolute;inset:0;display:block}
+.island{position:absolute;left:132px;top:11px;width:126px;height:37px;border-radius:19px;background:#000;box-shadow:inset 0 0 0 1px #111}
+.homebar{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:rgba(255,255,255,.55);pointer-events:none}
+.ibtn,.tbtn{width:44px;height:44px;border:0;border-radius:12px;background:transparent;color:rgba(255,255,255,.62);display:grid;place-items:center;cursor:pointer;transition:transform .12s cubic-bezier(.23,1,.32,1)}
+.ibtn{position:absolute;top:54px;color:rgba(255,255,255,.78)}
+.ibtn:active,.tbtn:active{transform:scale(.94)}
+.ibtn:disabled{opacity:.28;cursor:default}
+.ibtn svg,.tbtn svg{width:21px;height:21px;position:static}
+.tbtn[aria-pressed="true"]{background:rgba(255,255,255,.12);color:#fff}
+.tools{position:absolute;left:16px;right:16px;top:758px;height:44px;display:flex;justify-content:space-around}
+.tbtn:focus-visible,.pal:focus-visible,.save:focus-visible,.ibtn:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.pal{position:absolute;width:36px;height:48px;margin:-24px 0 0 -18px;border:0;background:transparent;border-radius:10px;display:grid;place-items:center;cursor:grab;transition:opacity .15s ease-out}
+.pal svg{position:static;width:20px;height:20px;overflow:visible}
+.pal.on-table{opacity:.26;cursor:pointer}
+.pal.flying{visibility:hidden}
+#palette{transition:opacity .15s ease-out}
+.shotbar{position:absolute;left:16px;right:16px;top:702px;height:104px;display:grid;grid-template-columns:96px 1fr;gap:18px;align-items:center;opacity:0;pointer-events:none;transition:opacity .15s ease-out}
+.screen.shotmode .shotbar{opacity:1;pointer-events:auto}
+.screen.shotmode #palette,.screen.shotmode .tools{opacity:0;pointer-events:none}
+.tools{transition:opacity .15s ease-out}
+.pad{width:96px;height:96px;border-radius:48px;touch-action:none;cursor:ns-resize;outline:none}
+.pad svg{position:static;width:96px;height:96px;display:block;overflow:visible}
+.pad:focus-visible{box-shadow:0 0 0 2px var(--gold)}
+.ctl{display:flex;flex-direction:column;min-width:0}
+.ctl .row{display:flex;justify-content:space-between;align-items:baseline;height:20px;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ctl .k{color:rgba(242,241,236,.64);font-weight:500}
+.ctl .v{color:#fff;font-weight:600;overflow:hidden;text-overflow:ellipsis;min-width:0;padding-left:10px}
+.ctl .v i{display:inline-block;width:7px;height:7px;border-radius:4px;margin-right:6px;vertical-align:0}
+.track{position:relative;height:40px;touch-action:none;cursor:ew-resize;outline:none;margin-top:2px}
+.track:focus-visible .rail{box-shadow:0 0 0 2px var(--gold)}
+.track .rail{position:absolute;left:0;right:0;top:18px;height:5px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden}
+.track .fill{position:absolute;left:0;top:0;bottom:0;background:var(--gold);border-radius:3px}
+.track .tick{position:absolute;top:15px;width:2px;height:11px;margin-left:-1px;border-radius:1px;background:rgba(255,255,255,.5)}
+.track .thumb{position:absolute;top:8px;width:24px;height:24px;margin-left:-12px;border-radius:12px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.5),0 0 0 .5px rgba(0,0,0,.2);transition:transform .12s cubic-bezier(.23,1,.32,1)}
+.track.held .thumb{transform:scale(1.12)}
+.marks{position:relative;height:16px;font-size:11px;font-weight:500;color:rgba(242,241,236,.64)}
+.marks span{position:absolute;transform:translateX(-50%)}
+.marks span.on{color:var(--gold)}
+.save{position:absolute;left:310px;top:59px;width:64px;height:34px;border:0;border-radius:11px;background:var(--gold);color:var(--gold-ink);font:700 13px/1 var(--font);letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:transform .12s cubic-bezier(.23,1,.32,1)}
+.save:active{transform:scale(.96)}
+.inspector{position:absolute;left:195px;top:107px;transform:translateX(-50%);max-width:276px;height:26px;padding:0 4px 0 12px;display:flex;align-items:center;gap:8px;border-radius:13px;background:rgba(28,28,30,.62);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.14);font-size:12px;font-weight:500;color:rgba(255,255,255,.9);white-space:nowrap;font-variant-numeric:tabular-nums;transition:opacity .15s ease-out}
+.inspector .tx{overflow:hidden;text-overflow:ellipsis;min-width:0;padding-right:8px}
+.inspector .bad{color:#FF8A84}
+.inspector.hide{opacity:0;pointer-events:none}
+.inspector .ib{flex:none;border:0;background:rgba(255,255,255,.12);color:#fff;font:600 11.5px/1 var(--font);height:20px;padding:0 9px;border-radius:10px;cursor:pointer}
+.inspector .ib.danger{color:#FF8A84}
+.txt{position:absolute;height:26px;min-width:150px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.35);background:rgba(20,20,22,.9);color:#fff;font:500 12px var(--font);outline:none}
+.toast{position:absolute;left:195px;top:652px;transform:translate(-50%,8px);opacity:0;pointer-events:none;height:30px;padding:0 6px 0 14px;display:flex;align-items:center;gap:10px;border-radius:15px;background:rgba(44,44,46,.85);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);font-size:12.5px;font-weight:500;color:#fff;white-space:nowrap;transition:opacity .15s ease-out,transform .15s ease-out}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto;transition:opacity .2s cubic-bezier(.23,1,.32,1),transform .2s cubic-bezier(.23,1,.32,1)}
+.toast button{border:0;background:transparent;color:var(--gold);font:600 12.5px var(--font);padding:0 8px;height:30px;cursor:pointer}
+.toast .sp{width:8px}
+.backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s ease-out}
+.backdrop.show{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;bottom:0;width:390px;height:452px;border-radius:16px 16px 0 0;background:#1C1C1E;box-shadow:0 -10px 40px rgba(0,0,0,.5);transform:translateY(105%);transition:transform .2s ease-out;display:flex;flex-direction:column;color:#fff;padding-bottom:30px;box-sizing:border-box}
+.sheet.show{transform:translateY(0);transition:transform .32s cubic-bezier(.23,1,.32,1)}
+.grab{width:36px;height:5px;border-radius:3px;background:rgba(255,255,255,.28);margin:6px auto 0}
+.sh-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:4px 10px 6px}
+.sh-head h4{margin:0;font-size:15px;font-weight:600}
+.sh-head button{border:0;background:transparent;color:rgba(255,255,255,.75);font:500 15px var(--font);height:36px;padding:0 8px;cursor:pointer;justify-self:start}
+.sh-head button.primary{justify-self:end;color:var(--gold);font-weight:700}
+.sh-body{flex:1;overflow:auto;padding:4px 16px 12px;display:flex;flex-direction:column;gap:10px}
+.group{background:#2C2C2E;border-radius:11px;overflow:hidden}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:0 12px;font-size:14px}
+.row+.row{box-shadow:inset 0 .5px 0 rgba(255,255,255,.12)}
+.row input[type=text]{flex:1;background:transparent;border:0;color:#fff;font:500 14px var(--font);text-align:right;outline:none;min-width:0}
+.seg{display:flex;background:rgba(118,118,128,.24);border-radius:8px;padding:2px;gap:2px}
+.seg button{border:0;background:transparent;color:#fff;font:500 12.5px var(--font);height:28px;padding:0 9px;border-radius:6px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:#636366}
+.step{display:flex;align-items:center;gap:10px;font-variant-numeric:tabular-nums}
+.step button{width:32px;height:28px;border:0;border-radius:7px;background:rgba(118,118,128,.24);color:#fff;font:600 16px/1 var(--font);cursor:pointer}
+.step b{min-width:46px;text-align:center;font-weight:600}
+.foot{font-size:12.5px;color:rgba(255,255,255,.55);padding:0 4px}
+.json{margin:0;font:11.5px/1.5 var(--mono);color:rgba(255,255,255,.82);background:#111;border-radius:10px;padding:10px 12px;white-space:pre;overflow:auto;max-height:250px}
+.copy{align-self:flex-start;border:0;border-radius:9px;background:rgba(255,255,255,.12);color:#fff;font:600 13px var(--font);height:34px;padding:0 14px;cursor:pointer}
+
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--line2);background:var(--surface);color:var(--fg);font:500 14px var(--font);cursor:pointer}
+.chip input{accent-color:var(--gold);margin:0}
+.chip:hover{border-color:rgba(255,255,255,.26)}
+.hlog{display:flex;flex-direction:column;gap:4px;min-height:84px;font-family:var(--mono);font-size:12.5px}
+.hlog .e{display:flex;gap:10px;align-items:baseline}
+.hlog .k{color:var(--gold);min-width:140px;flex:none}
+.hlog .w{color:var(--fg2)}
+.hint{font-size:14px;color:var(--fg3)}
+.legend{display:flex;flex-direction:column;gap:8px;font-size:14.5px;color:var(--fg2)}
+.legend b{color:var(--fg);font-weight:600}
+
+/* ---------- Doc ---------- */
+.anatomy{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.part{background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.part .n{font-family:var(--mono);font-size:12px;color:var(--fg3)}
+.part p{font-size:14.5px;color:var(--fg2)}
+.part code{font-size:12px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:16px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:760px}
+th{text-align:left;font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);padding:12px 14px;border-bottom:1px solid var(--line);background:var(--surface)}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--fg2)}
+tr:last-child td{border-bottom:0}
+td:first-child{color:var(--fg);font-weight:500}
+tr.new td:first-child::after{content:"mới";margin-left:8px;font-size:11px;font-weight:600;color:var(--gold);letter-spacing:.04em}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.f100{background:rgba(255,255,255,.08);color:var(--fg)}
+.f10{background:rgba(255,255,255,.05);color:var(--fg2)}
+.fsome{background:rgba(216,180,81,.14);color:var(--gold)}
+.now{background:rgba(255,255,255,.1);color:var(--fg)}
+.next{background:rgba(216,180,81,.16);color:var(--gold)}
+.later{background:transparent;color:var(--fg3);box-shadow:inset 0 0 0 1px var(--line2)}
+.ladder{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.step-card{flex:1 1 150px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.step-card .t{font-weight:600}
+.step-card .d{font-size:13px;color:var(--fg2)}
+.step-card .c{font-family:var(--mono);font-size:12px;color:var(--fg3)}
+.step-card.gap{border-style:dashed;border-color:rgba(216,180,81,.45)}
+.step-card.gap .c{color:var(--gold)}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.rule{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:8px}
+.rule .tag{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.rule p{font-size:14.5px;color:var(--fg2)}
+.callout{border-left:2px solid var(--gold);padding:4px 0 4px 16px;color:var(--fg2);max-width:70ch}
+.callout b{color:var(--fg)}
+pre.code{margin:0;font:13px/1.55 var(--mono);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;overflow-x:auto;color:rgba(242,241,236,.86)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card ul{margin:0;padding-left:18px;color:var(--fg2);font-size:14.5px;display:flex;flex-direction:column;gap:6px}
+.card li b{color:var(--fg);font-weight:600}
+.src{font-size:14px;color:var(--fg2);display:flex;flex-direction:column;gap:4px}
+.src a{color:var(--fg);text-decoration-color:rgba(255,255,255,.3);text-underline-offset:3px}
+@media (prefers-reduced-motion: reduce){*{transition-duration:0s!important}}
+</style>
+
+<div class="wrap">
+  <section>
+    <div class="head">
+      <span class="eyebrow">Pool Training · thiết kế qua chay-apple</span>
+      <h1>Drill Editor</h1>
+      <p class="lede">Máy cầm dọc như mọi lúc. Bàn đứng, băng đỉnh (foot) ở trên, khay bi ở dưới sát ngón cái. Chọn một đường vào lỗ là thấy góc cắt, hình quạt chỗ đặt bi cái, và đường bi cái sau va chạm tính từ spin và lực.</p>
+    </div>
+
+    <div class="hero-grid">
+      <div class="stage" id="stage">
+        <div class="device" id="device">
+          <div class="screen" id="screen" aria-label="Drill Editor prototype">
+            <svg id="svg" viewBox="0 0 390 844" width="390" height="844" aria-hidden="true">
+              <defs>
+                <radialGradient id="hl" cx=".34" cy=".3" r=".78">
+                  <stop offset="0" stop-color="#fff" stop-opacity=".6"/>
+                  <stop offset=".32" stop-color="#fff" stop-opacity=".07"/>
+                  <stop offset="1" stop-color="#000" stop-opacity=".38"/>
+                </radialGradient>
+                <radialGradient id="cloth" cx=".5" cy=".5" r=".72">
+                  <stop offset="0" stop-color="#2F4E64"/>
+                  <stop offset="1" stop-color="#223A4C"/>
+                </radialGradient>
+                <clipPath id="uc"><circle r="1"/></clipPath>
+                <radialGradient id="halo"><stop offset="0" stop-color="#D8B451" stop-opacity=".6"/><stop offset="1" stop-color="#D8B451" stop-opacity="0"/></radialGradient>
+                <radialGradient id="cueFace" cx=".35" cy=".32" r=".75"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#ECE8DE"/><stop offset="1" stop-color="#A8A49A"/></radialGradient>
+                <clipPath id="felt"><rect width="50" height="100"/></clipPath>
+              </defs>
+              <g id="gTable">
+                <g id="gStatic"></g><g id="gGrid"></g><g id="gPaths"></g><g id="gAims"></g><g id="gTexts"></g><g id="gPockets"></g><g id="gBalls"></g><g id="gTop"></g><g id="gHit"></g>
+              </g>
+            </svg>
+            <div class="island"></div>
+
+            <button class="ibtn chrome" id="bUndo" style="left:12px" aria-label="Hoàn tác"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4.5 9.5 9 5"/><path d="M4.5 9.5H14a5.5 5.5 0 010 11h-3"/></svg></button>
+            <button class="ibtn chrome" id="bRedo" style="left:56px" aria-label="Làm lại"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l4.5-4.5L15 5"/><path d="M19.5 9.5H10a5.5 5.5 0 000 11h3"/></svg></button>
+            <button class="ibtn chrome" id="bClear" style="left:214px" aria-label="Xoá hết bàn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l1 13h9l1-13M9.5 7V4.5h5V7"/></svg></button>
+            <button class="ibtn chrome" id="bShare" style="left:258px" aria-label="Chia sẻ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11M7.5 8L12 3.5 16.5 8"/><path d="M6 11.5H5v8.5h14v-8.5h-1"/></svg></button>
+            <button class="save chrome" id="bSave">Lưu</button>
+
+            <div id="palette"></div>
+            <div class="shotbar chrome" id="shotbar" aria-label="Cú đánh">
+              <div class="pad" id="pad" role="slider" tabindex="0" aria-label="Điểm đặt đầu cơ trên bi cái, cao là follow, thấp là draw" aria-valuemin="-0.5" aria-valuemax="0.5"><svg id="padSvg" viewBox="-50 -50 100 100"></svg></div>
+              <div class="ctl">
+                <div class="row"><span class="k">Đầu cơ</span><span class="v" id="tipOut"></span></div>
+                <div class="row"><span class="k">Lực</span><span class="v" id="powOut"></span></div>
+                <div class="track" id="track" role="slider" tabindex="0" aria-label="Lực, tốc độ bi cái lúc rời đầu cơ" aria-valuemin="0.5" aria-valuemax="4.5"><div class="rail"><div class="fill" id="pFill"></div></div><div id="pTicks"></div><div class="thumb" id="pThumb"></div></div>
+                <div class="marks" id="pMarks"></div>
+              </div>
+            </div>
+            <nav class="tools chrome" id="tools" aria-label="Công cụ">
+              <button class="tbtn" data-tool="select" aria-label="Chọn và kéo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3.5l12.5 7.2-5.6 1.6-2.9 5.2z"/></svg></button>
+              <button class="tbtn" data-tool="text" aria-label="Ghi chú"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4.5 6h9M9 6v12.5M14 11h6M17 11v7.5"/></svg></button>
+              <button class="tbtn" id="bGrid" aria-label="Lưới diamond" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M12 4v16M5 9.3h14M5 14.7h14"/></svg></button>
+            </nav>
+
+            <div class="inspector chrome hide" id="insp" role="status" aria-live="polite"></div>
+            <input class="txt chrome" id="txt" type="text" placeholder="Ghi chú, Enter để xong" hidden>
+            <div class="toast chrome" id="toast" role="status"></div>
+            <div class="backdrop chrome" id="backdrop"></div>
+
+            <section class="sheet chrome" id="sheetSave" aria-label="Lưu bài">
+              <div class="grab"></div>
+              <div class="sh-head"><button data-close>Huỷ</button><h4>Lưu bài</h4><button class="primary" id="bDoSave">Lưu</button></div>
+              <div class="sh-body">
+                <div class="group">
+                  <div class="row"><span>Tên bài</span><input type="text" id="fTitle" maxlength="40"></div>
+                  <div class="row"><span>Nhóm</span><div class="seg" id="fCat"><button data-v="shotMaking">Đánh trúng</button><button data-v="cueBallControl">Bi cái</button><button data-v="patternPlay">Đi bài</button></div></div>
+                </div>
+                <div class="group">
+                  <div class="row"><span>Chấm theo</span><div class="seg" id="fFormat"><button data-v="binary">Đạt / Trượt</button><button data-v="ladder">Thang</button></div></div>
+                  <div class="row"><span>Số cú</span><div class="step"><button data-step="att:-1" aria-label="Bớt một cú">−</button><b id="vAtt">10</b><button data-step="att:1" aria-label="Thêm một cú">+</button></div></div>
+                  <div class="row"><span>Đạt khi</span><div class="step"><button data-step="pass:-1" aria-label="Giảm ngưỡng">−</button><b id="vPass">5/10</b><button data-step="pass:1" aria-label="Tăng ngưỡng">+</button></div></div>
+                </div>
+                <p class="foot" id="fFoot"></p>
+              </div>
+            </section>
+
+            <section class="sheet chrome" id="sheetShare" aria-label="Chia sẻ bài">
+              <div class="grab"></div>
+              <div class="sh-head"><button data-close>Đóng</button><h4>Chia sẻ bài</h4><span></span></div>
+              <div class="sh-body">
+                <pre class="json" id="json"></pre>
+                <button class="copy" id="bCopy">Chép JSON</button>
+                <p class="foot">Trên máy: share sheet hệ thống gửi file <span class="mono">.pooldrill.json</span>. Người nhận mở file là vào thẳng editor.</p>
+              </div>
+            </section>
+            <div class="homebar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="side">
+        <div class="controls">
+          <button class="chip" id="cSample">Mẫu cắt 20°</button>
+          <button class="chip" id="cD03">Drill 03</button>
+          <button class="chip" id="cBad">Ca anh gửi</button>
+          <button class="chip" id="cEmpty">Bàn trống</button>
+          <label class="chip"><input type="checkbox" id="cRM"> Giảm chuyển động</label>
+          <label class="chip"><input type="checkbox" id="cHit"> Hiện vùng chạm</label>
+        </div>
+        <div class="legend">
+          <span><b>Chọn lỗ xong</b>, hoặc chạm vào đường kẻ: khay đổi thành bảng cú đánh. Trái là mặt bi cái, kéo dọc để đặt đầu cơ, hít vào vạch lăn đều 0.4R và vạch stun tính riêng cho cú này. Phải là thanh lực 0.5 đến 4.5 m/s với ba mốc Nhẹ · Vừa · Mạnh. Đường bi cái màu theo spin lúc chạm, không theo chỗ đặt đầu cơ. Trên bàn có thêm chấm gold là điểm chạm và nét gold là tangent.</span>
+          <span><b>Chạm bi mục tiêu</b> (chạm, không kéo): mọi đường kẻ tắt, sáu lỗ sáng vàng. Chạm một lỗ là hiện đường bi cái → ghost → bi → lỗ, capsule ghi góc cắt hoặc lý do không đánh được. Muốn đổi lỗ thì chạm lại bi đó.</span>
+          <span><b>Bấm "Drill 03".</b> Cú thẳng, follow vừa. Bi cái theo bi 1 vào lỗ, đường đỏ. Đổi sang Stun là hết.</span>
+          <span><b>Kéo bi cái vòng quanh bi 1.</b> Góc cắt và đường bi cái chạy theo tay. Ra khỏi hình quạt là cam, qua 90° là đỏ.</span>
+          <span><b>Kéo bi</b> từ khay lên vải, kéo ra khỏi mép bàn rồi thả để bỏ. ⌘Z, ⇧⌘Z, Delete đều chạy.</span>
+        </div>
+        <div>
+          <span class="eyebrow">Haptic sẽ bắn trên máy</span>
+          <div class="hlog" id="hlog"><span class="hint">Chưa có. Thả một viên bi để thấy.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">Luật cú đánh</span>
+      <h2>Editor không cho dựng cú không đánh được mà không báo</h2>
+      <p class="lede">Mỗi đường vào lỗ đi qua năm phép kiểm, tính lại mỗi khung hình khi anh kéo. Tâm lỗ góc dùng đúng điểm <code>pocketAim</code> của module native, nên số trong editor khớp số trên màn tập.</p>
+    </div>
+    <div class="rules">
+      <div class="rule"><span class="tag bad">1 · Ghost lọt băng</span><h3>Bi mục tiêu phải có chỗ cho bi cái chạm</h3><p>Ghost ball nằm sau bi mục tiêu, trên đường kéo dài từ lỗ. Tâm ghost phải cách băng ít nhất một bán kính. Bi sát băng mà lỗ ở phía bên kia bàn thì ghost nằm trong băng, dời bi cái đi đâu cũng vô ích.</p></div>
+      <div class="rule"><span class="tag bad">2 · Góc từ 90°</span><h3>Bi cái phải tới từ phía sau</h3><p>Góc cắt là góc giữa hướng bi cái tới ghost và hướng bi mục tiêu vào lỗ. Từ 90° trở lên thì bi cái phải đi xuyên qua bi mục tiêu mới tới được ghost.</p></div>
+      <div class="rule"><span class="tag bad">3 · Bị chắn</span><h3>Hai hành lang phải trống</h3><p>Đường bi cái tới ghost và đường bi mục tiêu vào lỗ cần trống một hành lang rộng đúng một đường kính bi, 2¼". Bi cái không tính là vật chắn đường vào lỗ vì lúc đó nó đã rời chỗ.</p></div>
+      <div class="rule"><span class="tag warn">4 · Trên 75°</span><h3>Đánh được nhưng quá mỏng</h3><p>Vẫn lưu được, đường chuyển cam. Ngưỡng 75° do em đặt, chưa có nguồn. Anh thử ở bàn thật rồi mình chỉnh.</p></div>
+      <div class="rule"><span class="tag bad">5 · Bi cái vào lỗ</span><h3>Bi mục tiêu vào, bi cái theo xuống</h3><p>Đường bi cái tính từ spin và lực đang chọn. Chạm miệng lỗ nào thì đường đỏ, capsule ghi lỗ đó. Lỗ khác lỗ đích cũng tính, scratch là scratch. Đụng bi khác thì đường cam và dừng ở đó.</p></div>
+    </div>
+    <p class="callout"><b>Hình quạt</b> là tập hợp mọi chỗ đặt bi cái cho góc cắt dưới 75°. Đỉnh quạt nằm ở ghost ball, quay lưng về lỗ, nửa góc mở 75°. Quạt chỉ hiện khi anh đang kéo bi cái hoặc bi mục tiêu, thả tay là tắt.</p>
+    <p class="callout"><b>Luật 5 bắt được Drill 03.</b> Bi cái (0.56, 0.66), bi 1 (0.75, 0.375), lỗ góc trên phải, góc cắt 0°, cách nhau 30". Đầu cơ cao 0.4R ở 1.8 hoặc 3.2 m/s: bi cái lăn đều theo bi 1 vào lỗ, đúng lỗi scratch trong play mode trước đây. Cái mô hình mới lòi ra: đánh tâm ở 1.8 m/s thì tới nơi bi cái đã lăn đều và đi tiếp 25", không dừng. Muốn stun ở 30" phải 3.2 m/s và đầu cơ thấp 0.15R. Draw tối đa ở 1.8 m/s chỉ giữ được tới 24.5". Đánh nhẹ 0.9 m/s vào tâm thì bi 1 không tới lỗ.</p>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">Đường bi cái</span>
+      <h2>Đường bi cái là phép tính, không vẽ tay</h2>
+      <p class="lede">Bi cái đổi hướng tại ghost, không tại chỗ nó nằm. Từ đó nó đi theo spin và lực, nên đường đi là kết quả tính, không phải thứ người dựng bài vẽ ra.</p>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <h3>Vì sao hình v2 sai</h3>
+        <ul>
+          <li><b>Đường bi cái vẽ tay.</b> Điểm đầu bám bi cái, các điểm sau đứng yên. Kéo bi cái đi chỗ khác là đường thành vô nghĩa.</li>
+          <li><b>Không đi qua ghost.</b> Bi cái đổi hướng tại ghost, không tại chỗ nó nằm. Đường vẽ tay bỏ qua điểm này.</li>
+          <li>v3 bỏ công cụ vẽ đường. Đường tính từ ghost theo spin và lực, nên dời bi nào cũng đúng.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Chọn lỗ khác</h3>
+        <ul>
+          <li>Chạm bi mục tiêu: mọi đường kẻ tắt, sáu lỗ sáng đều như nhau. Chưa tô màu đánh được hay không, để người dựng bài tự chọn lỗ trước.</li>
+          <li>Chạm một lỗ: đường bi cái → ghost → bi → lỗ hiện ra, cùng kết luận luật 1–5. Một bước undo. Chạm ra ngoài hoặc chạm lại bi là thôi chọn.</li>
+          <li>Haptic <code>.selection</code>, lỗ không vào được thì <code>.warning</code>.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tbl"><table>
+      <thead><tr><th>Đại lượng</th><th>Giá trị</th><th>Nguồn</th></tr></thead>
+      <tbody>
+        <tr><td>Bi cái rời ghost</td><td>Giữ phần vận tốc tiếp tuyến <code>v·sinφ</code>, spin dọc giữ nguyên</td><td>docs/aiming-physics.md, đã có</td></tr>
+        <tr><td>Hướng sau khi hết trượt</td><td><code>v_cuối = 5/7·v_sau + 2/7·W</code>, W = f·v theo hướng bắn</td><td>docs/aiming-physics.md, đã có</td></tr>
+        <tr><td>Ma sát vải</td><td>μ trượt 0.2, μ lăn 0.01</td><td>docs/aiming-physics.md, đã có</td></tr>
+        <tr><td>Nảy băng</td><td>e 0.8, sau băng coi như lăn đều ngay</td><td>docs/aiming-physics.md, doc ghi là ước lượng</td></tr>
+        <tr><td>Đầu cơ → spin</td><td><code>Rω/v = 2.5·b/R</code> lúc rời cơ, b từ −0.5R tới 0.5R. Trượt tới ghost, μ trượt kéo spin về lăn đều</td><td>Công thức va chạm cơ–bi chuẩn. Giới hạn 0.5R theo Aim Lab, chưa đo</td></tr>
+        <tr><td>Lực</td><td>Tốc độ bi cái lúc rời đầu cơ, 0.5 đến 4.5 m/s. Mốc Nhẹ 0.9, Vừa 1.8, Mạnh 3.2</td><td>Mốc theo Aim Lab, chưa đo. Bi mục tiêu nhận <code>v·cosφ</code>, trượt mất 2/7 rồi lăn; tới lỗ không thì luật báo</td></tr>
+        <tr><td>Bắt lỗ</td><td>Tâm bi cách tâm hình lỗ dưới bán kính lỗ + 0.9"</td><td>Em đặt, chưa đo</td></tr>
+        <tr><td>Thời gian một lần chạy</td><td>0.34 ms, bước 1/200 s, tối đa 5000 bước</td><td>Đo trên Node, máy dev</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">Tư duy bài tập</span>
+      <h2>Một bài tập gồm năm phần</h2>
+      <p class="lede">Editor chỉ sinh ra ba phần đầu. Hai phần sau nằm trong sheet Lưu. Bài tự tạo dùng chung kiểu <code>PoolDrill</code> với 10 bài có sẵn, nên màn tập không cần biết bài từ đâu ra.</p>
+    </div>
+    <div class="anatomy">
+      <div class="part"><span class="n">1 · editor</span><h3>Layout</h3><p>Bi cái, bi mục tiêu, lỗ. Đọc ra được toạ độ diamond để bày lại trên bàn thật.</p><code>cueBall · objectBalls</code></div>
+      <div class="part"><span class="n">2 · editor</span><h3>Nhiệm vụ</h3><p>Bi nào vào lỗ nào. Cú phải qua năm phép kiểm ở trên.</p><code>guideLines</code></div>
+      <div class="part"><span class="n">3 · editor</span><h3>Cú đánh</h3><p>Đầu cơ, lực, và đường bi cái tính ra từ hai thứ đó. Ghi chú tay. Chỉ để đọc, không chấm.</p><code>shot.tipY · shot.speedMps · recommendedSpin · recommendedSpeed · expectedCuePath</code></div>
+      <div class="part"><span class="n">4 · sheet</span><h3>Cách chấm</h3><p>Mỗi cú người chơi tự bấm Đạt hoặc Trượt. App không nhìn được bàn thật, nên chấm càng đơn giản thì số liệu càng thật.</p><code>attemptCount · passCondition</code></div>
+      <div class="part"><span class="n">5 · sau</span><h3>Tiến cấp</h3><p>Bi cái lùi xa dần, góc cắt mỏng dần. Trường đã có trong types, thuật toán chưa có.</p><code>difficultyModifiers</code></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">Cách chấm</span>
+      <h2>Bốn định dạng, ship từng cái một</h2>
+    </div>
+    <div class="tbl"><table>
+      <thead><tr><th>Định dạng</th><th>Chấm thế nào</th><th>Hợp với</th><th>Nguồn</th><th>Trạng thái</th></tr></thead>
+      <tbody>
+        <tr><td>Đạt / Trượt × N</td><td>Mỗi cú một nút. Đạt khi đủ ngưỡng, ví dụ 7/10.</td><td>Mọi bài, mặc định cho bài tự tạo</td><td>BU Exam I</td><td><span class="pill now">Đang có</span></td></tr>
+        <tr><td>Thang</td><td>Đạt thì lên một nấc khó, trượt thì xuống một nấc. Điểm là nấc cao nhất giữ được.</td><td>Tốc độ, draw xa dần, cắt mỏng dần</td><td>Bob Jewett, progressive practice</td><td><span class="pill next">Làm tiếp</span></td></tr>
+        <tr><td>Đấu ghost</td><td>Race to 7. Chạy hết rack thì mình ăn, hỏng một cú thì ghost ăn. Thắng thì thêm một bi.</td><td>Chạy bàn 3 đến 9 bi</td><td>PoolDawg</td><td><span class="pill later">Sau</span></td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted">Khuyến nghị: làm <b>Thang</b> trước. <code>difficultyModifiers.cueDistanceDiamonds</code> đã có sẵn chỗ, chỉ thiếu luật lên xuống nấc. Thang cắt mỏng dần còn dùng thẳng được luật góc cắt ở trên: mỗi nấc thêm 10°, dừng ở 75°.</p>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">Lộ trình</span>
+      <h2>Sáu chặng, hiện thiếu hai</h2>
+      <p class="lede">Đếm trên 10 bài của app và 20 bài trong Aim Lab. Hai ô viền vàng là chỗ editor nên lấp trước, bằng bài anh tự dựng.</p>
+    </div>
+    <div class="ladder">
+      <div class="step-card"><span class="t">Đánh trúng</span><span class="d">Cắt từ thẳng tới mỏng, bi sát băng, lỗ giữa</span><span class="c">01 · 11–18</span></div>
+      <div class="step-card gap"><span class="t">Tốc độ</span><span class="d">Lag, dừng bi cái ở mốc 1, 2, 3 diamond</span><span class="c">chưa có bài</span></div>
+      <div class="step-card"><span class="t">Xoáy</span><span class="d">Stop, follow, draw, cự ly</span><span class="c">02–06 · 19–22</span></div>
+      <div class="step-card"><span class="t">Góc</span><span class="d">Tangent, wagon wheel, một băng</span><span class="c">07 · 09 · 23–26</span></div>
+      <div class="step-card"><span class="t">Đi bài</span><span class="d">Hai đến ba bi, endless</span><span class="c">08 · 10 · 27–30</span></div>
+      <div class="step-card gap"><span class="t">Chạy bàn</span><span class="d">3-ball ball-in-hand, đấu ghost</span><span class="c">chưa có bài</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">Cổng chay-apple</span>
+      <h2>Từng tương tác, ai được động và động thế nào</h2>
+      <p class="lede">Tần suất tính trong một phiên dựng bài khoảng năm phút. Hàng nào cổng ra "không động" là cố ý.</p>
+    </div>
+    <div class="tbl"><table>
+      <thead><tr><th>Tương tác</th><th>Tần suất</th><th>Mục đích</th><th>Quyết định</th></tr></thead>
+      <tbody>
+        <tr class="new"><td>Hướng màn hình</td><td>—</td><td>—</td><td>Dọc, không bắt xoay. Bàn đứng, băng foot ở trên, đúng hệ toạ độ của app nên không cần phép xoay nào. Khay bi và công cụ ở đáy, trong tầm ngón cái.</td></tr>
+        <tr><td>Đổi công cụ</td><td><span class="pill f100">100+</span></td><td>—</td><td>Không động. Nền ô đổi ngay lúc chạm xuống, nút co <code>0.94</code> trong 120ms.</td></tr>
+        <tr><td>Bật lưới</td><td><span class="pill f100">100+</span></td><td>—</td><td>Không động. Snap 1/8 diamond luôn bật, lưới chỉ để nhìn.</td></tr>
+        <tr><td>Chạm vào bi</td><td><span class="pill f10">chục lần</span></td><td>phản hồi</td><td>Ngay lúc chạm xuống: bi nhấc <code>scale 1.15</code>, bóng lệch xa và đậm hơn, 120ms ease-out.</td></tr>
+        <tr><td>Kéo bi trên vải</td><td><span class="pill f10">chục lần</span></td><td>—</td><td>Bám tay 1:1, giữ đúng chỗ cầm, không animation. Vòng nét đứt báo trước chỗ bi sẽ đậu. Quá cushion thì rubber-band <code>c 0.55</code>.</td></tr>
+        <tr class="new"><td>Góc cắt khi kéo</td><td><span class="pill f10">chục lần</span></td><td>báo trạng thái</td><td>Không động. Số góc trên capsule đổi mỗi khung hình (<code>tabular-nums</code>, không <code>.numericText()</code> vì số chạy liên tục). Màu đường đổi tức thì trắng, cam, đỏ. Không haptic khi kéo qua ngưỡng, vì kéo qua lại quanh 75° sẽ rung liên tục.</td></tr>
+        <tr class="new"><td>Hình quạt đặt bi cái</td><td><span class="pill f10">chục lần</span></td><td>giải thích</td><td>Hiện và tắt tức thì, không fade, vì nó bám theo cử chỉ kéo. Vải sáng thêm 6% trong quạt, viền nét đứt, cắt gọn trong mặt bàn.</td></tr>
+        <tr><td>Thả bi</td><td><span class="pill f10">chục lần</span></td><td>tránh giật</td><td>Snap 1/8 diamond bằng spring <code>duration 0.25, bounce 0</code>, chạy từ chỗ đang hiện. Vận tốc lúc thả đặt về 0 vì bi đặt tay không có quán tính. Cách băng dưới 0.6" thì đặt sát băng. Chạm bi khác thì đặt sát bi đó, không chồng. Haptic <code>.impact(.light)</code> đúng khung hình thả.</td></tr>
+        <tr class="new"><td>Thả vào chỗ không đánh được</td><td><span class="pill fsome">thỉnh thoảng</span></td><td>báo trạng thái</td><td>Haptic đổi thành <code>.warning</code> thay cho <code>.impact(.light)</code>, vẫn một haptic một hành động. Capsule ghi lý do bằng chữ đỏ, vì haptic không bao giờ là phản hồi duy nhất. Không chặn, không hộp thoại.</td></tr>
+        <tr><td>Kéo bi ra khỏi bàn</td><td><span class="pill fsome">thỉnh thoảng</span></td><td>báo trạng thái</td><td>Vượt mép ngoài 1.5" thì nhả rubber-band, bi theo tay tự do, mờ còn 0.55, capsule ghi "Thả để bỏ". Haptic <code>.selection</code> một lần lúc vượt ngưỡng, trễ 1" để không rung khi tay lưỡng lự.</td></tr>
+        <tr><td>Bỏ bi</td><td><span class="pill fsome">thỉnh thoảng</span></td><td>giữ không gian</td><td>Bi bay về đúng ô của nó trong khay: spring <code>duration 0.35, bounce 0.2</code>, mang vận tốc lúc thả.</td></tr>
+        <tr><td>Kéo bi từ khay</td><td><span class="pill fsome">thỉnh thoảng</span></td><td>giữ không gian</td><td>Bi co từ cỡ khay về cỡ thật trên bàn trong 120ms. Mỗi số chỉ có một viên: ô trong khay mờ 0.26 khi bi đang nằm trên bàn.</td></tr>
+        <tr><td>Chọn lỗ cho đường vào lỗ</td><td><span class="pill f10">chục lần</span></td><td>báo trạng thái</td><td>Chạm bi mục tiêu (dịch dưới 10pt mới tính là chạm, quá là kéo): mọi đường kẻ tắt, sáu lỗ sáng vàng cùng lúc, không fade. Không haptic lúc vào, vì bi đã nhấc lên lúc chạm xuống là đủ phản hồi.</td></tr>
+        <tr class="new"><td>Bảng cú đánh thay khay</td><td><span class="pill f10">chục lần</span></td><td>giữ không gian</td><td>Chọn đường vào lỗ thì khay và thanh công cụ mờ đi, bảng hiện cùng chỗ, crossfade opacity 150ms, không trượt. Kéo là 1:1, không animation. Thanh lực kéo tương đối, thumb không nhảy về ngón tay; chạm không kéo thì đặt đúng chỗ, gần mốc thì hít. Haptic <code>.selection</code> chỉ khi hít vạch đầu cơ hoặc qua mốc lực. Nhấc tay mới thành một bước undo.</td></tr>
+        <tr class="new"><td>Đường bi cái dự đoán</td><td><span class="pill f10">chục lần</span></td><td>giải thích</td><td>Không động. Tính lại mỗi lần đổi đầu cơ, lực, hay kéo bi. Màu theo spin lúc chạm: tím còn draw, trắng stun, xanh bạc hà follow. Draw tối đa và follow tối đa cùng lực là nhánh ngắn 9", chỉ vẽ nhánh khác loại với cú đang chọn. Bi cái không tới thì vòng đỏ đứt ở chỗ dừng. Bi mục tiêu thiếu lực thì đường đỏ liền tới chỗ dừng.</td></tr>
+        <tr class="new"><td>Bi cái vào lỗ</td><td><span class="pill fsome">thỉnh thoảng</span></td><td>báo trạng thái</td><td>Đường đổi đỏ tức thì, capsule ghi lỗ. Lúc thả bi vào thế scratch thì haptic <code>.warning</code> thay cho <code>.impact(.light)</code>. Không rung khi đang kéo.</td></tr>
+        <tr class="new"><td>Chạm một lỗ</td><td><span class="pill f10">chục lần</span></td><td>báo trạng thái</td><td>Không động. Vòng lỗ tắt, đường kẻ và kết luận hiện cùng khung hình. Haptic <code>.selection</code>, không đánh được hoặc bi cái vào lỗ thì <code>.warning</code>.</td></tr>
+        <tr><td>Hoàn tác, làm lại</td><td><span class="pill f10">chục lần</span></td><td>giải thích</td><td>Bi trượt về chỗ cũ bằng spring <code>0.25, bounce 0</code> để mắt thấy cái gì vừa đổi. Chữ đổi ngay. Không haptic. Nằm trên thanh trên cùng như Notes và Freeform.</td></tr>
+        <tr><td>Capsule thông tin</td><td><span class="pill f10">chục lần</span></td><td>báo trạng thái</td><td><code>.ultraThinMaterial</code> nổi trên băng foot, lớp nổi duy nhất đè lên bàn. Rộng tối đa 276pt để không che hai lỗ góc trên. Hiện và ẩn bằng opacity 150ms.</td></tr>
+        <tr><td>Xoá hết bàn</td><td><span class="pill fsome">thỉnh thoảng</span></td><td>—</td><td>Không hỏi xác nhận. Xoá ngay, toast có nút Hoàn tác.</td></tr>
+        <tr><td>Lưu, chia sẻ</td><td><span class="pill fsome">thỉnh thoảng</span></td><td>giữ không gian</td><td><code>.sheet</code> + <code>.presentationDetents([.medium, .large])</code> bản native. Cú nào không đánh được thì sheet ghi rõ bằng chữ đỏ nhưng vẫn cho lưu. Lưu xong bắn <code>.success</code>.</td></tr>
+        <tr><td>Giảm chuyển động</td><td>—</td><td>—</td><td>Bỏ scale lúc nhấc bi, giữ bóng đậm. Snap, bay về khay và undo thành nhảy thẳng tới đích. Sheet và toast chỉ còn fade.</td></tr>
+        <tr><td>Vùng chạm</td><td>—</td><td>—</td><td>Bi trên bàn rộng 12pt, vùng bắt 44pt, hai vùng chồng thì lấy bi gần ngón tay nhất. Khay 10 ô chỉ được 36×48pt mỗi ô, hụt 44 bề ngang. Nút trên thanh cú đánh rộng khoảng 55pt nhưng chỉ cao 36pt. Bù lại các ô liền nhau, chạm đâu trong khay hay thanh cũng trúng đúng một nút.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">Ráp vào app</span>
+      <h2>Cử chỉ ở native, dữ liệu ở TS</h2>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <h3>SwiftUI · module pool-table</h3>
+        <ul>
+          <li>Nâng <code>PoolBallDrag</code> (devMode hiện có, đã kéo 1:1 và giữ chỗ cầm) thành <code>editMode</code>.</li>
+          <li>Snap, rubber-band, spring, haptic, góc cắt, hình quạt và mô phỏng bi cái đều tính ở native, vì phải chạy mỗi khung hình. Đặt cạnh <code>PoolGuideMath</code>, dùng chung <code>ghost</code> và <code>pocketAim</code>.</li>
+          <li>Mỗi lần commit (thả bi, đổi lỗ, đổi cú) thì bắn một sự kiện <code>onLayoutChange</code>.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>TypeScript · src/pool-engine</h3>
+        <ul>
+          <li>Giữ bản nháp <code>PoolDrill</code>, ngăn undo và lưu bài.</li>
+          <li>Luật cú đánh và mô phỏng bi cái viết lại bên TS trong <code>shot.ts</code> cạnh <code>aim.ts</code>, mirror như cặp <code>PoolAim</code> / <code>aimOf</code> đang làm. TS dùng nó lúc lưu, xuất <code>expectedCuePath</code>, và soi 10 bài có sẵn.</li>
+          <li>Editor dọc nên không cần thư viện khoá hướng. Thư viện lưu (sqlite hay file) chọn sau khi đọc doc SDK 57.</li>
+        </ul>
+      </div>
+    </div>
+<pre class="code">// types.ts: chỉ thêm, không đổi trường cũ
+export type DrillSkill = … | 'custom';
+
+export type PoolDrill = {
+  …
+  source?: 'builtin' | 'custom';
+  annotations?: { point: NormalizedPoint; text: string }[];
+};</pre>
+    <p class="muted">Hai thay đổi trên dễ sửa lại sau: chỉ thêm nhánh vào union và field tuỳ chọn. Thứ khó quay đầu là định dạng file chia sẻ (<code>schema: 1</code>). File đã nằm trong máy người khác thì phải đọc được mãi, nên chốt kỹ field trước khi bật nút Chia sẻ.</p>
+  </section>
+
+  <section>
+    <div class="cols">
+      <div class="card">
+        <h3>Cố ý cắt</h3>
+        <ul>
+          <li><b>Không có bản ngang.</b> iPad và màn ngang để sau, khi có người xin.</li>
+          <li><b>Vật lý chỉ có spin dọc.</b> Đầu cơ chỉ kéo được dọc. Không english, throw, squirt, mất năng lượng lúc va. Sau băng coi như lăn đều ngay. Bỏ luôn đường 30° và tô đoạn trượt khác đoạn lăn của Aim Lab: bàn editor đã đủ nét.</li>
+          <li><b>Bi cái đụng bi khác thì dừng tính</b>, chỉ báo cam. Chưa tính va chạm tiếp theo.</li>
+          <li><b>Một bài một đường vào lỗ.</b> Chọn bi khác là thay đường cũ. Bài nhiều bi theo thứ tự, và "bi 1 vào lỗ nào cũng được", chưa làm. Chưa kiểm cú qua băng, cú kick.</li>
+          <li><b>Bỏ zone và công cụ vẽ đường bi cái tay.</b> Bài chỉ chấm vào lỗ. Đường bi cái chỉ đến từ phép tính.</li>
+          <li><b>Không có link chia sẻ hay thư viện cộng đồng.</b> Cần server và tài khoản. Bản đầu chia sẻ bằng file JSON.</li>
+          <li><b>Khay chỉ có bi 1 đến 9.</b> Bi 10–15 làm sau.</li>
+          <li><b>Prototype là web.</b> Haptic chỉ hiện bằng chữ, spring là bản mô phỏng gần đúng.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Cầm máy thử</h3>
+        <ul>
+          <li><b>Kéo bi cái vòng quanh bi mục tiêu thật nhanh:</b> quạt, góc và màu đường phải bám tay, không trễ một khung.</li>
+          <li><b>Búng bi rồi thả:</b> bi phải đứng yên ở chỗ snap, không trôi thêm.</li>
+          <li><b>Kéo bi qua lại quanh ngưỡng 75°:</b> không được rung.</li>
+          <li><b>Bày Drill 03 lên bàn thật, đánh tâm lực vừa:</b> bi cái dừng hay đi tiếp. Mô hình nói đi tiếp 25". Sai nhiều thì μ trượt 0.2 là thứ phải chỉnh đầu tiên.</li>
+          <li><b>Một tay, ngón cái:</b> kéo bi 9 từ góc khay lên băng foot. Nếu với không tới thì đổi khay lên trên.</li>
+          <li><b>Chạy release build trên máy cũ nhất anh có.</b> Simulator không tính.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Nguồn</span>
+    <div class="src">
+      <a href="https://www.worldofpoolandbilliards.com/" target="_blank" rel="noopener">World of Pool and Billiards: Table Layout Creator, 200+ drill, chấm điểm theo bài</a>
+      <a href="https://billiarduniversity.org/testing/exams/" target="_blank" rel="noopener">Billiard University: các bài thi và cách chấm</a>
+      <a href="https://forums.azbilliards.com/threads/drills.8071" target="_blank" rel="noopener">Bob Jewett: progressive practice (Billiards Digest, 12/1992)</a>
+      <a href="https://www.pooldawg.com/article/constructing-your-game/" target="_blank" rel="noopener">PoolDawg: Playing the Ghost</a>
+      <a href="https://store.kozoom.com/en/pool-training-book-the-pat-workout-start.html" target="_blank" rel="noopener">WPA PAT: Ralph Eckert, the PAT workout</a>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+const $ = (s) => document.querySelector(s);
+const SW = 390, RAIL = 6;
+const TY0 = 104, TH = 590, K = TH / (100 + 2 * RAIL), TW = (50 + 2 * RAIL) * K, TX0 = (SW - TW) / 2;
+const PX = TX0 + RAIL * K, PY = TY0 + RAIL * K;
+const BR = 1.125, BD = 2.25, SNAP = 12.5 / 8, HIT = 22 / K, PAL_R = 10;
+const PAL_LIFT = PAL_R / (BR * K);
+const CUT_WARN = 75, RED = '#FF453A', ORANGE = '#FF9F0A';
+// Vật lý bi cái sau va chạm: cùng hằng số với docs/aiming-physics.md (μ trượt 0.2, μ lăn 0.01, e băng 0.8). Inch, giây.
+const G_IN = 386.1, MU_S = 0.2 * G_IN, MU_R = 0.01 * G_IN, E_RAIL = 0.8;
+// f: tỉ lệ spin dọc so với vận tốc lúc chạm. 1 lăn đều, 0 stun, -1 draw mạnh.
+// Màu riêng cho draw và follow, dịu, không trùng đỏ/cam của cảnh báo và vàng của nút. Stun giữ trắng.
+const SPINS = [{ id: 'draw', f: -1, label: 'Draw', col: '#C3A6FF' }, { id: 'stun', f: 0, label: 'Stun', col: '#FFFFFF' }, { id: 'follow', f: 1, label: 'Follow', col: '#8EE0B0' }];
+const STUB = 9; // inch, độ dài nhánh gợi ý draw/follow
+// Lực là tốc độ bi cái lúc rời đầu cơ, m/s. Ba mốc cùng Aim Lab; ranh giới chữ theo speedWord của Aim Lab.
+const IN_PER_M = 39.37, V_MIN = 0.5, V_MAX = 4.5, TIP_MAX = 0.5, ROLL_TIP = 0.4;
+const POWER = [{ id: 'soft', v: 0.9, label: 'Nhẹ' }, { id: 'medium', v: 1.8, label: 'Vừa' }, { id: 'firm', v: 3.2, label: 'Mạnh' }];
+const powerWord = (v) => (v < 1.2 ? 'nhẹ' : v < 2.6 ? 'vừa' : v < 4 ? 'mạnh' : 'rất mạnh');
+const powerId = (v) => (v < 1.2 ? 'soft' : v < 2.6 ? 'medium' : 'firm');
+// Spin lúc chạm, theo f = Rω/v: âm còn draw, quanh 0 stun, 1 lăn đều. Ngưỡng theo spinState của Aim Lab.
+const spinIdx = (f) => (f < -0.05 ? 0 : f < 0.12 ? 1 : 2);
+const contactWord = (f) => (f < -0.05 ? 'còn draw' : f < 0.12 ? 'stun' : f < 0.9 ? 'follow một phần' : f <= 1.04 ? 'lăn đều' : 'follow mạnh');
+const tipWord = (t) => (Math.abs(t) < 0.025 ? 'tâm' : t > 0 ? `cao ${t.toFixed(2)}R` : `thấp ${(-t).toFixed(2)}R`);
+// Toạ độ inch: x 0..50 theo bề ngang, y 0..100 theo chiều dài, băng foot ở y = 0. Trùng hệ của app, chỉ khác đơn vị.
+const POCKETS = { footLeft: [0, 0], footRight: [50, 0], sideLeft: [0, 50], sideRight: [50, 50], headLeft: [0, 100], headRight: [50, 100] };
+const POCKET_NAME = { footLeft: 'góc trên trái', footRight: 'góc trên phải', sideLeft: 'giữa trái', sideRight: 'giữa phải', headLeft: 'góc dưới trái', headRight: 'góc dưới phải' };
+const POCKET_DRAW = { footLeft: [-0.9, -0.9, 2.5], footRight: [50.9, -0.9, 2.5], sideLeft: [-1.3, 50, 2.2], sideRight: [51.3, 50, 2.2], headLeft: [-0.9, 100.9, 2.5], headRight: [50.9, 100.9, 2.5] };
+const TONE = { 1: '#E99C00', 2: '#053E7F', 3: '#AF0022', 4: '#F26D85', 5: '#59478B', 6: '#25916B', 7: '#82441F', 8: '#1D1D1D' };
+
+const screen = $('#screen'), device = $('#device'), stage = $('#stage');
+const g = (id) => document.getElementById(id);
+g('gTable').setAttribute('transform', `translate(${PX} ${PY}) scale(${K})`);
+
+let RMtoggle = false;
+const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+const RM = () => RMtoggle || mq.matches;
+let showHit = false;
+
+/* ---------- state ---------- */
+let S = blank();
+const V = { balls: {}, lift: {}, alpha: {} };
+let tool = 'select', sel = null, drag = null, aimPick = null, grid = false;
+let hist = [], fut = [], committed = JSON.stringify(S);
+let uid = 1;
+let CR = null; // đường bi cái của cú chính, tính lại mỗi lần render
+
+function blank() {
+  return { balls: {}, aims: [], texts: [], shot: { tip: 0, v: 1.8 }, meta: { title: 'Bài của tôi', category: 'cueBallControl', format: 'binary', attempts: 10, pass: 7 } };
+}
+function sample() {
+  const s = blank();
+  s.meta = { title: 'Cắt 20° · follow nhẹ', category: 'cueBallControl', format: 'binary', attempts: 10, pass: 6 };
+  s.balls = { 0: { x: 18.75, y: 62.5 }, 1: { x: 37.5, y: 37.5 } };
+  s.aims = [{ ball: 1, pocket: 'footRight' }];
+  s.shot = { tip: 0.4, v: 0.9 };
+  s.texts = [{ id: 't1', x: 2.5, y: 97, t: 'Mẫu · follow nhẹ' }];
+  return s;
+}
+function sampleBad() {
+  const s = blank();
+  s.meta = { title: 'Ca không đánh được', category: 'shotMaking', format: 'binary', attempts: 10, pass: 7 };
+  s.balls = { 0: { x: 28.125, y: 50 }, 1: { x: 48.875, y: 62.5 } };
+  s.aims = [{ ball: 1, pocket: 'footLeft' }];
+  return s;
+}
+function sampleD03() {
+  const s = blank();
+  s.meta = { title: 'Drill 03 · Follow', category: 'cueBallControl', format: 'binary', attempts: 10, pass: 7 };
+  s.balls = { 0: { x: 28, y: 66 }, 1: { x: 37.5, y: 37.5 } };
+  s.aims = [{ ball: 1, pocket: 'footRight' }];
+  s.shot = { tip: 0.4, v: 1.8 };
+  return s;
+}
+
+/* ---------- math ---------- */
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+const unit = (x, y) => { const l = Math.hypot(x, y) || 1e-4; return [x / l, y / l]; };
+function snapV(v) { return Math.round(v / SNAP) * SNAP; }
+function rb(v, lo, hi) {
+  const c = 0.55, dim = 12;
+  if (v < lo) { const o = lo - v; return lo - (o * dim * c) / (dim + c * o); }
+  if (v > hi) { const o = v - hi; return hi + (o * dim * c) / (dim + c * o); }
+  return v;
+}
+function place(n, p) {
+  const axis = (v, L) => {
+    const lo = BR, hi = L - BR;
+    if (v < lo + 0.6) return [lo, true];
+    if (v > hi - 0.6) return [hi, true];
+    return [clamp(snapV(v), lo, hi), false];
+  };
+  let [x, rx] = axis(p.x, 50), [y, ry] = axis(p.y, 100);
+  let touch = null;
+  for (const k of Object.keys(S.balls)) {
+    const m = +k; if (m === n) continue;
+    const q = S.balls[m], d = Math.hypot(x - q.x, y - q.y);
+    if (d < BD - 1e-6) {
+      const [ux, uy] = d > 1e-6 ? [(x - q.x) / d, (y - q.y) / d] : [0, 1];
+      x = clamp(q.x + ux * BD, BR, 50 - BR); y = clamp(q.y + uy * BD, BR, 100 - BR); touch = m;
+    }
+  }
+  return { x, y, rail: rx || ry, touch };
+}
+const FR = ['', '⅛', '¼', '⅜', '½', '⅝', '¾', '⅞'];
+function dv(v) { const e = Math.round(v * 8), w = Math.floor(e / 8), f = e % 8; return (w || !f ? String(w) : '') + FR[f]; }
+const dia = (p) => `(${dv(p.x / 12.5)}, ${dv(p.y / 12.5)})`;
+const bname = (n) => (n === 0 ? 'bi cái' : 'bi ' + n);
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
+const toIn = (sx, sy) => [(sx - PX) / K, (sy - PY) / K];
+const slotPx = (n) => [16 + 35.8 * (n + 0.5), 726];
+const slotIn = (n) => { const [sx, sy] = slotPx(n); const [x, y] = toIn(sx, sy); return { x, y }; };
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function segDist(px, py, a, b) {
+  const vx = b.x - a.x, vy = b.y - a.y, l = vx * vx + vy * vy || 1e-6;
+  const t = clamp(((px - a.x) * vx + (py - a.y) * vy) / l, 0, 1);
+  return Math.hypot(px - a.x - t * vx, py - a.y - t * vy);
+}
+const shotName = () => `đầu cơ ${tipWord(S.shot.tip)}, ${S.shot.v.toFixed(1)} m/s`;
+
+/* ---------- luật cú đánh ---------- */
+// Vị trí dùng để kiểm: bi đang kéo lấy chỗ nó sẽ đậu, bi đang kéo ra ngoài coi như đã bỏ.
+function posOf(n) {
+  if (drag && drag.kind === 'ball' && drag.n === n) return drag.torn ? null : place(n, V.balls[n]);
+  return S.balls[n] || null;
+}
+function ballsNow() {
+  const ns = new Set(Object.keys(S.balls).map(Number));
+  if (drag && drag.kind === 'ball') ns.add(drag.n);
+  const out = []; for (const n of ns) { const p = posOf(n); if (p) out.push([n, p]); }
+  return out;
+}
+function shotOf(ball, pocket) {
+  const o = posOf(ball); if (!o) return null;
+  const P = POCKETS[pocket], d = unit(P[0] - o.x, P[1] - o.y);
+  const G = { x: o.x - d[0] * BD, y: o.y - d[1] * BD };
+  const r = { cut: null, level: 'ok', why: '' };
+  const bad = (why) => { r.level = 'bad'; r.why = why; return r; };
+  const tol = 0.05;
+  if (G.x < BR - tol || G.x > 50 - BR + tol || G.y < BR - tol || G.y > 100 - BR + tol) return bad('sát băng, lỗ này không vào được');
+  const c = posOf(0);
+  if (c) {
+    const v = unit(G.x - c.x, G.y - c.y);
+    r.cut = (Math.acos(clamp(v[0] * d[0] + v[1] * d[1], -1, 1)) * 180) / Math.PI;
+    if (r.cut >= 89.5) return bad('không có góc đánh');
+  }
+  for (const [m, q] of ballsNow()) {
+    if (m === ball || m === 0) continue;
+    if (c && segDist(q.x, q.y, c, G) < BD - 0.02) return bad(`${bname(m)} chắn bi cái`);
+    if (segDist(q.x, q.y, o, { x: P[0], y: P[1] }) < BD - 0.02) return bad(`${bname(m)} chắn đường vào lỗ`);
+  }
+  if (r.cut != null && r.cut > CUT_WARN) { r.level = 'warn'; r.why = 'quá mỏng'; }
+  return r;
+}
+// Phần bi chồng lên nhau nhìn từ bi cái: 1 − sin(góc cắt). Gọi theo mốc người chơi dùng.
+const FRACS = [[1, 'cả bi'], [0.75, '¾ bi'], [0.5, '½ bi'], [0.25, '¼ bi'], [0.125, '⅛ bi']];
+const fraction = (cut) => { const f = 1 - Math.sin((cut * Math.PI) / 180); return FRACS.reduce((b, x) => (Math.abs(x[0] - f) < Math.abs(b[0] - f) ? x : b))[1]; };
+// Lý do cú đánh hỏng theo mô phỏng, rỗng nếu ổn. Thứ tự: bi cái không tới, bi mục tiêu thiếu lực, bi cái vào lỗ.
+const runWhy = (r) => !r ? '' : r.short === 'cue' ? 'bi cái không tới bi mục tiêu' : r.short === 'ob' ? `thiếu lực, bi dừng cách lỗ ${Math.max(1, Math.round(r.gap))}"` : r.scratch ? `bi cái vào lỗ ${POCKET_NAME[r.scratch]}` : '';
+function shotText(sh) {
+  if (!sh) return '';
+  if (sh.level === 'bad') return ` · <span class="bad">${sh.why}</span>`;
+  if (sh.cut == null) return ' · chưa có bi cái';
+  const t = `cắt ${Math.round(sh.cut)}° · ${fraction(sh.cut)}`;
+  return sh.level === 'warn' ? ` · <span class="warn">${t}, quá mỏng</span>` : ' · ' + t;
+}
+const aimFor = (n) => S.aims.find((a) => a.ball === n) || (n === 0 ? S.aims[0] : null);
+
+/* ---------- bi cái sau va chạm ---------- */
+// Bi cái rời ghost với phần vận tốc tiếp tuyến v·sinφ, spin dọc giữ nguyên. Ma sát vải bẻ cong tới khi lăn đều
+// (v_cuối = 5/7·v_sau + 2/7·W), rồi lăn chậm dần. Chạm băng thì bật gương, coi như lăn đều ngay.
+function cueRun(c, o, P, f, v0, others) {
+  const d = unit(P[0] - o.x, P[1] - o.y), G = { x: o.x - d[0] * BD, y: o.y - d[1] * BD };
+  const a = unit(G.x - c.x, G.y - c.y), ad = a[0] * d[0] + a[1] * d[1];
+  let vx = v0 * (a[0] - ad * d[0]), vy = v0 * (a[1] - ad * d[1]), wx = f * v0 * a[0], wy = f * v0 * a[1];
+  let x = G.x, y = G.y, acc = 0, scratch = null, hit = null;
+  const pts = [{ x, y }], dt = 1 / 200;
+  for (let i = 0; i < 5000; i++) {
+    const ux = vx - wx, uy = vy - wy, us = Math.hypot(ux, uy);
+    if (us > 0.05) { const k = Math.min(MU_S * dt, us / 3.5) / us; vx -= ux * k; vy -= uy * k; wx += 2.5 * ux * k; wy += 2.5 * uy * k; }
+    else { const s = Math.hypot(vx, vy); if (s < 0.4) break; const ns = Math.max(0, s - MU_R * dt); vx *= ns / s; vy *= ns / s; wx = vx; wy = vy; }
+    x += vx * dt; y += vy * dt; acc += Math.hypot(vx, vy) * dt;
+    for (const [id, [px, py, r]] of Object.entries(POCKET_DRAW)) if (Math.hypot(x - px, y - py) < r + 0.9) { scratch = id; break; }
+    if (scratch) break;
+    for (const q of others) if (Math.hypot(x - q.x, y - q.y) < BD) { hit = q.n; break; }
+    if (hit != null) break;
+    let bounced = false;
+    if (x < BR) { x = 2 * BR - x; vx = -vx * E_RAIL; bounced = true; } else if (x > 50 - BR) { x = 2 * (50 - BR) - x; vx = -vx * E_RAIL; bounced = true; }
+    if (y < BR) { y = 2 * BR - y; vy = -vy * E_RAIL; bounced = true; } else if (y > 100 - BR) { y = 2 * (100 - BR) - y; vy = -vy * E_RAIL; bounced = true; }
+    if (bounced) { wx = vx; wy = vy; pts.push({ x, y }); acc = 0; }
+    else if (acc > 0.6) { pts.push({ x, y }); acc = 0; }
+  }
+  pts.push({ x, y });
+  return { pts, stop: { x, y }, scratch, hit };
+}
+// Cú chính: đường vào lỗ đầu tiên, đánh từ bi cái. Không tính nếu cú không đánh được.
+function mainShot() {
+  const a = S.aims[0], c = posOf(0); if (!a || !c) return null;
+  const sh = shotOf(a.ball, a.pocket); if (!sh || sh.level === 'bad') return null;
+  const others = ballsNow().filter(([m]) => m !== 0 && m !== a.ball).map(([n, q]) => ({ n, x: q.x, y: q.y }));
+  return { a, c, o: posOf(a.ball), P: POCKETS[a.pocket], others };
+}
+// Bi cái từ đầu cơ tới ghost. Đầu cơ lệch tâm b cho Rω = 2.5·(b/R)·v, trượt tới khi lăn đều, rồi lăn chậm dần.
+// Trả về tốc độ v (in/s) và f = Rω/v lúc chạm; v = 0 là bi cái dừng trước khi tới.
+function approach(L, tip, v0) {
+  let v = v0, w = 2.5 * tip * v0, s = 0;
+  const dt = 1 / 400;
+  while (s < L) {
+    const u = v - w;
+    if (Math.abs(u) > 0.05) { const k = Math.sign(u) * Math.min(MU_S * dt, Math.abs(u) / 3.5); v -= k; w += 2.5 * k; }
+    else { v = Math.max(0, v - MU_R * dt); w = v; }
+    if (v < 0.4) return { v: 0, f: 0, s };
+    s += v * dt;
+  }
+  return { v, f: w / v, s: L };
+}
+// Cả cú: tiếp cận, bi cái sau va chạm, và bi mục tiêu có đủ lực tới lỗ không.
+// Bi mục tiêu nhận v·cosφ, chưa có spin nên trượt tới 5/7 rồi mới lăn.
+function runWith(ms, tip, vms) {
+  const { c, o, P } = ms, d = unit(P[0] - o.x, P[1] - o.y), G = { x: o.x - d[0] * BD, y: o.y - d[1] * BD };
+  const L = Math.hypot(G.x - c.x, G.y - c.y), a = unit(G.x - c.x, G.y - c.y), cosc = a[0] * d[0] + a[1] * d[1];
+  const ap = approach(L, tip, vms * IN_PER_M);
+  if (!ap.v) return { pts: [], stop: { x: c.x + a[0] * ap.s, y: c.y + a[1] * ap.s }, scratch: null, hit: null, short: 'cue', f: 0, vC: 0, G, d, a };
+  const r = cueRun(c, o, P, ap.f, ap.v, ms.others);
+  const vo = ap.v * cosc, v1 = (5 / 7) * vo, reach = (vo * vo - v1 * v1) / (2 * MU_S) + (v1 * v1) / (2 * MU_R);
+  const dP = Math.hypot(P[0] - o.x, P[1] - o.y) - BR;
+  Object.assign(r, { f: ap.f, vC: ap.v, G, d, a });
+  if (reach < dP) { r.short = 'ob'; r.gap = dP - reach; r.obStop = { x: o.x + d[0] * reach, y: o.y + d[1] * reach }; }
+  return r;
+}
+// Điểm đặt đầu cơ cho stun đúng lúc chạm, ở khoảng cách và lực này. null nếu draw tối đa vẫn tới nơi đã lăn.
+function stunTip(ms, vms) {
+  const L = Math.hypot(ms.o.x - ms.c.x, ms.o.y - ms.c.y) - BD, v0 = vms * IN_PER_M;
+  const f = (t) => { const ap = approach(L, t, v0); return ap.v ? ap.f : NaN; };
+  let lo = -TIP_MAX, hi = 0;
+  if (!(f(lo) < 0)) return null;
+  for (let i = 0; i < 14; i++) { const m = (lo + hi) / 2; if (f(m) < 0) lo = m; else hi = m; }
+  return (lo + hi) / 2;
+}
+function runText(r) {
+  if (!r) return '';
+  if (r.short === 'cue') return ' · <span class="bad">bi cái không tới nơi</span>';
+  if (r.short === 'ob') return ` · <span class="bad">thiếu lực, bi dừng cách lỗ ${Math.max(1, Math.round(r.gap))}"</span>`;
+  if (r.scratch) return ` · <span class="bad">bi cái vào lỗ ${POCKET_NAME[r.scratch]}</span>`;
+  if (r.hit != null) return ` · <span class="warn">bi cái đụng ${bname(r.hit)}</span>`;
+  return '';
+}
+
+/* ---------- animation ---------- */
+const anims = new Set(); let raf = 0, last = 0;
+function loop(t) {
+  const dt = Math.min(0.05, (t - last) / 1000); last = t;
+  for (const a of [...anims]) if (a.step(dt)) anims.delete(a);
+  render();
+  raf = anims.size ? requestAnimationFrame(loop) : 0;
+}
+function run(a) { anims.add(a); if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); } }
+function stop(obj, key) { const k = '_a' + key; if (obj[k]) { anims.delete(obj[k]); obj[k] = null; } }
+function springPt(p, target, { duration = 0.25, bounce = 0, v = [0, 0] } = {}, done) {
+  stop(p, 'pt');
+  if (RM()) { p.x = target.x; p.y = target.y; done && done(); render(); return; }
+  const w = (2 * Math.PI) / duration, z = 1 - bounce; let vx = v[0], vy = v[1];
+  const a = { step(dt) {
+    const n = Math.max(1, Math.ceil(dt * 240)), h = dt / n;
+    for (let i = 0; i < n; i++) {
+      vx += (-w * w * (p.x - target.x) - 2 * z * w * vx) * h; vy += (-w * w * (p.y - target.y) - 2 * z * w * vy) * h;
+      p.x += vx * h; p.y += vy * h;
+    }
+    if (Math.hypot(p.x - target.x, p.y - target.y) < 0.004 && Math.hypot(vx, vy) < 0.05) { p.x = target.x; p.y = target.y; p._apt = null; done && done(); return true; }
+  } };
+  p._apt = a; run(a);
+}
+function bez(x1, y1, x2, y2) {
+  const c = (a, b, t) => ((1 - 3 * b + 3 * a) * t + (3 * b - 6 * a)) * t * t + 3 * a * t;
+  return (x) => { let lo = 0, hi = 1, t = x; for (let i = 0; i < 24; i++) { const v = c(x1, x2, t); if (v < x) lo = t; else hi = t; t = (lo + hi) / 2; } return c(y1, y2, t); };
+}
+const easeOut = bez(0.23, 1, 0.32, 1);
+function tween(obj, key, to, dur, done) {
+  stop(obj, key);
+  if (RM() || dur <= 0) { obj[key] = to; done && done(); render(); return; }
+  const from = obj[key] ?? to; let t = 0;
+  const a = { step(dt) { t += dt; const k = Math.min(1, t / dur); obj[key] = from + (to - from) * easeOut(k); if (k >= 1) { obj['_a' + key] = null; done && done(); return true; } } };
+  obj['_a' + key] = a; run(a);
+}
+
+/* ---------- haptic log ---------- */
+const hlog = $('#hlog'); let hItems = [];
+function haptic(kind, why) {
+  hItems.unshift({ kind, why }); hItems = hItems.slice(0, 4);
+  hlog.innerHTML = hItems.map((h, i) => `<div class="e" style="opacity:${1 - i * 0.22}"><span class="k">${h.kind}</span><span class="w">${esc(h.why)}</span></div>`).join('');
+}
+
+/* ---------- static table ---------- */
+(function staticTable() {
+  let s = `<rect x="${-RAIL}" y="${-RAIL}" width="${50 + 2 * RAIL}" height="${100 + 2 * RAIL}" rx="3.2" fill="#0E0E0E"/>`;
+  s += `<rect x="${-RAIL + 0.25}" y="${-RAIL + 0.25}" width="${50 + 2 * RAIL - 0.5}" height="${100 + 2 * RAIL - 0.5}" rx="3" fill="none" stroke="#262626" stroke-width=".22"/>`;
+  s += `<rect x="-1.8" y="-1.8" width="53.6" height="103.6" fill="#1B3040"/>`;
+  s += `<rect x="0" y="0" width="50" height="100" fill="url(#cloth)"/>`;
+  for (const [x, y, r] of Object.values(POCKET_DRAW)) s += `<circle cx="${x}" cy="${y}" r="${r}" fill="#000"/>`;
+  for (let j = 1; j < 8; j++) { if (j === 4) continue; const y = j * 12.5; s += `<circle cx="-3.9" cy="${y}" r=".36" fill="#C9C4B4"/><circle cx="53.9" cy="${y}" r=".36" fill="#C9C4B4"/>`; }
+  for (let i = 1; i < 4; i++) { const x = i * 12.5; s += `<circle cx="${x}" cy="-3.9" r=".36" fill="#C9C4B4"/><circle cx="${x}" cy="103.9" r=".36" fill="#C9C4B4"/>`; }
+  s += `<circle cx="25" cy="25" r=".3" fill="rgba(201,196,180,.45)"/>`;
+  g('gStatic').innerHTML = s;
+})();
+
+function ballInner(n) {
+  if (n === 0) return `<circle r="1" fill="#FBFAE9"/><circle cx=".3" cy="-.16" r=".13" fill="#2F2D2D"/><circle r="1" fill="url(#hl)"/>`;
+  const t = TONE[n > 8 ? n - 8 : n];
+  const s = n > 8 ? `<circle r="1" fill="#181818"/><rect x="-1" y="-.56" width="2" height="1.12" fill="${t}" clip-path="url(#uc)"/>` : `<circle r="1" fill="${t}"/>`;
+  return s + `<circle r=".45" fill="#fff"/><text y=".03" text-anchor="middle" dominant-baseline="central" font-size=".55" font-weight="700" fill="#111" font-family="Outfit, system-ui, sans-serif">${n}</text><circle r="1" fill="url(#hl)"/>`;
+}
+
+/* ---------- palette + thanh cú đánh ---------- */
+const palette = $('#palette');
+for (let n = 0; n <= 9; n++) {
+  const [x, y] = slotPx(n);
+  const b = document.createElement('button');
+  b.className = 'pal'; b.dataset.pal = n; b.style.left = x + 'px'; b.style.top = y + 'px';
+  b.setAttribute('aria-label', 'Kéo ' + bname(n) + ' lên bàn');
+  b.innerHTML = `<svg viewBox="-1.25 -1.25 2.5 2.5"><ellipse cx=".16" cy=".24" rx=".98" ry=".9" fill="rgba(0,0,0,.5)"/>${ballInner(n)}</svg>`;
+  palette.appendChild(b);
+}
+/* ---------- bảng cú đánh: đầu cơ và lực ---------- */
+const padY = (t) => -t * 44; // mặt bi cái bán kính 44 trong viewBox, đúng tỉ lệ: 0.5R là nửa đường từ tâm ra mép
+const vX = (v) => ((v - V_MIN) / (V_MAX - V_MIN)) * 100;
+$('#pMarks').innerHTML = POWER.map((p) => `<span data-v="${p.v}" style="left:${vX(p.v)}%">${p.label}</span>`).join('');
+$('#pTicks').innerHTML = POWER.map((p) => `<div class="tick" style="left:${vX(p.v)}%"></div>`).join('');
+let padDet = []; // mốc của bảng đầu cơ cho cú hiện tại
+function shotPanel(ms) {
+  const t = S.shot.tip, v = S.shot.v;
+  const st = ms ? stunTip(ms, v) : null;
+  padDet = [{ id: 'roll', t: ROLL_TIP, col: SPINS[2].col }, { id: 'center', t: 0, col: 'rgba(0,0,0,.35)' }];
+  if (st != null) padDet.push({ id: 'stun', t: st, col: '#3a3a3a' });
+  let p = `<circle r="44" fill="url(#cueFace)"/><line x1="0" y1="-44" x2="0" y2="44" stroke="rgba(0,0,0,.16)" stroke-width="1"/>`;
+  p += `<line x1="-44" y1="0" x2="44" y2="0" stroke="rgba(0,0,0,.1)" stroke-width="1"/>`;
+  // Vòng miscue 0.5R: ra ngoài là trượt cơ.
+  p += `<circle r="${44 * TIP_MAX}" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="1" stroke-dasharray="3 3"/>`;
+  for (const d of padDet) if (d.id !== 'center') p += `<line x1="-14" y1="${padY(d.t)}" x2="14" y2="${padY(d.t)}" stroke="${d.col}" stroke-width="2" stroke-linecap="round"/><text x="17" y="${padY(d.t) + 3.2}" font-size="9" font-weight="600" fill="rgba(0,0,0,.55)" font-family="Outfit, system-ui">${d.id === 'roll' ? 'lăn' : 'stun'}</text>`;
+  p += `<circle cy="${padY(t)}" r="13" fill="rgba(63,109,168,.3)"/><circle cy="${padY(t)}" r="7.5" fill="#3F6DA8" stroke="#0D1A2B" stroke-width="1.5"/>`;
+  $('#padSvg').innerHTML = p;
+  $('#pad').setAttribute('aria-valuenow', t.toFixed(2));
+  const f = CR && CR.short !== 'cue' ? CR.f : null;
+  $('#tipOut').innerHTML = f == null ? tipWord(t) : `<i style="background:${SPINS[spinIdx(f)].col}"></i>${tipWord(t)} → ${contactWord(f)}`;
+  $('#powOut').textContent = `${v.toFixed(1)} m/s · ${powerWord(v)}`;
+  $('#pFill').style.width = vX(v) + '%'; $('#pThumb').style.left = vX(v) + '%';
+  $('#track').setAttribute('aria-valuenow', v.toFixed(1));
+  document.querySelectorAll('#pMarks span').forEach((e) => e.classList.toggle('on', Math.abs(+e.dataset.v - v) < 0.05));
+}
+// Đầu cơ: chạm đâu đặt đó theo chiều dọc, hít vào mốc trong 0.03R, mỗi lần hít một haptic.
+let padHeld = false, padSnap = null;
+function padSet(e) {
+  const r = $('#pad').getBoundingClientRect(), y = (e.clientY - r.top) / r.height * 100 - 50;
+  let t = clamp(-y / 44, -TIP_MAX, TIP_MAX), snap = null;
+  for (const d of padDet) if (Math.abs(t - d.t) < 0.03) { t = d.t; snap = d.id; }
+  if (snap && snap !== padSnap) haptic('.selection', `Đầu cơ hít mốc ${snap === 'roll' ? 'lăn đều 0.4R' : snap === 'stun' ? 'stun ' + tipWord(t) : 'tâm'}`);
+  padSnap = snap;
+  S.shot.tip = Math.round(t * 100) / 100; render();
+}
+$('#pad').addEventListener('pointerdown', (e) => { padHeld = true; padSnap = null; $('#pad').setPointerCapture(e.pointerId); padSet(e); });
+$('#pad').addEventListener('pointermove', (e) => { if (padHeld) padSet(e); });
+$('#pad').addEventListener('pointerup', () => { if (padHeld) { padHeld = false; commit(); } });
+$('#pad').addEventListener('keydown', (e) => {
+  const d = { ArrowUp: 0.05, ArrowDown: -0.05 }[e.key]; if (!d) return; e.preventDefault();
+  S.shot.tip = Math.round(clamp(S.shot.tip + d, -TIP_MAX, TIP_MAX) * 100) / 100; commit();
+});
+// Lực: kéo tương đối, không nhảy thumb về ngón tay. Chạm không kéo thì đặt đúng chỗ chạm, gần mốc thì hít mốc.
+let trk = null;
+const vOfX = (x, r) => V_MIN + clamp((x - r.left) / r.width, 0, 1) * (V_MAX - V_MIN);
+function powSet(v) {
+  v = Math.round(clamp(v, V_MIN, V_MAX) * 10) / 10;
+  const crossed = POWER.find((p) => (S.shot.v - p.v) * (v - p.v) < 0 || (v === p.v && S.shot.v !== p.v));
+  if (crossed) haptic('.selection', `Lực qua mốc ${crossed.label.toLowerCase()} ${crossed.v} m/s`);
+  S.shot.v = v; render();
+}
+$('#track').addEventListener('pointerdown', (e) => { const r = $('#track').getBoundingClientRect(); trk = { x0: e.clientX, v0: S.shot.v, r, moved: false }; $('#track').setPointerCapture(e.pointerId); $('#track').classList.add('held'); });
+$('#track').addEventListener('pointermove', (e) => {
+  if (!trk) return; const dx = e.clientX - trk.x0;
+  if (!trk.moved && Math.abs(dx) < 4) return; trk.moved = true;
+  powSet(trk.v0 + (dx / trk.r.width) * (V_MAX - V_MIN));
+});
+$('#track').addEventListener('pointerup', (e) => {
+  if (!trk) return; $('#track').classList.remove('held');
+  if (!trk.moved) { let v = vOfX(e.clientX, trk.r); const near = POWER.find((p) => Math.abs(p.v - v) < 0.25); powSet(near ? near.v : v); }
+  trk = null; commit();
+});
+$('#track').addEventListener('keydown', (e) => {
+  const d = { ArrowRight: 0.1, ArrowLeft: -0.1, ArrowUp: 0.1, ArrowDown: -0.1 }[e.key]; if (!d) return; e.preventDefault();
+  powSet(S.shot.v + d); commit();
+});
+const shotMode = () => !!(sel && sel.type === 'aim' && S.aims[0] && S.aims[0].ball === sel.ball);
+
+/* ---------- render ---------- */
+const polyline = (pts) => pts.map((q) => q.x.toFixed(2) + ',' + q.y.toFixed(2)).join(' ');
+function render() {
+  if (grid) {
+    let s = '';
+    for (let i = 1; i < 16; i++) { const x = i * 3.125, m = i % 4 === 0; s += `<line x1="${x}" y1="0" x2="${x}" y2="100" stroke="rgba(255,255,255,${m ? 0.15 : 0.05})" stroke-width="${m ? 0.12 : 0.08}"/>`; }
+    for (let j = 1; j < 32; j++) { const y = j * 3.125, m = j % 4 === 0; s += `<line x1="0" y1="${y}" x2="50" y2="${y}" stroke="rgba(255,255,255,${m ? 0.15 : 0.05})" stroke-width="${m ? 0.12 : 0.08}"/>`; }
+    g('gGrid').innerHTML = s;
+  } else g('gGrid').innerHTML = '';
+
+  const ms = mainShot();
+  CR = ms ? runWith(ms, S.shot.tip, S.shot.v) : null;
+  // Đang chọn lỗ: tắt mọi đường kẻ, chỉ còn bi được chọn và sáu lỗ.
+  const picking = aimPick != null && !(drag && drag.moved);
+
+  // Đường bi cái dự đoán: cú đang chọn đi hết đường, màu theo spin lúc chạm. Draw tối đa và follow tối đa cùng lực
+  // là hai nhánh ngắn từ ghost, chỉ vẽ nhánh khác loại với cú đang chọn.
+  let ps = '';
+  if (ms && CR.short !== 'cue') {
+    const focus = shotMode() || (drag && drag.kind === 'ball');
+    const kind = spinIdx(CR.f);
+    if (focus) for (const t of [-TIP_MAX, TIP_MAX]) {
+      const r = runWith(ms, t, S.shot.v); if (r.short === 'cue') continue;
+      const k = spinIdx(r.f); if (k === kind) continue;
+      const stub = [r.pts[0]];
+      for (let i = 1, acc = 0; i < r.pts.length && acc < STUB; i++) { acc += Math.hypot(r.pts[i].x - r.pts[i - 1].x, r.pts[i].y - r.pts[i - 1].y); stub.push(r.pts[i]); }
+      const e = stub[stub.length - 1];
+      ps += `<polyline points="${polyline(stub)}" fill="none" stroke="${SPINS[k].col}" stroke-opacity=".75" stroke-width=".16" stroke-linecap="round" stroke-linejoin="round"/>`;
+      ps += `<circle cx="${e.x}" cy="${e.y}" r=".38" fill="${SPINS[k].col}" fill-opacity=".9"/>`;
+    }
+    const col = CR.scratch ? RED : CR.hit != null ? ORANGE : SPINS[kind].col;
+    ps += `<polyline points="${polyline(CR.pts)}" fill="none" stroke="${col}" stroke-opacity=".9" stroke-width=".18" stroke-dasharray="1.1 .7" stroke-linejoin="round"/>`;
+    if (!CR.scratch) ps += `<circle cx="${CR.stop.x}" cy="${CR.stop.y}" r="${BR}" fill="${col}" fill-opacity=".1" stroke="${col}" stroke-opacity=".8" stroke-width=".13"/>`;
+  } else if (ms) {
+    ps += `<circle cx="${CR.stop.x}" cy="${CR.stop.y}" r="${BR}" fill="none" stroke="${RED}" stroke-width=".16" stroke-dasharray=".45 .32"/>`;
+  }
+  g('gPaths').innerHTML = picking ? '' : ps;
+
+  g('gAims').innerHTML = picking ? '' : S.aims.slice(0, 1).map((a) => {
+    const sh = shotOf(a.ball, a.pocket), p = V.balls[a.ball];
+    if (!sh || !p) return '';
+    const P = POCKETS[a.pocket], [ux, uy] = unit(P[0] - p.x, P[1] - p.y), gx = p.x - ux * BD, gy = p.y - uy * BD;
+    const on = sel && sel.type === 'aim' && sel.ball === a.ball;
+    const col = sh.level === 'bad' ? RED : sh.level === 'warn' ? ORANGE : '#fff';
+    const op = sh.level === 'ok' ? (on ? 1 : 0.62) : 1;
+    let s = '';
+    const wedge = (drag && drag.kind === 'ball' && (drag.n === 0 || drag.n === a.ball));
+    if (wedge) {
+      const phi = Math.atan2(-uy, -ux), R = 160, A = (CUT_WARN * Math.PI) / 180, pts = [`${gx},${gy}`];
+      for (let k = -8; k <= 8; k++) { const t = phi + (A * k) / 8; pts.push(`${gx + R * Math.cos(t)},${gy + R * Math.sin(t)}`); }
+      s += `<polygon points="${pts.join(' ')}" fill="rgba(255,255,255,.06)" clip-path="url(#felt)"/>`;
+      for (const t of [phi - A, phi + A]) s += `<line x1="${gx}" y1="${gy}" x2="${gx + R * Math.cos(t)}" y2="${gy + R * Math.sin(t)}" stroke="rgba(255,255,255,.3)" stroke-width=".12" stroke-dasharray=".6 .5" clip-path="url(#felt)"/>`;
+    }
+    const main = a === S.aims[0] && CR, short = main && CR.short === 'ob';
+    if (short) {
+      const q = CR.obStop;
+      s += `<line x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}" stroke="${RED}" stroke-width=".22"/>`;
+      s += `<line x1="${q.x}" y1="${q.y}" x2="${P[0]}" y2="${P[1]}" stroke="${RED}" stroke-opacity=".35" stroke-width=".14" stroke-dasharray=".5 .5"/>`;
+      s += `<circle cx="${q.x}" cy="${q.y}" r="${BR}" fill="none" stroke="${RED}" stroke-width=".14" stroke-dasharray=".45 .32"/>`;
+    } else s += `<line x1="${p.x}" y1="${p.y}" x2="${P[0]}" y2="${P[1]}" stroke="${col}" stroke-opacity="${op}" stroke-width="${on ? 0.24 : 0.16}" stroke-dasharray=".8 .55"/>`;
+    // Tangent qua ghost: hướng bi cái đi nếu chạm bằng stun. Mốc so với đường thật, không phải đường thật.
+    if (on && main && sh.level !== 'bad' && CR.short !== 'cue' && sh.cut > 1) {
+      const t = [-uy, ux], sg = Math.sign(t[0] * CR.a[0] + t[1] * CR.a[1]) || 1;
+      s += `<line x1="${gx}" y1="${gy}" x2="${gx + t[0] * sg * 12}" y2="${gy + t[1] * sg * 12}" stroke="#D8B451" stroke-opacity=".55" stroke-width=".12" stroke-dasharray=".6 .6" clip-path="url(#felt)"/>`;
+    }
+    s += `<circle cx="${gx}" cy="${gy}" r="${BR}" fill="${col}" fill-opacity=".07" stroke="${col}" stroke-opacity=".85" stroke-width=".13" stroke-dasharray=".45 .32"/>`;
+    const c = V.balls[0];
+    if (c && posOf(0)) s += `<line x1="${c.x}" y1="${c.y}" x2="${gx}" y2="${gy}" stroke="${col}" stroke-opacity="${sh.level === 'ok' ? 0.24 : 0.6}" stroke-width=".12"/>`;
+    return s;
+  }).join('');
+
+  g('gTexts').innerHTML = S.texts.map((t) => {
+    const on = sel && sel.type === 'text' && sel.id === t.id;
+    return `<text x="${t.x}" y="${t.y}" font-size="2.1" font-weight="500" fill="rgba(255,255,255,${on ? 1 : 0.82})" font-family="Outfit, system-ui"${on ? ' text-decoration="underline"' : ''}>${esc(t.t)}</text>`;
+  }).join('');
+
+  // Sáu lỗ sáng đều như nhau, chưa tô đánh được hay không. Chọn lỗ xong mới hiện đường và kết luận.
+  g('gPockets').innerHTML = picking
+    ? Object.values(POCKET_DRAW).map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r + 0.9}" fill="${'#D8B451'}" fill-opacity=".16" stroke="#D8B451" stroke-width=".3"/>`).join('')
+    : '';
+
+  const keys = Object.keys(V.balls).map(Number).sort((a, b) => (drag && drag.n === a) - (drag && drag.n === b));
+  let bs = '';
+  if (drag && drag.kind === 'ball' && !drag.torn && V.balls[drag.n]) {
+    const q = place(drag.n, V.balls[drag.n]);
+    bs += `<circle cx="${q.x}" cy="${q.y}" r="${BR}" fill="none" stroke="rgba(255,255,255,.45)" stroke-width=".13" stroke-dasharray=".4 .3"/>`;
+  }
+  for (const n of keys) {
+    const p = V.balls[n], L = V.lift[n] ?? 1, al = V.alpha[n] ?? 1, up = clamp((L - 1) / 0.15, 0, 1);
+    const off = 0.22 + up * 0.55;
+    const dim = picking && n !== aimPick ? 0.4 : 1;
+    bs += `<g opacity="${al * dim}"><ellipse cx="${p.x + off}" cy="${p.y + off * 1.3}" rx="${BR * L * 0.98}" ry="${BR * L * 0.9}" fill="rgba(0,0,0,${0.42 + up * 0.12})"/>`;
+    bs += `<g transform="translate(${p.x} ${p.y}) scale(${BR * L})">${ballInner(n)}</g></g>`;
+    const picked = (sel && sel.type === 'ball' && sel.n === n && !drag) || (picking && aimPick === n);
+    if (picked) bs += `<circle cx="${p.x}" cy="${p.y}" r="${BR * L + 0.45}" fill="none" stroke="#D8B451" stroke-width=".22"/>`;
+  }
+  g('gBalls').innerHTML = bs;
+
+  // Điểm chạm: chỗ trên bi mục tiêu mà bi cái phải đụng, nằm trên đường nối lỗ với tâm bi, phía xa lỗ.
+  let top = '';
+  const a0 = S.aims[0];
+  if (!picking && a0 && sel && sel.type === 'aim' && sel.ball === a0.ball && !(drag && drag.torn)) {
+    const sh = shotOf(a0.ball, a0.pocket), p = V.balls[a0.ball];
+    if (sh && sh.level !== 'bad' && p) {
+      const P = POCKETS[a0.pocket], [ux, uy] = unit(P[0] - p.x, P[1] - p.y), cx = p.x - ux * BR, cy = p.y - uy * BR;
+      top = `<circle cx="${cx}" cy="${cy}" r="1.1" fill="url(#halo)"/><circle cx="${cx}" cy="${cy}" r=".36" fill="#D8B451" stroke="rgba(0,0,0,.6)" stroke-width=".06"/>`;
+    }
+  }
+  g('gTop').innerHTML = top;
+
+  g('gHit').innerHTML = showHit
+    ? Object.keys(S.balls).map((k) => { const p = V.balls[k] || S.balls[k]; return `<circle cx="${p.x}" cy="${p.y}" r="${HIT}" fill="rgba(216,180,81,.1)" stroke="rgba(216,180,81,.6)" stroke-width=".1" stroke-dasharray=".5 .4"/>`; }).join('')
+    : '';
+
+  chrome(ms);
+}
+
+/* ---------- chrome ---------- */
+const insp = $('#insp');
+let inspKey = '';
+function chrome(ms) {
+  document.querySelectorAll('[data-tool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === tool)));
+  $('#bGrid').setAttribute('aria-pressed', String(grid));
+  $('#bUndo').disabled = !hist.length; $('#bRedo').disabled = !fut.length;
+  const ring = showHit ? 'inset 0 0 0 1px rgba(216,180,81,.6)' : '';
+  document.querySelectorAll('.pal').forEach((b) => {
+    const n = +b.dataset.pal;
+    b.classList.toggle('on-table', n in S.balls);
+    b.classList.toggle('flying', !!V.balls[n] && !(n in S.balls));
+    b.style.boxShadow = ring;
+  });
+  document.querySelectorAll('.tbtn,.ibtn').forEach((b) => (b.style.boxShadow = ring));
+  screen.classList.toggle('shotmode', shotMode());
+  if (shotMode()) shotPanel(ms);
+
+  let text = '', btn = '';
+  const del = '<button class="ib danger" data-act="del">Bỏ</button>';
+  const withShot = (n) => { const a = aimFor(n); if (!a) return ''; const sh = shotOf(a.ball, a.pocket); return shotText(sh) + (a === S.aims[0] ? runText(CR) : ''); };
+  if (drag && drag.kind === 'ball') {
+    const p = V.balls[drag.n];
+    if (drag.torn) text = drag.origin === 'table' ? `${cap(bname(drag.n))} · Thả để bỏ` : `Kéo ${bname(drag.n)} vào bàn`;
+    else { const q = place(drag.n, p); text = `${cap(bname(drag.n))} · ${dia(q)}${q.rail ? ' · sát băng' : ''}${q.touch != null ? ' · sát ' + bname(q.touch) : ''}${withShot(drag.n)}`; }
+  } else if (aimPick != null) {
+    text = `Chạm một lỗ cho ${bname(aimPick)}`;
+    btn = '<button class="ib" data-act="cancelAim">Huỷ</button>';
+  } else if (tool === 'text') text = 'Chạm chỗ cần ghi chú';
+  else if (sel) {
+    if (sel.type === 'ball' && S.balls[sel.n]) { const p = S.balls[sel.n]; const q = place(sel.n, p); text = `${cap(bname(sel.n))} · ${dia(p)}${q.rail ? ' · sát băng' : ''}${withShot(sel.n)}`; btn = del; }
+    else if (sel.type === 'aim') { const a = S.aims.find((a) => a.ball === sel.ball); if (a) { text = `${cap(bname(a.ball))} → ${POCKET_NAME[a.pocket]}${shotText(shotOf(a.ball, a.pocket))}${a === S.aims[0] ? runText(CR) : ''}`; btn = del; } }
+    else if (sel.type === 'text') { text = 'Ghi chú'; btn = del; }
+  } else if (!Object.keys(S.balls).length) text = 'Kéo bi từ khay bên dưới lên bàn';
+  const html = text ? `<span class="tx">${text}</span>${btn}` : '';
+  if (html) { if (html !== inspKey) { insp.innerHTML = html; inspKey = html; } insp.classList.remove('hide'); }
+  else { insp.classList.add('hide'); inspKey = ''; }
+}
+/* ---------- history ---------- */
+function commit() { const now = JSON.stringify(S); if (now === committed) { render(); return; } hist.push(committed); committed = now; fut = []; render(); }
+function restore(json) {
+  const next = JSON.parse(json);
+  const prevBalls = S.balls; S = next;
+  for (const k of Object.keys(V.balls)) if (!(k in next.balls)) { delete V.balls[k]; delete V.lift[k]; }
+  for (const [k, p] of Object.entries(next.balls)) {
+    if (V.balls[k] && prevBalls[k]) springPt(V.balls[k], p, { duration: 0.25, bounce: 0 });
+    else { V.balls[k] = { x: p.x, y: p.y }; V.lift[k] = 1; V.alpha[k] = 1; }
+  }
+  sel = S.aims.length ? { type: 'aim', ball: S.aims[0].ball } : null; aimPick = null; render();
+}
+function undo() { if (!hist.length) return; fut.push(committed); committed = hist.pop(); restore(committed); }
+function redo() { if (!fut.length) return; hist.push(committed); committed = fut.pop(); restore(committed); }
+function load(s, resetHist) {
+  // Bản cũ lưu spin/speed theo nấc. Đổi sang đầu cơ và lực liên tục.
+  if (s.shot && s.shot.spin != null) s.shot = { tip: [-TIP_MAX, 0, ROLL_TIP][s.shot.spin] ?? 0, v: POWER[s.shot.speed]?.v ?? 1.8 };
+  S = s; V.balls = {}; V.lift = {}; V.alpha = {};
+  for (const [k, p] of Object.entries(S.balls)) V.balls[k] = { x: p.x, y: p.y };
+  tool = 'select'; aimPick = null; drag = null;
+  sel = S.aims.length ? { type: 'aim', ball: S.aims[0].ball } : null;
+  if (resetHist) { hist = []; fut = []; committed = JSON.stringify(S); render(); } else commit();
+}
+
+/* ---------- pointer ---------- */
+function ptr(e) { const r = screen.getBoundingClientRect(), s = r.width / SW; return [(e.clientX - r.left) / s, (e.clientY - r.top) / s]; }
+function hitBall(X, Y, objectOnly) {
+  let best = null, bd = HIT;
+  for (const k of Object.keys(S.balls)) {
+    const n = +k; if (objectOnly && n === 0) continue;
+    const p = V.balls[n] || S.balls[n], d = Math.hypot(p.x - X, p.y - Y);
+    if (d < bd) { bd = d; best = n; }
+  }
+  return best;
+}
+function hitPocket(X, Y) {
+  let best = null, bd = 26 / K;
+  for (const [id, [x, y]] of Object.entries(POCKET_DRAW)) { const d = Math.hypot(X - x, Y - y); if (d < bd) { bd = d; best = id; } }
+  return best;
+}
+function velocity() {
+  const s = drag.samples; if (s.length < 2) return [0, 0];
+  const a = s[0], b = s[s.length - 1], dt = (b.t - a.t) / 1000;
+  return dt > 0.012 ? [(b.x - a.x) / dt, (b.y - a.y) / dt] : [0, 0];
+}
+
+screen.addEventListener('pointerdown', (e) => {
+  if (e.button > 0) return;
+  if (e.target.closest('.chrome')) return;
+  if (!$('#txt').hidden) { commitText(); return; }
+  const [sx, sy] = ptr(e), [X, Y] = toIn(sx, sy);
+  const pal = e.target.closest('[data-pal]');
+  if (pal) {
+    if (shotMode()) return;
+    const n = +pal.dataset.pal;
+    if (n in S.balls) { tool = 'select'; sel = { type: 'ball', n }; render(); return; }
+    screen.setPointerCapture(e.pointerId);
+    startBall(n, slotIn(n), X, Y, 'palette');
+    return;
+  }
+  screen.setPointerCapture(e.pointerId);
+  if (tool === 'select') downSelect(X, Y);
+  else if (tool === 'text') downText(sx, sy, X, Y);
+});
+
+function startBall(n, from, X, Y, origin) {
+  if (!V.balls[n]) V.balls[n] = { x: from.x, y: from.y };
+  const p = V.balls[n]; stop(p, 'pt');
+  drag = { kind: 'ball', n, origin, off: [p.x - X, p.y - Y], x0: X, y0: Y, moved: origin === 'palette', torn: origin === 'palette', samples: [{ t: performance.now(), x: X, y: Y }], keepSel: sel };
+  V.alpha[n] = 1;
+  if (origin === 'palette') V.lift[n] = RM() ? 1 : PAL_LIFT;
+  tween(V.lift, n, RM() ? 1 : 1.15, 0.12);
+  render();
+}
+// Chọn lỗ cho bi mục tiêu. Đường này thành cú chính, nên bi cái, ghost và đường bi cái tính theo nó.
+function choosePocket(ball, pocket) {
+  S.aims = [{ ball, pocket }]; // một bài một đường vào lỗ
+  aimPick = null; sel = { type: 'aim', ball };
+  const sh = shotOf(ball, pocket), r = sh && sh.level !== 'bad' ? runWith(mainShot(), S.shot.tip, S.shot.v) : null;
+  const why = sh && sh.level === 'bad' ? sh.why : runWhy(r);
+  haptic(why ? '.warning' : '.selection', `${cap(bname(ball))} → ${POCKET_NAME[pocket]}${why ? ': ' + why : sh && sh.cut != null ? `, cắt ${Math.round(sh.cut)}°` : ''}`);
+  commit();
+}
+function downSelect(X, Y) {
+  if (aimPick != null) { const pk = hitPocket(X, Y); if (pk) { choosePocket(aimPick, pk); return; } }
+  const n = hitBall(X, Y, false);
+  if (n != null) { startBall(n, V.balls[n], X, Y, 'table'); return; }
+  for (const t of [...S.texts].reverse()) {
+    if (X > t.x - 1 && X < t.x + t.t.length * 1.05 && Y > t.y - 2.4 && Y < t.y + 0.8) { sel = { type: 'text', id: t.id }; drag = { kind: 'text', id: t.id, off: [t.x - X, t.y - Y] }; render(); return; }
+  }
+  for (const a of S.aims) {
+    const p = S.balls[a.ball]; if (!p) continue; const P = POCKETS[a.pocket];
+    if (segDist(X, Y, p, { x: P[0], y: P[1] }) < 10 / K) { sel = { type: 'aim', ball: a.ball }; render(); return; }
+  }
+  if (CR) for (let i = 1; i < CR.pts.length; i++) if (segDist(X, Y, CR.pts[i - 1], CR.pts[i]) < 10 / K) { sel = { type: 'aim', ball: S.aims[0].ball }; render(); return; }
+  aimPick = null; sel = null; render();
+}
+function downText(sx, sy, X, Y) {
+  const inp = $('#txt');
+  inp.hidden = false; inp.value = '';
+  inp.style.left = clamp(sx - 8, TX0, TX0 + TW - 170) + 'px'; inp.style.top = clamp(sy - 13, TY0, TY0 + TH - 26) + 'px';
+  inp.dataset.x = clamp(X, 0, 40); inp.dataset.y = clamp(Y + 0.7, 2.4, 99.5);
+  setTimeout(() => inp.focus(), 0);
+}
+function commitText() {
+  const inp = $('#txt'); if (inp.hidden) return;
+  const t = inp.value.trim(); inp.hidden = true;
+  if (t) { const id = 't' + uid++; S.texts.push({ id, x: +inp.dataset.x, y: +inp.dataset.y, t }); sel = { type: 'text', id }; tool = 'select'; commit(); }
+  else render();
+}
+$('#txt').addEventListener('keydown', (e) => { if (e.key === 'Enter') commitText(); if (e.key === 'Escape') { $('#txt').hidden = true; render(); } e.stopPropagation(); });
+$('#txt').addEventListener('blur', commitText);
+
+screen.addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const [sx, sy] = ptr(e), [X, Y] = toIn(sx, sy);
+  if (drag.kind === 'ball') {
+    const now = performance.now();
+    drag.samples.push({ t: now, x: X, y: Y }); while (drag.samples.length > 2 && now - drag.samples[0].t > 90) drag.samples.shift();
+    if (!drag.moved && Math.hypot(X - drag.x0, Y - drag.y0) > 10 / K) drag.moved = true;
+    const p = V.balls[drag.n], rx = X + drag.off[0], ry = Y + drag.off[1];
+    const o = Math.max(-RAIL - rx, rx - (50 + RAIL), -RAIL - ry, ry - (100 + RAIL), 0);
+    if (!drag.torn && o > 1.5) { drag.torn = true; if (drag.origin === 'table') haptic('.selection', `${cap(bname(drag.n))} rời mép bàn, thả là bỏ`); }
+    else if (drag.torn && (drag.origin === 'table' ? o < 0.5 : o === 0)) drag.torn = false;
+    if (drag.torn) { p.x = rx; p.y = ry; V.alpha[drag.n] = drag.origin === 'table' ? 0.55 : 1; }
+    else { p.x = rb(rx, BR, 50 - BR); p.y = rb(ry, BR, 100 - BR); V.alpha[drag.n] = 1; }
+    render();
+  } else if (drag.kind === 'text') {
+    const t = S.texts.find((t) => t.id === drag.id); if (!t) return;
+    t.x = clamp(X + drag.off[0], 0, 45); t.y = clamp(Y + drag.off[1], 2.4, 99.5); render();
+  }
+});
+
+function endDrag() {
+  if (!drag) return;
+  const d = drag;
+  if (d.kind === 'ball') {
+    const n = d.n, p = V.balls[n], v = velocity();
+    if (!d.moved && !d.torn && n in S.balls) {
+      // Chạm không kéo: bi về đúng chỗ cũ. Bi mục tiêu thì vào chế độ chọn lỗ, chạm lại lần nữa là thôi.
+      drag = null;
+      tween(V.lift, n, 1, 0.15);
+      springPt(p, S.balls[n], { duration: 0.25, bounce: 0 });
+      if (n === 0) { aimPick = null; sel = { type: 'ball', n }; }
+      else { aimPick = aimPick === n ? null : n; sel = aimPick == null ? { type: 'ball', n } : null; }
+      render();
+    } else if (d.torn) {
+      drag = null;
+      const was = n in S.balls;
+      delete S.balls[n]; S.aims = S.aims.filter((a) => a.ball !== n); sel = null;
+      tween(V.lift, n, RM() ? 1 : PAL_LIFT, 0.3);
+      if (RM()) { delete V.balls[n]; render(); }
+      else springPt(p, slotIn(n), { duration: 0.35, bounce: 0.2, v }, () => { if (!(n in S.balls)) { delete V.balls[n]; delete V.lift[n]; } render(); });
+      if (was) commit(); else render();
+    } else {
+      const q = place(n, p);
+      drag = null; aimPick = null;
+      S.balls[n] = { x: q.x, y: q.y };
+      // Đang xem một đường mà kéo bi của đường đó thì giữ nguyên lựa chọn, để thanh cú đánh không nhảy đi.
+      const a = aimFor(n);
+      sel = d.keepSel && d.keepSel.type === 'aim' && a && a.ball === d.keepSel.ball ? d.keepSel : { type: 'ball', n };
+      tween(V.lift, n, 1, 0.15);
+      springPt(p, q, { duration: 0.25, bounce: 0 });
+      const sh = a && shotOf(a.ball, a.pocket);
+      const ms = a === S.aims[0] ? mainShot() : null, r = ms && runWith(ms, S.shot.tip, S.shot.v);
+      if (sh && sh.level === 'bad') haptic('.warning', `Đặt ${bname(n)} ở ${dia(q)}: ${sh.why}`);
+      else if (runWhy(r)) haptic('.warning', `Đặt ${bname(n)} ở ${dia(q)}: ${runWhy(r)}`);
+      else haptic('.impact(.light)', `Đặt ${bname(n)} ở ${dia(q)}${q.rail ? ', sát băng' : ''}${sh && sh.cut != null ? `, cắt ${Math.round(sh.cut)}°` : ''}`);
+      commit();
+    }
+  } else if (d.kind === 'text') { drag = null; commit(); }
+}
+screen.addEventListener('pointerup', endDrag);
+screen.addEventListener('pointercancel', endDrag);
+
+/* ---------- chrome actions ---------- */
+$('#tools').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-tool]');
+  if (b) { tool = b.dataset.tool; aimPick = null; if (tool !== 'select') sel = null; render(); }
+});
+$('#bGrid').addEventListener('click', () => { grid = !grid; render(); });
+$('#bUndo').addEventListener('click', undo);
+$('#bRedo').addEventListener('click', redo);
+insp.addEventListener('click', (e) => {
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  if (a.dataset.act === 'del') del();
+  if (a.dataset.act === 'cancelAim') { aimPick = null; render(); }
+});
+function del() {
+  if (!sel) return;
+  if (sel.type === 'ball') {
+    const n = sel.n, p = V.balls[n];
+    delete S.balls[n]; S.aims = S.aims.filter((a) => a.ball !== n);
+    if (p && !RM()) { tween(V.lift, n, PAL_LIFT, 0.3); springPt(p, slotIn(n), { duration: 0.35, bounce: 0 }, () => { if (!(n in S.balls)) { delete V.balls[n]; delete V.lift[n]; } render(); }); }
+    else delete V.balls[n];
+  }
+  if (sel.type === 'text') S.texts = S.texts.filter((t) => t.id !== sel.id);
+  if (sel.type === 'aim') S.aims = S.aims.filter((a) => a.ball !== sel.ball);
+  sel = null; commit();
+}
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  const mod = e.metaKey || e.ctrlKey;
+  if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && sel) { e.preventDefault(); del(); }
+  else if (e.key === 'Escape') { closeSheets(); aimPick = null; render(); }
+});
+
+const toast = $('#toast'); let toastT = 0;
+function showToast(html) {
+  toast.innerHTML = html; toast.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('show'), 2400);
+}
+toast.addEventListener('click', (e) => { if (e.target.closest('[data-undo]')) { undo(); toast.classList.remove('show'); } });
+$('#bClear').addEventListener('click', () => {
+  const had = Object.keys(S.balls).length || S.texts.length;
+  if (!had) return;
+  const s = blank(); s.meta = S.meta; load(s, false);
+  showToast('Đã xoá bàn<span class="sp"></span><button data-undo>Hoàn tác</button>');
+});
+
+const backdrop = $('#backdrop');
+function openSheet(id) { closeSheets(); backdrop.classList.add('show'); $(id).classList.add('show'); }
+function closeSheets() { backdrop.classList.remove('show'); document.querySelectorAll('.sheet').forEach((s) => s.classList.remove('show')); }
+backdrop.addEventListener('click', closeSheets);
+document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeSheets));
+function syncForm() {
+  const m = S.meta;
+  $('#fTitle').value = m.title;
+  document.querySelectorAll('#fCat button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === m.category)));
+  document.querySelectorAll('#fFormat button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === m.format)));
+  $('#vAtt').textContent = m.attempts; $('#vPass').textContent = `${m.pass}/${m.attempts}`;
+  const ms = mainShot(), r = ms && runWith(ms, S.shot.tip, S.shot.v);
+  const probs = S.aims.map((a) => [a, shotOf(a.ball, a.pocket)]).filter(([, sh]) => sh && sh.level === 'bad').map(([a, sh]) => `${cap(bname(a.ball))} → ${POCKET_NAME[a.pocket]}: ${sh.why}.`);
+  if (runWhy(r)) probs.push(`Với ${shotName()}: ${runWhy(r)}.`);
+  const nb = Object.keys(S.balls).length;
+  let foot = m.format === 'ladder'
+    ? 'Thang: đạt thì bi cái lùi xa một nấc, trượt thì lại gần. Cần luật tiến cấp, chưa có trong app.'
+    : `${nb} bi · ${S.aims.length} đường vào lỗ · ${shotName()}. Lưu vào Bài của tôi, tập ngay ở màn drill.`;
+  if (probs.length) foot = `<span class="bad">${probs.join(' ')}</span> Vẫn lưu được, nhưng ra bàn thật sẽ không làm được. ` + foot;
+  $('#fFoot').innerHTML = foot;
+}
+$('#bSave').addEventListener('click', () => { syncForm(); openSheet('#sheetSave'); });
+$('#fTitle').addEventListener('input', (e) => { S.meta.title = e.target.value; });
+$('#fCat').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { S.meta.category = b.dataset.v; syncForm(); } });
+$('#fFormat').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { S.meta.format = b.dataset.v; syncForm(); } });
+document.querySelectorAll('[data-step]').forEach((b) => b.addEventListener('click', () => {
+  const [k, d] = b.dataset.step.split(':'), m = S.meta;
+  if (k === 'att') { m.attempts = clamp(m.attempts + +d, 3, 20); m.pass = Math.min(m.pass, m.attempts); }
+  else m.pass = clamp(m.pass + +d, 1, m.attempts);
+  syncForm();
+}));
+$('#bDoSave').addEventListener('click', () => {
+  commit(); closeSheets();
+  haptic('.success', `Lưu "${S.meta.title || 'Bài của tôi'}"`);
+  showToast('Đã lưu vào Bài của tôi');
+});
+
+function exportDrill() {
+  const r = (v) => Math.round(v * 10000) / 10000;
+  const N = (p) => ({ x: r(p.x / 50), y: r(p.y / 100) });
+  const obj = Object.keys(S.balls).map(Number).filter((n) => n > 0).sort((a, b) => a - b);
+  const guide = [];
+  for (const a of S.aims) guide.push({ kind: 'objectBallPath', ball: a.ball, pocket: a.pocket }, { kind: 'ghostBall', ball: a.ball, pocket: a.pocket });
+  const ms = mainShot(), run = ms && runWith(ms, S.shot.tip, S.shot.v);
+  if (run && run.pts.length) { const step = Math.max(1, Math.ceil(run.pts.length / 24)); guide.push({ kind: 'expectedCuePath', points: run.pts.filter((_, i) => i % step === 0 || i === run.pts.length - 1).map(N) }); }
+  const m = S.meta;
+  return JSON.stringify({
+    schema: 1,
+    id: 'custom-' + Date.now().toString(36),
+    source: 'custom',
+    title: m.title || 'Bài của tôi',
+    category: m.category,
+    skill: 'custom',
+    cueBall: S.balls[0] ? N(S.balls[0]) : null,
+    objectBalls: obj.map((n) => ({ number: n, ...N(S.balls[n]) })),
+    targetPocket: S.aims[0]?.pocket ?? null,
+    recommendedSpin: run && run.short !== 'cue' ? SPINS[spinIdx(run.f)].id : null,
+    recommendedSpeed: powerId(S.shot.v),
+    shot: { tipY: S.shot.tip, speedMps: S.shot.v },
+    guideLines: guide,
+    annotations: S.texts.map((t) => ({ point: N(t), text: t.t })),
+    attemptCount: m.attempts,
+    passCondition: { kind: 'pocketed', required: m.pass },
+  }, null, 2);
+}
+$('#bShare').addEventListener('click', () => { $('#json').textContent = exportDrill(); openSheet('#sheetShare'); });
+$('#bCopy').addEventListener('click', () => {
+  const t = $('#json').textContent;
+  const fallback = () => {
+    const s = window.getSelection(), rg = document.createRange(); rg.selectNodeContents($('#json')); s.removeAllRanges(); s.addRange(rg); $('#bCopy').textContent = 'Đã chọn, ⌘C để chép';
+  };
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => { $('#bCopy').textContent = 'Đã chép'; }, fallback); else fallback();
+  setTimeout(() => ($('#bCopy').textContent = 'Chép JSON'), 1800);
+});
+
+$('#cRM').addEventListener('change', (e) => { RMtoggle = e.target.checked; });
+$('#cHit').addEventListener('change', (e) => { showHit = e.target.checked; render(); });
+$('#cSample').addEventListener('click', () => load(sample(), false));
+$('#cBad').addEventListener('click', () => load(sampleBad(), false));
+$('#cD03').addEventListener('click', () => load(sampleD03(), false));
+$('#cEmpty').addEventListener('click', () => load(blank(), false));
+
+function fit() {
+  const w = stage.clientWidth, s = Math.min(0.86, w / 414);
+  device.style.transform = `scale(${s})`;
+  device.style.left = Math.max(0, (w - 414 * s) / 2) + 'px';
+  stage.style.height = 868 * s + 'px';
+}
+window.addEventListener('resize', fit); fit();
+
+load(sample(), true);
+})();
+</script>
