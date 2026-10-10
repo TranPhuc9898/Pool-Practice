@@ -20,19 +20,23 @@ export type ProgramBentoProps = {
 
 const pct = (n: number, total: number) => Math.round((n / total) * 100);
 
-/** Ba ô: Cue Ball Control vuông bên trái, hai pill xếp chồng bên phải. Không gold đặc, gold chỉ ở vạch. */
+/** Ba ô: Cue Ball Control vuông bên trái, hai pill xếp chồng bên phải. Không gold đặc, gold chỉ ở vạch.
+ * Dưới cùng là ô Điểm chết rộng bằng cả hàng: tự xếp lại thế bi hay hỏng để tập riêng. */
 export function ProgramBento({ fundamentals, cueBall, advanced }: ProgramBentoProps) {
   const s = useStyles();
   const { fontScale } = useWindowDimensions();
   const stacked = fontScale >= ONE_COLUMN_FONT_SCALE;
 
   return (
-    <View style={[s.row, stacked && s.column]}>
-      <CueBallTile {...cueBall} stacked={stacked} />
-      <View style={[s.right, stacked && s.rightStacked]}>
-        <FundamentalsPill {...fundamentals} />
-        <AdvancedPill {...advanced} />
+    <View style={s.stack}>
+      <View style={[s.row, stacked && s.column]}>
+        <CueBallTile {...cueBall} stacked={stacked} />
+        <View style={[s.right, stacked && s.rightStacked]}>
+          <FundamentalsPill {...fundamentals} />
+          <AdvancedPill {...advanced} />
+        </View>
       </View>
+      <DeadSpotTile />
     </View>
   );
 }
@@ -165,7 +169,31 @@ function AdvancedPill({ total, done }: ProgramStat) {
   );
 }
 
+function DeadSpotTile() {
+  const s = useStyles();
+  return (
+    <PressableScale
+      onPress={() => router.push('/editor')}
+      accessibilityRole="button"
+      accessibilityLabel="Điểm chết. Tự xếp thế bi hay hỏng rồi tập riêng."
+      style={[s.tile, s.pill, s.wide, homeSurfaces.graphiteTile]}>
+      <View style={s.ptext}>
+        <AppText variant="tileTitle" style={s.title} numberOfLines={1}>
+          Điểm chết
+        </AppText>
+        <AppText variant="caption" style={s.meta} numberOfLines={2}>
+          Xếp lại thế bi hay hỏng rồi tập
+        </AppText>
+      </View>
+      <View style={s.knob}>
+        <AppIcon name="arrow.right" size="small" color="textInverse" weight="semibold" />
+      </View>
+    </PressableScale>
+  );
+}
+
 const useStyles = makeStyles((t) => ({
+  stack: { gap: 12 },
   row: { flexDirection: 'row', gap: 12 },
   column: { flexDirection: 'column' },
   right: { flex: 1.35, gap: 12 },
@@ -214,6 +242,7 @@ const useStyles = makeStyles((t) => ({
     paddingLeft: 18,
     paddingRight: 12,
   },
+  wide: { flex: 0, paddingRight: 18 },
   ptext: { flex: 1, gap: 2 },
   ring: { width: 54, height: 54, alignItems: 'center', justifyContent: 'center' },
   ringTrack: {

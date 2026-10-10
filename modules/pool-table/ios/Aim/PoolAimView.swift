@@ -97,7 +97,7 @@ struct PoolAimView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
 
   private func label(_ text: String, gold: Bool) -> some View {
     Text(text)
-      .font(.custom("Outfit-SemiBold", size: 10))
+      .font(.custom("BeVietnamPro-SemiBold", size: 10))
       .tracking(1.4)
       .foregroundStyle(gold ? PoolAimPalette.gold : Color.white.opacity(0.6))
       .fixedSize()

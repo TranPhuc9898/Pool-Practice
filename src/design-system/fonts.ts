@@ -1,20 +1,25 @@
 import {
-  Outfit_400Regular,
-  Outfit_500Medium,
-  Outfit_600SemiBold,
-  Outfit_700Bold,
-  Outfit_800ExtraBold,
+  BeVietnamPro_400Regular,
+  BeVietnamPro_500Medium,
+  BeVietnamPro_600SemiBold,
+  BeVietnamPro_700Bold,
+  BeVietnamPro_800ExtraBold,
   useFonts,
-} from '@expo-google-fonts/outfit';
+} from '@expo-google-fonts/be-vietnam-pro';
+import { Doto_900Black } from '@expo-google-fonts/doto';
 
-/** Đổi font: đổi import ở đây + `fontFamily` trong tokens/typography.ts. */
+/**
+ * Đổi font: đổi import ở đây + `fontFamily` trong tokens/typography.ts.
+ * Native (Swift) gọi cùng các file này qua PostScript name: `BeVietnamPro-Medium`, `Doto-Black`.
+ */
 export function useAppFonts() {
   const [loaded, error] = useFonts({
-    Outfit_400Regular,
-    Outfit_500Medium,
-    Outfit_600SemiBold,
-    Outfit_700Bold,
-    Outfit_800ExtraBold,
+    BeVietnamPro_400Regular,
+    BeVietnamPro_500Medium,
+    BeVietnamPro_600SemiBold,
+    BeVietnamPro_700Bold,
+    BeVietnamPro_800ExtraBold,
+    Doto_900Black,
   });
   return loaded || error != null;
 }

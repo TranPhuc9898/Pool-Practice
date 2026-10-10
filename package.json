@@ -3,6 +3,8 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@expo-google-fonts/be-vietnam-pro": "^0.4.1",
+    "@expo-google-fonts/doto": "^0.4.1",
     "@expo-google-fonts/outfit": "^0.4.3",
     "@expo/ui": "~57.0.21",
     "expo": "~57.0.26",

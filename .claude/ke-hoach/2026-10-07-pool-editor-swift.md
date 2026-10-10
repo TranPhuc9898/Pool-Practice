@@ -27,3 +27,4 @@
 - Ngoài plan, anh yêu cầu: vẽ lại PoolShotPanel (chữ vạch ra ngoài bi, dòng trạng thái/lỗi riêng) + nút Đánh chạy thử cú (`PoolShotReplay.swift`), PANEL 132→184.
 - Ngoài plan, anh yêu cầu: đầu cơ kéo tới 0.85R (quá 0.6R là trượt cơ, không mô phỏng), thang lực theo Dr. Dave, nút "Đường đi" tắt đường bi cái và bi mục tiêu.
 - Ngoài plan, anh yêu cầu: trượt cơ chỉ khi chấm vượt viền bi (mép pad = 0.6R), thiết kế lại cả màn Soạn bài theo chuẩn Apple; bản HTML chờ anh duyệt trước khi port Swift.
+- 2026-10-08: anh duyệt bản HTML v4.1. Bước 5 và 7 ở đây **không tick**, thay bằng plan `2026-10-08-soan-bai-v4-swift.md` (pad 2D, vật lý e = 0.95 + throw + squirt, hai hình, sheet). Quyết định: `docs/quyet-dinh/2026-10-08-port-soan-bai-v4.md`. Bước 3 và 6 vẫn chạy ở đây. Đã commit 54b4ee1 trên nhánh `feat/pool-editor`.

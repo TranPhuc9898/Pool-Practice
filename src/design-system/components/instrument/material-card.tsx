@@ -100,7 +100,7 @@ export type MetricCardProps = Omit<MaterialCardProps, 'children'> & {
   caption?: string;
 };
 
-/** Số đo phụ: nhãn in hoa, số Outfit tabular. Không dot-matrix — dot dành cho bảng điểm. */
+/** Số đo phụ: nhãn in hoa, số Be Vietnam Pro tabular. Không dot-matrix — dot dành cho bảng điểm. */
 export function MetricCard({ label, value, suffix, pad, caption, state = 'normal', accessibilityLabel, ...card }: MetricCardProps) {
   const s = useStyles();
   return (
@@ -123,7 +123,7 @@ export function MetricCard({ label, value, suffix, pad, caption, state = 'normal
   );
 }
 
-/** Số Outfit tabular + hậu tố nhỏ. Dùng cho mọi con số không phải bảng điểm. */
+/** Số Be Vietnam Pro tabular + hậu tố nhỏ. Dùng cho mọi con số không phải bảng điểm. */
 export function StatValue({
   value,
   suffix,
@@ -157,7 +157,7 @@ export type ScoreboardProps = Omit<MaterialCardProps, 'children' | 'material' | 
   pad?: number;
   /** Góc phải trên, ví dụ "+6 this week". */
   caption?: string;
-  /** Số phụ ở chân bảng, chữ Outfit. */
+  /** Số phụ ở chân bảng, chữ Be Vietnam Pro. */
   stats?: readonly { label: string; value: number; suffix?: string; pad?: number }[];
   children?: ReactNode;
 };

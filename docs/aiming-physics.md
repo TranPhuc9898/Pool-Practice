@@ -61,7 +61,7 @@ Va chạm gần đàn hồi: bi cái mất vận tốc dọc đường nối tâ
 ```
 W      = f·v·ê                  roll vector: f = 1 lăn đều, 0 stun, < 0 draw
 v_cuối = 5/7·v_sau + 2/7·W      sau khi hết trượt
-f lúc rời đầu cơ = 2.5·h/R      cơ ngang, h = độ cao điểm đặt so với tâm → h = 0.4R lăn đều ngay
+f lúc rời đầu cơ = 2.5·h/R      cơ ngang, h = độ cao điểm đặt so với tâm → h = 0.4R lăn đều từ lúc rời cơ
 
 30° rule (bi lăn): tan θc = sinφ·cosφ / (sin²φ + 2/5)
 θc lớn nhất 33.7° ở φ = 28.1°, nằm trong 27…34° từ ¾ tới ¼ ball
@@ -131,7 +131,7 @@ Kết luận dùng được:
 | μ trượt vải | 0.2 | giá trị thường dùng trong mô phỏng |
 | μ lăn vải | 0.01 | như trên |
 | e bi–bi | 0.95 | như trên |
-| e bi–băng | 0.8 | ước lượng thô |
+| e bi–băng | 0.8 Aim Lab, 0.82 Soạn bài | Aim Lab ước lượng thô; Soạn bài (`ShotPhysics.cushion`) lấy theo `cushion()` của `docs/research/bi-cai-xoay.html` |
 | μ bi–bi | công thức mục 4 | đã kiểm qua mã pooltool |
 | Squirt tối đa | 2.5° / 1.2° | **ước lượng**, trang nguồn trả 403 lúc kiểm |
 | Sai số lỗ | ±1.2" góc, ±1.4" giữa | **ước lượng** |
@@ -152,7 +152,7 @@ Chưa kiểm:
 ## 9. Chưa mô phỏng
 
 - Swerve, cơ dốc, nhảy bi.
-- Phê tác động lên góc bật băng (running, reverse english). Sau băng bi coi như lăn đều ngay, phê ngang còn một nửa.
+- Aim Lab: phê chưa tác động lên góc bật băng (running, reverse english); sau băng bi coi như hết trượt, phê ngang còn một nửa. Soạn bài (`ShotPhysics.roll`) đã mô phỏng phần này theo `cushion()` của `docs/research/bi-cai-xoay.html`: spin giữ qua băng, xung ma sát dọc băng đủ ba trục, bi trượt lại sau băng.
 - Phê giảm dần trên vải.
 - Chế độ Phân tích: bi cái chạm lại bi mục tiêu sau cú đầu. Chế độ Chơi có xử lý (mục 9b).
 - Miscue: Aim Lab chặn điểm đặt ở 0.55R.
@@ -171,7 +171,7 @@ Bấm trúng bi trắng hoặc bi mục tiêu thì kéo bi đó đặt đâu cũ
 | Bắt lỗ | vào miệng lỗ (4.4" góc, 3.4" giữa), đường đi cách tâm lỗ dưới sai số mục 7 và đang hướng vào lỗ → rơi; không thì bật băng | **ước lượng**, cùng luật với `shoot()` |
 | Lăn sát băng vào lỗ góc | chạm băng mà đường đi đang trỏ vào lỗ góc trong sai số → không dội, lăn vào | ước lượng |
 | Lỗ giữa, bi xiên | góc tới so với băng dưới 19.3° (sin = R/3.4) → đập má, không vào; áp cho cả `shoot()` | ước lượng |
-| Bật băng | `v · 0.8` | ước lượng thô |
+| Bật băng | `v · 0.8` | ước lượng thô; Soạn bài dùng `cushion()` của bi-cai-xoay, xem mục 7 |
 | Bi dừng | `|v| < 0.3"/s` và gần như hết trượt | tự chọn |
 
 Ba mức gợi ý: đủ (đường đi, throw, squirt, so với cú chuẩn), chỉ ghost, tắt. Sau mỗi cú báo: vào, scratch, vào nhầm lỗ, đúng hướng thiếu lực, cắt nhầm phía, hoặc mỏng/dày bao nhiêu độ, kèm độ lệch đường cơ so với cú chuẩn tính bằng độ và mm tại bi mục tiêu.

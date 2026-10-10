@@ -72,7 +72,7 @@ export default function HomeScreen() {
         <AppText variant="eyebrow" color="textTertiary">
           {date}
         </AppText>
-        <AppText variant="display" accessibilityRole="header">
+        <AppText variant="dotDisplay" color="accentGold" accessibilityRole="header">
           Today
         </AppText>
       </View>

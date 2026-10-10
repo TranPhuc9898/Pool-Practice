@@ -1,0 +1,1146 @@
+<title>Bi Cái Xoay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Doto:wght@800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: bàn dọc nhìn từ đầu bàn ở cột trái, kính lúp soi bi và bảng cú ở cột phải, đồ thị trải ngang bên dưới. Một tông tối theo app. */
+:root{
+  --bg:#0A0C0E; --panel:#12161A; --raise:#1A2026; --line:#27303A; --fg:#EDE9E0; --muted:#97A0A8;
+  --gold:#D8B451; --gold-ink:#191304; --cloth:#223A4C; --cloth-lit:#2F4E64; --rail:#0E0E0E;
+  --slide:#E8896A; --roll:#86C9B4; --spin:#A898EA; --still:#6B747B;
+  --f-body:"Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --f-dot:"Doto", "IBM Plex Mono", ui-monospace, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:28px 72px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--f-dot);font-weight:900;font-size:clamp(40px,7vw,64px);line-height:1;letter-spacing:.01em;margin:8px 0 0;color:var(--gold)}
+header p{color:var(--muted);max-width:66ch;margin:12px 0 0}
+h2{font-size:20px;font-weight:600;margin:0 0 12px;text-wrap:balance}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+.app{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px 24px;margin-top:28px;align-items:start}
+.table-col{display:flex;flex-direction:column;gap:8px}
+#table{display:block;border-radius:14px}
+.cap{font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+.sw{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.sw.slide{background:var(--slide)} .sw.roll{background:var(--roll)} .sw.spin{background:var(--spin)} .sw.obj{background:var(--muted)}
+.main-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.rack{display:none;flex-direction:column;gap:10px;padding:12px;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.rack.on{display:flex}
+.rack-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.rack .btn.primary{margin-left:auto}
+.force{position:relative}
+.force-ticks{position:relative;height:16px;font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.force-ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.rack-out{font-size:13px;margin:0;color:var(--fg)}
+#table.edit{touch-action:none;cursor:grab}
+
+.lens{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:18px;align-items:start}
+.lens-stage{position:relative;aspect-ratio:1/1;width:100%;max-width:100%;border-radius:16px;overflow:hidden;
+  background:radial-gradient(60% 60% at 52% 56%, rgba(0,0,0,.45) 0 28%, transparent 52%), radial-gradient(120% 90% at 35% 25%, var(--cloth-lit), var(--cloth) 70%)}
+.lens-stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.lens-tag{position:absolute;left:12px;bottom:10px;font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;color:rgba(237,233,224,.75)}
+.nogl{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--fg)}
+.reads{display:flex;flex-direction:column;gap:12px;min-width:0}
+.pill{align-self:flex-start;font-family:var(--f-dot);font-weight:900;font-size:30px;line-height:1;padding:8px 14px 9px;border-radius:999px;background:var(--raise);color:var(--slide);border:1px solid currentColor}
+.seeing{margin:0;min-height:4.7em;color:var(--fg)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:13.5px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+.rhobar{grid-column:1 / -1;position:relative;height:10px;border-radius:5px;margin:2px 0 14px;
+  background:linear-gradient(90deg, rgba(232,137,106,.35), rgba(232,137,106,.12) 40%, rgba(134,201,180,.45) 40.5% 41.5%, rgba(232,137,106,.12) 42%, rgba(232,137,106,.3))}
+.rhobar .tick{position:absolute;top:-3px;width:1px;height:16px;background:var(--muted)}
+.rhobar .tick b{position:absolute;top:17px;transform:translateX(-50%);font-weight:400;font-family:var(--f-mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
+#rhoMark{position:absolute;top:-4px;width:6px;height:18px;margin-left:-3px;border-radius:3px;background:var(--fg);transition:left .05s linear}
+
+.transport{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.btn{font:inherit;font-size:14px;font-weight:600;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--raise);color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{font:inherit;font-family:var(--f-mono);font-size:13px;padding:7px 10px;background:transparent;color:var(--muted);border:0;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--raise);color:var(--gold)}
+#scrub{flex:1 1 160px;min-width:120px;accent-color:var(--gold)}
+#tOut{min-width:8.5ch;color:var(--muted);font-size:13px}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.shot{display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.presets{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--fg);cursor:pointer}
+.chip:hover{border-color:var(--muted)}
+.chip.on{border-color:var(--gold);color:var(--gold);background:rgba(216,180,81,.08)}
+.shot-grid{display:grid;grid-template-columns:180px minmax(0,1fr);gap:18px;align-items:start}
+.tip{display:flex;flex-direction:column;gap:6px;align-items:center}
+#tip{width:180px;height:180px;cursor:crosshair;touch-action:none;border-radius:50%}
+#tipOut{font-size:12.5px;color:var(--muted);text-align:center}
+.sliders{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 18px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted)}
+.field label output{font-family:var(--f-mono);color:var(--fg);font-variant-numeric:tabular-nums}
+.field input[type=range]{width:100%;accent-color:var(--gold)}
+select{font:inherit;font-size:13.5px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--raise);color:var(--fg)}
+.toggles{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13.5px;color:var(--muted)}
+.toggles label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.toggles input{accent-color:var(--gold)}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+
+.graph-row{grid-column:1 / -1;padding:14px 16px 10px;border-radius:14px;background:var(--panel);border:1px solid var(--line);min-width:0}
+.graph-head{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;margin-bottom:6px}
+.graph-head h2{font-size:15px;margin:0}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted)}
+.ln{display:inline-block;width:16px;height:2px;vertical-align:middle;margin-right:5px}
+#graph{display:block;width:100%;height:170px;cursor:pointer;touch-action:none}
+
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 28px;margin-top:40px}
+.notes section{min-width:0}
+.notes p,.notes li{color:var(--fg);max-width:68ch}
+.notes ul{padding-left:18px;margin:0;display:flex;flex-direction:column;gap:6px}
+.notes .muted{color:var(--muted)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+td.k{font-family:var(--f-mono);white-space:nowrap}
+code{font-family:var(--f-mono);font-size:.92em;background:var(--raise);padding:1px 5px;border-radius:5px}
+a{color:var(--gold)}
+.src{font-size:13px;columns:2;column-gap:28px}
+.src li{break-inside:avoid}
+.full{grid-column:1 / -1}
+
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .table-col{order:2}
+  .lens{grid-template-columns:minmax(0,1fr)}
+  .lens-stage{max-width:420px}
+  .notes{grid-template-columns:minmax(0,1fr)}
+  .src{columns:1}
+}
+@media (max-width:520px){
+  .shot-grid{grid-template-columns:minmax(0,1fr)}
+  .sliders{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){#rhoMark{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Pool Training · nghiên cứu animation bi</div>
+    <h1>Bi cái xoay</h1>
+    <p>Chọn điểm chạm cơ, lực và góc nâng cơ. Trang mô phỏng cú đánh rồi phát lại chậm để thấy bi trượt, lăn, kéo và phê. Hướng bi được tích phân bằng quaternion từ ω, rồi shader vẽ quả cầu từng pixel. App sẽ vẽ theo đúng cách này.</p>
+  </header>
+
+  <div class="app">
+    <div class="table-col">
+      <canvas id="table" aria-label="Bàn 9 ft nhìn từ trên"></canvas>
+      <div class="cap"><span>Bàn 9 ft, đầu bàn ở dưới.</span><span><i class="sw slide"></i>trượt</span><span><i class="sw roll"></i>lăn</span><span><i class="sw obj"></i>bi mục tiêu</span></div>
+      <div class="rack" id="rack">
+        <p class="hint">Kéo bi để đặt. Bấm một bi màu để chọn bi mục tiêu, bấm một lỗ để chọn lỗ. Hướng đánh tự tính theo bi ma.</p>
+        <div class="rack-row">
+          <button class="chip" id="addBall" type="button">+ Thêm bi</button>
+          <button class="chip" id="delBall" type="button">Bỏ bi mục tiêu</button>
+          <button class="btn primary" id="shoot" type="button">▶ Đánh</button>
+        </div>
+        <div class="field force">
+          <label for="force">Lực <output id="forceOut"></output></label>
+          <input type="range" id="force" min="0" max="1" step="0.005" aria-label="Lực, tốc bi cái ngay sau cú">
+          <div class="force-ticks" id="forceTicks" aria-hidden="true"></div>
+        </div>
+        <p class="rack-out" id="rackOut"></p>
+      </div>
+    </div>
+
+    <div class="main-col">
+      <div class="lens">
+        <div class="lens-stage" id="lensStage">
+          <canvas id="gl"></canvas>
+          <canvas id="axis"></canvas>
+          <div class="lens-tag" id="lensTag">BI CÁI · NHÌN TỪ TRÊN</div>
+        </div>
+        <div class="reads">
+          <div class="pill" id="statePill">Trượt</div>
+          <p class="seeing" id="seeing"></p>
+          <dl class="kv">
+            <dt>Tốc bi</dt><dd id="rV">0,00 m/s</dd>
+            <dt>Tỉ số lăn ρ</dt><dd id="rRho">—</dd>
+            <div class="rhobar" aria-hidden="true">
+              <span class="tick" style="left:40%"><b>0 trượt</b></span>
+              <span class="tick" style="left:80%"><b>1 lăn</b></span>
+              <span id="rhoMark" style="left:40%"></span>
+            </div>
+            <dt>Phê</dt><dd id="rZ">0,0 vòng/s</dd>
+            <dt>Spin tổng</dt><dd id="rW">0,0 vòng/s</dd>
+            <dt>Trục quay</dt><dd id="rAx">—</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="transport">
+        <button class="btn primary" id="play" type="button">Tạm dừng</button>
+        <button class="btn" id="again" type="button">Đánh lại</button>
+        <div class="seg" id="speedSeg" role="group" aria-label="Tốc độ phát">
+          <button type="button" data-s="1">1×</button><button type="button" data-s="0.5">0,5×</button><button type="button" data-s="0.25" class="on">0,25×</button><button type="button" data-s="0.1">0,1×</button>
+        </div>
+        <input type="range" id="scrub" min="0" max="1000" step="1" value="0" aria-label="Thời điểm trong cú">
+        <output id="tOut" class="mono">0,00 s</output>
+      </div>
+
+      <div class="shot">
+        <div class="presets" id="presets"></div>
+        <div class="shot-grid">
+          <div class="tip">
+            <canvas id="tip" tabindex="0" aria-label="Điểm chạm cơ trên mặt bi. Kéo, hoặc dùng phím mũi tên."></canvas>
+            <div id="tipOut" class="mono"></div>
+          </div>
+          <div class="sliders">
+            <div class="field"><label for="v0">Tốc cơ <output id="v0Out"></output></label><input type="range" id="v0" min="0.5" max="7" step="0.1"></div>
+            <div class="field"><label for="theta">Nâng cơ <output id="thetaOut"></output></label><input type="range" id="theta" min="0" max="75" step="1"></div>
+            <div class="field"><label for="aim">Hướng đánh <output id="aimOut"></output></label><input type="range" id="aim" min="-60" max="60" step="1"></div>
+            <div class="field"><label for="dist">Cách bi mục tiêu <output id="distOut"></output></label><input type="range" id="dist" min="0.2" max="1.5" step="0.05"></div>
+            <div class="field"><label for="obj">Bi mục tiêu</label><select id="obj"><option value="none">Không có</option><option value="straight">Thẳng, đầy bi</option><option value="half">Cắt ½ bi</option><option value="layout">Tự xếp bàn</option></select></div>
+            <div class="field"><label for="beta">Góc nhìn kính lúp <output id="betaOut"></output></label><input type="range" id="beta" min="15" max="90" step="1"></div>
+            <div class="field"><label for="lensBall">Soi bi</label><select id="lensBall"><option value="0">Bi cái</option><option value="1">Bi mục tiêu</option></select></div>
+            <div class="field"><label for="pattern">Mẫu bi cái</label><select id="pattern"><option value="0">Bi chấm (Measles)</option><option value="1">Bi sọc số 9</option></select></div>
+            <div class="toggles">
+              <label><input type="checkbox" id="blur" checked> Nhoè chuyển động</label>
+              <label><input type="checkbox" id="showAxis" checked> Hiện trục quay ω</label>
+              <label><input type="checkbox" id="big"> Phóng bi trên bàn ×2,5</label>
+            </div>
+          </div>
+        </div>
+        <p class="hint" id="strikeOut"></p>
+      </div>
+    </div>
+
+    <div class="graph-row">
+      <div class="graph-head">
+        <h2>Tốc tâm, tốc trượt và phê theo thời gian</h2>
+        <div class="legend">
+          <span><i class="ln" style="background:var(--fg)"></i>tốc tâm |v|</span>
+          <span><i class="ln" style="background:var(--slide)"></i>tốc trượt ở điểm chạm nỉ |u|</span>
+          <span><i class="ln" style="background:var(--spin)"></i>tốc mặt do phê R|ωz|</span>
+          <span class="mono">m/s · bấm để tua</span>
+        </div>
+      </div>
+      <canvas id="graph" aria-label="Đồ thị tốc độ theo thời gian, bấm để tua"></canvas>
+    </div>
+  </div>
+
+  <div class="notes">
+    <section>
+      <h2>Đọc con bi</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Trạng thái</th><th>ρ</th><th>Nhìn từ trên thấy gì</th></tr></thead>
+        <tbody>
+          <tr><td>Trượt thuần (stun)</td><td class="k">0</td><td>Bi tịnh tiến, chấm đứng im.</td></tr>
+          <tr><td>Kéo (backspin)</td><td class="k">&lt; 0</td><td>Chấm chạy ngược chiều bi đi. Ma sát ăn dần backspin, tới ρ = 0 rồi bi chuyển sang lăn tới.</td></tr>
+          <tr><td>Topspin chưa đủ</td><td class="k">0…1</td><td>Chấm chạy cùng chiều nhưng chậm hơn bi.</td></tr>
+          <tr><td>Lăn đều</td><td class="k">1</td><td>Chấm đi từ mép sau qua đỉnh ra mép trước. Điểm chạm nỉ đứng yên, đỉnh bi chạy gấp đôi tâm.</td></tr>
+          <tr><td>Phê</td><td class="k">trục đứng</td><td>Chấm quay tròn quanh tâm đĩa như con quay. Nhìn từ trên là góc rõ nhất để thấy phê.</td></tr>
+          <tr><td>Lăn kèm phê</td><td class="k">trục nghiêng</td><td>Vòng chấm nghiêng. Phê càng nhiều so với tốc lăn thì trục càng dựng đứng.</td></tr>
+          <tr><td>Xoay tại chỗ</td><td class="k">v = 0</td><td>Bi đứng, mặt bi vẫn quay tới khi phê tắt.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="muted">ρ = R·(ω × ẑ)·v̂ / |v|: phần quay của bi chia cho phần quay cần để lăn đều. Bi Measles của Aramith ra đời đúng vì bi trắng trơn không cho thấy mấy trạng thái này. Trang này tô một chấm màu xanh để phá đối xứng, nhờ vậy đọc được chiều quay.</p>
+    </section>
+
+    <section>
+      <h2>Mô hình đang chạy</h2>
+      <ul>
+        <li><b>Cú cơ.</b> Xung dọc trục cơ đặt tại điểm chạm trên mặt cầu. v = J/m, ω = (r × J)/I, với J = (1+e)V₀ / (1/M + 1/m + |r×d|²/I). Khi cơ nằm ngang, công thức rút về |ω|R/v = 5/2·√(a²+b²). Lấy e = 1 như pooltool và <code>sim.js</code>, M = 0,54 kg, m = 0,17 kg.</li>
+        <li><b>Nâng cơ.</b> Thành phần thẳng đứng của vận tốc bị mặt đá triệt tiêu, còn ω giữ nguyên trục nghiêng. Phê kèm cơ nâng làm hướng trượt lệch khỏi hướng đi, nên bi đi cong (swerve, massé).</li>
+        <li><b>Squirt.</b> Bi lệch ngược phía phê: tan α = 2,5a√(1−a²) / (1 + 25 + 2,5a²), Shepard 2001, tỉ số khối lượng 25.</li>
+        <li><b>Trượt.</b> u = v + ω × r<sub>c</sub>. Ma sát μs = 0,2 ngược hướng u. Hướng u không đổi nên đường trượt là parabol. Hết trượt sau τ = 2|u₀| / (7μs g).</li>
+        <li><b>Lăn.</b> Giảm tốc μr g với μr = 0,01, ω ép theo v. Phê tắt tuyến tính 10,9 rad/s², độc lập với lăn.</li>
+        <li><b>Hướng bi.</b> q ← dq(ω·dt) ⊗ q, nhân trái vì ω ở khung bàn, chuẩn hoá mỗi bước. dt = 0,5 ms, lưu mẫu mỗi 2 ms. Nhoè chuyển động lấy tới 16 mẫu hướng bi trong một khung hình.</li>
+        <li><b>Va chạm.</b> Bi–bi chỉ đổi thành phần pháp tuyến (e = 0,95), không throw. Băng là bản rút gọn: e = 0,82, ma sát μw = 0,14 tại điểm chạm cao hơn tâm 0,27R. Không phải mô hình Mathavan của <code>sim.js</code>.</li>
+      </ul>
+    </section>
+
+    <section class="full">
+      <h2>Số đo thật và kiểm chéo</h2>
+      <p class="muted">Không có nguồn nào đo trực tiếp rps của cú kéo. Mọi số rps công khai đều là số tính. Số đo thật duy nhất là tỉ số spin/tốc độ (SRF = ωR/v) trên video tốc độ cao. Cột "Trang này" do em chạy chính engine của trang bằng node.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Đại lượng</th><th>Nguồn</th><th>Trang này</th><th>Ghi chú</th></tr></thead>
+        <tbody>
+          <tr><td>SRF cao nhất đo được</td><td class="k">1,37 (≈0,55R)</td><td class="k">1,25 ở 0,5R</td><td>Dr. Dave HSV A.106. Ông vẫn khuyên giới hạn thực tế 0,5R. Vòng miscue trên trang đặt ở 0,5R.</td></tr>
+          <tr><td>rps khi kéo 0,5R, bi đi 3,09 m/s</td><td class="k">21,6 (công thức Jal)</td><td class="k">21,5</td><td>W[rps] = 6,23·(b/R)·V[mph], AZB. TP B.10: cơ 15 mph cho bi 11,2 mph, 34,8 rps.</td></tr>
+          <tr><td>Quãng trượt tới khi lăn, kéo 0,5R, v₀ 2,06 m/s</td><td class="k">0,945 m (TP A.18)</td><td class="k">0,946 m</td><td>d = v²(24 + 50s′ − 25s′²)/(98μg), s′ là offset dưới tâm theo R.</td></tr>
+          <tr><td>Chỗ backspin về 0</td><td class="k">v = 50% v₀, 0,813 m</td><td class="k">49,9%, 0,813 m</td><td>Số suy từ cùng mô hình, chưa có video đo.</td></tr>
+          <tr><td>Hướng cuối của massé, a 0,4, nâng 60°</td><td class="k">34,7° (Coriolis)</td><td class="k">35,4°</td><td>tan θc = a·sinθ/(cosθ − b). Ở 30°/a 0,3: 9,8° và 9,9°.</td></tr>
+          <tr><td>Tốc bi khi chạm giữa</td><td class="k">127% tốc cơ</td><td class="k">152%</td><td>TP B.8 dùng hiệu suất đầu cơ η 0,87. Trang để e = 1 cho khớp <code>sim.js</code>, nên tốc bi cao hơn thực khoảng 16%. SRF không đổi.</td></tr>
+          <tr><td>Mất spin khi nâng cơ</td><td class="k">−13% sau 2 ft ở 12°</td><td class="k">0%</td><td>Bi nảy khi cơ nâng nên mất spin. Trang cắt vận tốc dọc về 0 nên không có hiệu ứng này.</td></tr>
+          <tr><td>Phê tắt dần</td><td class="k">10,9 rad/s²</td><td class="k">10,9</td><td>Mặc định pooltool, μs 0,2, μr 0,01.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="muted">Bản đầy đủ, 27 nguồn: <code>docs/research/2026-10-09-bi-cai-xoay-sau-cu.md</code>.</p>
+    </section>
+
+    <section>
+      <h2>Cố ý bỏ</h2>
+      <ul>
+        <li>Bi nảy khi cơ nâng (jump, mặt đá bật lên). Ở đây vận tốc dọc bị cắt về 0.</li>
+        <li>Throw, truyền phê sang bi mục tiêu, ma sát bi–bi.</li>
+        <li>Mô hình băng Mathavan, lắc lỗ, mép lỗ. Lỗ ở đây chỉ là vùng bắt bi.</li>
+        <li>Bóng đổ theo hướng đèn, phản chiếu môi trường, số in hai mặt.</li>
+        <li>Hiệu năng trên iPhone. Trang chạy WebGL2, app sẽ chạy Metal shader trong Canvas SwiftUI.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Nguồn</h2>
+      <ul class="src" id="srcList">
+        <li><a href="https://drdavepoolinfo.com/?p=2460" target="_blank" rel="noopener">Dr. Dave: stun, roll, phê và vệt mực trên bi</a></li>
+        <li><a href="https://drdavepoolinfo.com/?p=2220" target="_blank" rel="noopener">Dr. Dave: lăn tự nhiên ở 2/5 R</a></li>
+        <li><a href="https://drdavepoolinfo.com/technical_proofs/new/TP_A-18.pdf" target="_blank" rel="noopener">Dr. Dave TP A.18: quãng trượt khi kéo</a></li>
+        <li><a href="https://drdavepoolinfo.com/technical_proofs/new/TP_B-10.pdf" target="_blank" rel="noopener">Dr. Dave TP B.10: spin khi kéo, cơ nâng</a></li>
+        <li><a href="https://drdavepoolinfo.com/high-speed-video/" target="_blank" rel="noopener">Dr. Dave: danh mục video tốc độ cao</a></li>
+        <li><a href="https://pooltableportfolio.com/blogs/magazine/the-red-dot-cue-ball" target="_blank" rel="noopener">Bi chấm đỏ Measles</a></li>
+        <li><a href="https://raw.githubusercontent.com/ekiefl/pooltool/main/pooltool/ani/utils.py" target="_blank" rel="noopener">pooltool: tích phân quaternion từ ω</a></li>
+        <li><a href="https://github.com/ekiefl/pooltool" target="_blank" rel="noopener">pooltool</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Wagon-wheel_effect" target="_blank" rel="noopener">Hiệu ứng bánh xe ngựa (aliasing)</a></li>
+        <li><a href="https://people.csail.mit.edu/fredo/comp-photo-book/12-video-01-motion-blur-and-temporal-sampling.html" target="_blank" rel="noopener">MIT: motion blur là bộ lọc thời gian</a></li>
+        <li><a href="https://developer.apple.com/documentation/swiftui/graphicscontext/shading/shader(_:bounds:).md" target="_blank" rel="noopener">Apple: shader fill trong Canvas</a></li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<script id="physics">
+'use strict';
+const P = {R:0.028575, m:0.17, M:0.54, g:9.81, muS:0.2, muR:0.01, alpha:10.9, eTip:1, eRail:0.82, muW:0.14, eBB:0.95, squirt:25, aMax:0.5, W:1.27, L:2.54, sinE:0.27};
+const I_BALL = 0.4 * P.m * P.R * P.R;
+const DT = 1 / 2000, HZ = 500, SUB = 4, TMAX = 18, STRIDE = 12;
+const ST = {SLIDE:0, ROLL:1, SPIN:2, STILL:3, POT:4};
+const POCKETS = [[0,0,.062],[P.W,0,.062],[0,P.L,.062],[P.W,P.L,.062],[0,P.L/2,.056],[P.W,P.L/2,.056]];
+const CZ = 0.08, SZ = 0.06;
+
+const cross = (a,b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const dot = (a,b) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const qmul = (a,b) => [
+  a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3],
+  a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],
+  a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1],
+  a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];
+const qconj = q => [q[0],-q[1],-q[2],-q[3]];
+function qnorm(q){ const n = Math.hypot(q[0],q[1],q[2],q[3]); return [q[0]/n,q[1]/n,q[2]/n,q[3]/n]; }
+// Ma trận xoay của q, xếp theo cột cho GLSL mat3.
+function qmat(q){
+  const [w,x,y,z] = q;
+  return [1-2*(y*y+z*z), 2*(x*y+w*z), 2*(x*z-w*y),
+          2*(x*y-w*z), 1-2*(x*x+z*z), 2*(y*z+w*x),
+          2*(x*z+w*y), 2*(y*z-w*x), 1-2*(x*x+y*y)];
+}
+
+// Khung bàn: x sang phải, y lên phía chân bàn, z hướng lên khỏi mặt nỉ. Điểm chạm nỉ r_c = −R·ẑ.
+function makeBall(x,y){ return {p:[x,y], v:[0,0], w:[0,0,0], q:[1,0,0,0], alive:true, buf:[]}; }
+function slip(B){ return [B.v[0]-P.R*B.w[1], B.v[1]+P.R*B.w[0]]; }
+function stateOf(B){
+  if (!B.alive) return ST.POT;
+  const u = slip(B);
+  if (Math.hypot(u[0],u[1]) > 1e-6) return ST.SLIDE;
+  if (Math.hypot(B.v[0],B.v[1]) > 1e-6) return ST.ROLL;
+  if (Math.abs(B.w[2]) > 1e-3) return ST.SPIN;
+  return ST.STILL;
+}
+function record(B){ B.buf.push(B.p[0],B.p[1],B.q[0],B.q[1],B.q[2],B.q[3],B.v[0],B.v[1],B.w[0],B.w[1],B.w[2],stateOf(B)); }
+
+// a: phê theo R (+ là phải), b: dọc theo R (+ là culê), theta: nâng cơ (độ), aim: hướng đánh (độ, + lệch phải), V0: tốc cơ m/s.
+function strike(c){
+  const ph = c.aim*Math.PI/180, th = c.theta*Math.PI/180;
+  const h = [Math.sin(ph), Math.cos(ph), 0];
+  const d = [h[0]*Math.cos(th), h[1]*Math.cos(th), -Math.sin(th)];
+  const right = [h[1], -h[0], 0];
+  const up = cross(right, d);
+  let a = c.a, b = c.b;
+  const rr = Math.hypot(a,b);
+  if (rr > P.aMax){ a *= P.aMax/rr; b *= P.aMax/rr; }
+  const o = [0,1,2].map(i => (right[i]*a + up[i]*b)*P.R);
+  const dep = Math.sqrt(Math.max(0, P.R*P.R - dot(o,o)));
+  const r = [0,1,2].map(i => o[i] - d[i]*dep);
+  const rxd = cross(r, d);
+  const j = (1+P.eTip)*c.V0 / (1/P.M + 1/P.m + dot(rxd,rxd)/I_BALL);
+  const vx = d[0]*j/P.m, vy = d[1]*j/P.m;
+  const w = rxd.map(x => x*j/I_BALL);
+  const sq = Math.atan(2.5*a*Math.sqrt(1-a*a) / (1 + P.squirt + 2.5*a*a));
+  const cs = Math.cos(sq), sn = Math.sin(sq);
+  return {v:[vx*cs - vy*sn, vx*sn + vy*cs], w, squirtDeg: sq*180/Math.PI};
+}
+
+function step(B, dt){
+  if (!B.alive) return;
+  const vx = B.v[0], vy = B.v[1];
+  const ux = vx - P.R*B.w[1], uy = vy + P.R*B.w[0];
+  const us = Math.hypot(ux,uy);
+  if (us > 1e-6){
+    if (us <= 3.5*P.muS*P.g*dt){
+      // Bước cuối của pha trượt: xoá hẳn u, ra lăn đều.
+      B.v = [vx - ux/3.5, vy - uy/3.5];
+      B.w[0] += 2.5/P.R*(-uy)/3.5; B.w[1] += 2.5/P.R*ux/3.5;
+    } else {
+      const k = P.muS*P.g*dt/us;
+      B.v = [vx - k*ux, vy - k*uy];
+      const c = 2.5*P.muS*P.g/P.R*dt/us;
+      B.w[0] += c*(-uy); B.w[1] += c*ux;
+    }
+  } else {
+    const s = Math.hypot(vx,vy);
+    if (s > 0){
+      const dv = P.muR*P.g*dt;
+      B.v = s <= dv ? [0,0] : [vx*(1-dv/s), vy*(1-dv/s)];
+      B.w[0] = -B.v[1]/P.R; B.w[1] = B.v[0]/P.R;
+    }
+  }
+  if (B.w[2] !== 0){
+    const d = P.alpha*dt;
+    B.w[2] = Math.abs(B.w[2]) <= d ? 0 : B.w[2] - Math.sign(B.w[2])*d;
+  }
+  B.p[0] += (vx + B.v[0])*0.5*dt;
+  B.p[1] += (vy + B.v[1])*0.5*dt;
+  const wm = Math.hypot(B.w[0],B.w[1],B.w[2]);
+  if (wm > 1e-9){
+    const half = wm*dt*0.5, s = Math.sin(half)/wm;
+    B.q = qnorm(qmul([Math.cos(half), B.w[0]*s, B.w[1]*s, B.w[2]*s], B.q));
+  }
+}
+
+function collide(balls){
+  for (let i = 0; i < balls.length; i++) for (let k = i+1; k < balls.length; k++){
+    const A = balls[i], B = balls[k];
+    if (!A.alive || !B.alive) continue;
+    const dx = B.p[0]-A.p[0], dy = B.p[1]-A.p[1], dist = Math.hypot(dx,dy);
+    if (dist >= 2*P.R || dist === 0) continue;
+    const nx = dx/dist, ny = dy/dist;
+    const vrel = (A.v[0]-B.v[0])*nx + (A.v[1]-B.v[1])*ny;
+    if (vrel <= 0) continue;
+    const J = (1+P.eBB)/2*vrel;
+    A.v = [A.v[0]-J*nx, A.v[1]-J*ny];
+    B.v = [B.v[0]+J*nx, B.v[1]+J*ny];
+    const push = (2*P.R - dist)/2;
+    A.p = [A.p[0]-nx*push, A.p[1]-ny*push];
+    B.p = [B.p[0]+nx*push, B.p[1]+ny*push];
+  }
+}
+
+// Băng rút gọn: phản lực đi qua tâm (không sinh mô-men), ma sát dọc băng tại điểm chạm cao hơn tâm.
+function cushion(B, n){
+  const cosE = Math.sqrt(1 - P.sinE*P.sinE);
+  const vn = B.v[0]*n[0] + B.v[1]*n[1];
+  const r = [-P.R*cosE*n[0], -P.R*cosE*n[1], P.R*P.sinE];
+  const t = [-n[1], n[0], 0];
+  const Jn = -(1+P.eRail)*P.m*vn;
+  const wr = cross(B.w, r);
+  const ut = (B.v[0]+wr[0])*t[0] + (B.v[1]+wr[1])*t[1];
+  const rxt = cross(r, t);
+  const meff = 1/(1/P.m + dot(rxt,rxt)/I_BALL);
+  const Jt = -Math.sign(ut)*Math.min(P.muW*Jn, Math.abs(ut)*meff);
+  B.v = [B.v[0] + (Jn*n[0] + Jt*t[0])/P.m, B.v[1] + (Jn*n[1] + Jt*t[1])/P.m];
+  const dw = cross(r, [Jt*t[0], Jt*t[1], 0]);
+  B.w = [B.w[0]+dw[0]/I_BALL, B.w[1]+dw[1]/I_BALL, B.w[2]+dw[2]/I_BALL];
+}
+function pot(B){ B.alive = false; B.v = [0,0]; B.w = [0,0,0]; }
+function rails(B){
+  if (!B.alive) return;
+  const [x,y] = B.p;
+  for (const [px,py,pr] of POCKETS) if (Math.hypot(x-px, y-py) < pr){ pot(B); return; }
+  if (x < -P.R || x > P.W+P.R || y < -P.R || y > P.L+P.R){ pot(B); return; }
+  const nearCornerX = x < CZ || x > P.W-CZ, nearCornerY = y < CZ || y > P.L-CZ, nearSide = Math.abs(y-P.L/2) < SZ;
+  if (x < P.R && B.v[0] < 0 && !nearCornerY && !nearSide){ B.p[0] = P.R; cushion(B,[1,0]); }
+  else if (x > P.W-P.R && B.v[0] > 0 && !nearCornerY && !nearSide){ B.p[0] = P.W-P.R; cushion(B,[-1,0]); }
+  if (y < P.R && B.v[1] < 0 && !nearCornerX){ B.p[1] = P.R; cushion(B,[0,1]); }
+  else if (y > P.L-P.R && B.v[1] > 0 && !nearCornerX){ B.p[1] = P.L-P.R; cushion(B,[0,-1]); }
+}
+
+// Bi ma: tâm bi cái lúc chạm để bi mục tiêu đi thẳng về lỗ (va chạm không ma sát nên không có throw).
+function ghostOf(lay){
+  const T = lay.balls[lay.target].p, [px,py] = POCKETS[lay.pocket];
+  const dx = px - T[0], dy = py - T[1], d = Math.hypot(dx, dy) || 1;
+  return [T[0] - 2*P.R*dx/d, T[1] - 2*P.R*dy/d];
+}
+function layoutAim(lay){
+  const G = ghostOf(lay), C = lay.cue;
+  return Math.atan2(G[0] - C[0], G[1] - C[1])*180/Math.PI;
+}
+function simulate(c){
+  if (c.obj === 'layout'){
+    const lay = c.layout;
+    c = Object.assign({}, c, {aim: layoutAim(lay)});
+    // strike() tuyến tính theo V0: dò bằng V0 = 1 rồi nhân để bi cái ra đúng tốc của thanh Lực.
+    const s1 = strike(Object.assign({}, c, {V0:1}));
+    c.V0 = c.force/Math.max(1e-6, Math.hypot(s1.v[0], s1.v[1]));
+  }
+  const cue = makeBall(...(c.obj === 'layout' ? c.layout.cue : [P.W/2, 0.5]));
+  const balls = [cue];
+  if (c.obj === 'layout') c.layout.balls.forEach(b => { const B = makeBall(b.p[0], b.p[1]); B.n = b.n; balls.push(B); });
+  else if (c.obj !== 'none'){
+    const ph = c.aim*Math.PI/180, h = [Math.sin(ph), Math.cos(ph)], rt = [h[1], -h[0]];
+    const off = c.obj === 'half' ? P.R : 0;
+    const lim = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    balls.push(makeBall(lim(cue.p[0] + h[0]*c.D + rt[0]*off, 0.1, P.W-0.1), lim(cue.p[1] + h[1]*c.D + rt[1]*off, 0.1, P.L-0.1)));
+  }
+  const s = strike(c);
+  cue.v = s.v; cue.w = s.w;
+  balls.forEach(record);
+  let quiet = 0;
+  const maxSteps = Math.round(TMAX/DT);
+  for (let n = 1; n <= maxSteps; n++){
+    for (const B of balls) step(B, DT);
+    collide(balls);
+    for (const B of balls) rails(B);
+    if (n % SUB === 0){
+      balls.forEach(record);
+      if (balls.every(B => { const st = stateOf(B); return st === ST.STILL || st === ST.POT; })){ if (++quiet > HZ*0.35) break; }
+    }
+  }
+  const count = cue.buf.length / STRIDE;
+  return {balls, count, tEnd:(count-1)/HZ, strike:s, aim:c.aim, V0:c.V0};
+}
+
+function sampleAt(sim, bi, t){
+  const buf = sim.balls[bi].buf, N = sim.count;
+  let f = Math.min(N-1, Math.max(0, t*HZ));
+  const i = Math.floor(f), k = Math.min(i+1, N-1), a = f - i;
+  const A = i*STRIDE, B = k*STRIDE;
+  const lerp = o => buf[A+o] + (buf[B+o]-buf[A+o])*a;
+  let q2 = [buf[B+2],buf[B+3],buf[B+4],buf[B+5]];
+  const q1 = [buf[A+2],buf[A+3],buf[A+4],buf[A+5]];
+  if (q1[0]*q2[0]+q1[1]*q2[1]+q1[2]*q2[2]+q1[3]*q2[3] < 0) q2 = q2.map(x => -x);
+  const q = qnorm(q1.map((x,j) => x + (q2[j]-x)*a));
+  return {p:[lerp(0),lerp(1)], q, v:[lerp(6),lerp(7)], w:[lerp(8),lerp(9),lerp(10)], st:buf[(a < 0.5 ? A : B)+11], i};
+}
+function rhoOf(s){
+  const sp = Math.hypot(s.v[0], s.v[1]);
+  if (sp < 0.02) return null;
+  return P.R*(s.w[1]*s.v[0] - s.w[0]*s.v[1]) / (sp*sp);
+}
+if (typeof module !== 'undefined') module.exports = {P, ST, strike, simulate, sampleAt, rhoOf, HZ};
+</script>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const fmt = (x, d) => (Math.abs(x) < 0.5*Math.pow(10,-d) ? 0 : x).toFixed(d).replace('.', ',').replace('-', '−');
+const css = getComputedStyle(document.documentElement);
+const C = n => css.getPropertyValue('--'+n).trim();
+const COL = {slide:C('slide'), roll:C('roll'), spin:C('spin'), still:C('still'), fg:C('fg'), muted:C('muted'), gold:C('gold'), cloth:C('cloth'), clothLit:C('cloth-lit'), rail:C('rail'), line:C('line'), panel:C('panel')};
+const STATE_NAME = ['Trượt','Lăn','Xoay tại chỗ','Đứng','Vào lỗ'];
+const STATE_COL = [COL.slide, COL.roll, COL.spin, COL.still, COL.still];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DPR = Math.min(2, window.devicePixelRatio || 1);
+
+const cfg = {a:0, b:-0.5, theta:0, V0:3, aim:0, obj:'straight', D:0.9, force:1.6,
+  layout:{cue:[P.W/2, 0.55], balls:[{n:1, p:[0.95, 1.75]}, {n:2, p:[0.35, 1.35]}, {n:3, p:[0.75, 2.2]}], target:0, pocket:3}};
+const view = {beta:90, lensBall:0, pattern:0, blur:true, axis:true, big:false};
+const PRESETS = [
+  {name:'Tự xếp bàn', c:{a:0,b:0,theta:0,obj:'layout'}},
+  {name:'Giữa bi', c:{a:0,b:0,theta:0,V0:2.5,aim:0,obj:'none',D:0.9}},
+  {name:'Lăn tự nhiên 2/5R', c:{a:0,b:0.4,theta:0,V0:2.5,aim:0,obj:'none',D:0.9}},
+  {name:'Culê', c:{a:0,b:0.5,theta:0,V0:3,aim:0,obj:'straight',D:0.9}},
+  {name:'Kéo', c:{a:0,b:-0.5,theta:0,V0:3,aim:0,obj:'straight',D:0.9}},
+  {name:'Stop', c:{a:0,b:-0.26,theta:0,V0:1.5,aim:0,obj:'straight',D:0.5}},
+  {name:'Phê phải vào băng', c:{a:0.45,b:0,theta:0,V0:2.5,aim:0,obj:'none',D:0.9}},
+  {name:'Kéo + phê trái, cắt ½', c:{a:-0.35,b:-0.35,theta:0,V0:3,aim:0,obj:'half',D:0.8}},
+  {name:'Massé, cơ nâng 60°', c:{a:0.4,b:0,theta:60,V0:3,aim:-10,obj:'none',D:0.9}},
+];
+
+let SIM = null, simT = 0, playing = !reduceMotion, speed = 0.25, lastNow = performance.now(), dirty = true;
+
+/* ---------- WebGL quả cầu ---------- */
+const glc = $('gl');
+const gl = glc.getContext('webgl2', {premultipliedAlpha:true, preserveDrawingBuffer:true, antialias:false, alpha:true});
+let G = null;
+const VS = `#version 300 es
+in vec2 aP; out vec2 vP; void main(){ vP = aP; gl_Position = vec4(aP, 0.0, 1.0); }`;
+const FS = `#version 300 es
+precision highp float;
+in vec2 vP; out vec4 outC;
+uniform mat3 uPrev; uniform mat3 uCam;
+uniform vec3 uAxis; uniform vec3 uBase;
+uniform float uAngle; uniform float uScale;
+uniform int uPat; uniform int uN; uniform int uDigit;
+uniform sampler2D uTex;
+const vec3 WHITE = vec3(0.94, 0.93, 0.89);
+vec3 rotA(vec3 v, vec3 k, float a){ float c = cos(a), s = sin(a); return v*c + cross(k, v)*s + k*dot(k, v)*(1.0 - c); }
+vec3 albedo(vec3 b){
+  if (uPat == 0){
+    vec3 ab = abs(b);
+    float m = max(ab.x, max(ab.y, ab.z));
+    float d = smoothstep(0.953, 0.961, m);
+    vec3 dc = b.x > 0.9 ? vec3(0.10, 0.27, 0.66) : vec3(0.78, 0.09, 0.11);
+    return mix(WHITE, dc, d);
+  }
+  vec3 col = uPat == 1 ? mix(uBase, WHITE, smoothstep(0.455, 0.475, abs(b.z))) : uBase;
+  float disc = smoothstep(0.876, 0.888, abs(b.y));
+  if (disc > 0.0){
+    float u = -b.x*sign(b.y), v = b.z;
+    vec2 tc = vec2(0.5 + u/0.94, 0.5 - v/0.94);
+    float ink = 0.0;
+    if (tc.x > 0.0 && tc.x < 1.0 && tc.y > 0.0 && tc.y < 1.0) ink = texture(uTex, vec2((float(uDigit) + tc.x)/9.0, tc.y)).a;
+    col = mix(col, mix(WHITE, vec3(0.06), ink), disc);
+  }
+  return col;
+}
+void main(){
+  vec2 p = vP/uScale;
+  float r = length(p);
+  float aa = fwidth(r)*1.5;
+  float alpha = 1.0 - smoothstep(1.0 - aa, 1.0, r);
+  if (alpha <= 0.0){ outC = vec4(0.0); return; }
+  float z = sqrt(max(0.0, 1.0 - r*r));
+  vec3 n = normalize(uCam*vec3(p, z));
+  vec3 acc = vec3(0.0);
+  for (int k = 0; k < 16; k++){
+    if (k >= uN) break;
+    float s = float(k + 1)/float(uN);
+    acc += albedo(uPrev*rotA(n, uAxis, -s*uAngle));
+  }
+  vec3 alb = acc/float(uN);
+  vec3 L = normalize(vec3(-0.35, 0.5, 0.8));
+  vec3 V = uCam[2];
+  float dif = max(dot(n, L), 0.0);
+  float spec = pow(max(dot(n, normalize(L + V)), 0.0), 90.0);
+  float rim = mix(0.7, 1.0, z);
+  vec3 col = alb*(0.27 + 0.8*dif)*rim + vec3(spec*0.55);
+  outC = vec4(col*alpha, alpha);
+}`;
+
+const DIGITS = ['9','3','1','2','4','5','6','7','8'];
+function initGL(){
+  if (!gl) return null;
+  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  const pr = gl.createProgram();
+  gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS));
+  gl.linkProgram(pr);
+  if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+  gl.useProgram(pr);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(pr, 'aP');
+  gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  // Atlas số, mỗi ô 128 px theo DIGITS. Gạch chân 9 và 6.
+  const tc = document.createElement('canvas'); tc.width = 128*DIGITS.length; tc.height = 128;
+  const tx = tc.getContext('2d');
+  tx.fillStyle = '#000'; tx.textAlign = 'center'; tx.textBaseline = 'middle';
+  tx.font = '800 92px "Be Vietnam Pro", system-ui, sans-serif';
+  DIGITS.forEach((d, i) => { tx.fillText(d, 128*i + 64, 70); if (d === '9' || d === '6') tx.fillRect(128*i + 40, 112, 48, 7); });
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tc);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const U = {};
+  ['uPrev','uCam','uAxis','uBase','uAngle','uScale','uPat','uN','uDigit','uTex'].forEach(n => U[n] = gl.getUniformLocation(pr, n));
+  gl.uniform1i(U.uTex, 0);
+  gl.enable(gl.SCISSOR_TEST);
+  return {U};
+}
+try { G = initGL(); } catch (e) { console.error(e); G = null; }
+if (!G){
+  const m = document.createElement('div'); m.className = 'nogl';
+  m.textContent = 'Trình duyệt này không chạy được WebGL2 nên không vẽ được quả cầu xoay. Mở bằng Chrome, Safari hoặc Firefox bản mới.';
+  $('lensStage').appendChild(m);
+}
+
+const CAM_TOP = [1,0,0, 0,1,0, 0,0,1];
+function camFor(beta, aimDeg){
+  const ph = aimDeg*Math.PI/180, be = beta*Math.PI/180;
+  const h = [Math.sin(ph), Math.cos(ph), 0];
+  const f = [h[0]*Math.cos(be), h[1]*Math.cos(be), -Math.sin(be)];
+  const right = [h[1], -h[0], 0];
+  const up = cross(right, f);
+  return {m:[...right, ...up, -f[0], -f[1], -f[2]], right, up, back:[-f[0],-f[1],-f[2]]};
+}
+// qPrev → qNow dưới dạng trục và góc ở khung bàn, để shader rải mẫu nhoè.
+function deltaRot(qPrev, qNow){
+  let d = qmul(qNow, qconj(qPrev));
+  if (d[0] < 0) d = d.map(x => -x);
+  const ang = 2*Math.acos(Math.min(1, d[0]));
+  const s = Math.sin(ang/2);
+  return ang < 1e-6 ? {axis:[0,0,1], ang:0} : {axis:[d[1]/s, d[2]/s, d[3]/s], ang};
+}
+function renderBall(sNow, sPrev, look, cam, scale, size){
+  const {U} = G;
+  gl.viewport(0, 0, size, size); gl.scissor(0, 0, size, size);
+  gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+  const dr = sPrev ? deltaRot(sPrev.q, sNow.q) : {axis:[0,0,1], ang:0};
+  const base = sPrev ? sPrev.q : sNow.q;
+  const nSamp = dr.ang > 0 ? Math.min(16, Math.max(1, Math.ceil(dr.ang/0.07))) : 1;
+  gl.uniformMatrix3fv(U.uPrev, false, qmat(qconj(dr.ang > 0 ? base : sNow.q)));
+  gl.uniformMatrix3fv(U.uCam, false, cam);
+  gl.uniform3fv(U.uAxis, dr.axis); gl.uniform1f(U.uAngle, dr.ang);
+  gl.uniform3fv(U.uBase, look.base); gl.uniform1f(U.uScale, scale);
+  gl.uniform1i(U.uPat, look.pat); gl.uniform1i(U.uN, nSamp); gl.uniform1i(U.uDigit, look.digit);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+const LOOK_CUE = [{pat:0, digit:0, base:[1,1,1]}, {pat:1, digit:0, base:[0.95,0.74,0.16]}];
+const LOOK_OBJ = {pat:2, digit:1, base:[0.78,0.16,0.14]};
+const BALL_BASE = {1:[0.96,0.76,0.12], 2:[0.12,0.3,0.75], 3:[0.78,0.16,0.14], 4:[0.42,0.2,0.62], 5:[0.95,0.45,0.1], 6:[0.1,0.52,0.3], 7:[0.5,0.12,0.12], 8:[0.08,0.08,0.09]};
+const lookOf = bi => {
+  if (bi === 0) return LOOK_CUE[view.pattern];
+  const n = SIM && SIM.balls[bi] && SIM.balls[bi].n;
+  return n ? {pat:2, digit:DIGITS.indexOf(String(n)), base:BALL_BASE[n]} : LOOK_OBJ;
+};
+
+/* ---------- Bàn ---------- */
+const tcv = $('table'), tctx = tcv.getContext('2d');
+const RAIL = 0.11, TW = P.W + 2*RAIL, TL = P.L + 2*RAIL;
+let T = {s:1, w:0, h:0, layer:null};
+const X = x => (RAIL + x)*T.s, Y = y => (RAIL + P.L - y)*T.s;
+function layoutTable(){
+  const narrow = innerWidth <= 900;
+  let h, w;
+  if (narrow){ w = Math.min(tcv.parentElement.clientWidth || innerWidth - 40, 460); h = w*TL/TW; }
+  else { h = Math.min(innerHeight*0.82, 800); w = h*TW/TL; }
+  T.s = w/TW; T.w = w; T.h = h;
+  tcv.style.width = w+'px'; tcv.style.height = h+'px';
+  tcv.width = Math.round(w*DPR); tcv.height = Math.round(h*DPR);
+  const L = document.createElement('canvas'); L.width = tcv.width; L.height = tcv.height;
+  const c = L.getContext('2d'); c.scale(DPR, DPR);
+  c.fillStyle = COL.rail; roundRect(c, 0, 0, w, h, 14); c.fill();
+  const g = c.createRadialGradient(X(P.W*0.4), Y(P.L*0.62), 10, X(P.W/2), Y(P.L/2), P.L*T.s*0.7);
+  g.addColorStop(0, COL.clothLit); g.addColorStop(1, COL.cloth);
+  c.fillStyle = g; c.fillRect(X(0), Y(P.L), P.W*T.s, P.L*T.s);
+  c.fillStyle = 'rgba(216,180,81,.55)';
+  for (let i = 1; i < 8; i++) if (i !== 4) [X(0)-RAIL*T.s*0.5, X(P.W)+RAIL*T.s*0.5].forEach(x => dotAt(c, x, Y(P.L*i/8), 2));
+  for (let i = 1; i < 4; i++) [Y(0)+RAIL*T.s*0.5, Y(P.L)-RAIL*T.s*0.5].forEach(y => dotAt(c, X(P.W*i/4), y, 2));
+  c.fillStyle = '#000';
+  for (const [px,py,pr] of POCKETS) dotAt(c, X(px), Y(py), pr*T.s*1.05);
+  c.strokeStyle = 'rgba(237,233,224,.12)'; c.setLineDash([4,5]); c.lineWidth = 1;
+  c.beginPath(); c.moveTo(X(0), Y(P.L/4)); c.lineTo(X(P.W), Y(P.L/4)); c.stroke(); c.setLineDash([]);
+  dotAt(c, X(P.W/2), Y(P.L*0.75), 2.2);
+  T.layer = L;
+}
+function roundRect(c, x, y, w, h, r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function dotAt(c, x, y, r){ c.beginPath(); c.arc(x, y, r, 0, Math.PI*2); c.fill(); }
+
+function drawTable(t, blurDt){
+  const c = tctx;
+  c.setTransform(1,0,0,1,0,0); c.clearRect(0, 0, tcv.width, tcv.height);
+  c.drawImage(T.layer, 0, 0);
+  c.setTransform(DPR,0,0,DPR,0,0);
+  // Đường ngắm.
+  const ph = cfg.aim*Math.PI/180, cue0 = sampleAt(SIM, 0, 0);
+  c.strokeStyle = 'rgba(216,180,81,.35)'; c.setLineDash([3,4]); c.lineWidth = 1;
+  c.beginPath(); c.moveTo(X(cue0.p[0]), Y(cue0.p[1])); c.lineTo(X(cue0.p[0] - Math.sin(ph)*0.35), Y(cue0.p[1] - Math.cos(ph)*0.35)); c.stroke(); c.setLineDash([]);
+  // Xếp bàn, chưa đánh: vẽ mờ cả đường đi dự đoán như nút Đường đi của app.
+  const preview = cfg.obj === 'layout' && t === 0 && !playing, fade = preview ? 0.45 : 1;
+  const iNow = preview ? SIM.count-1 : Math.min(SIM.count-1, Math.floor(t*HZ));
+  SIM.balls.forEach((B, bi) => {
+    const buf = B.buf;
+    c.lineWidth = bi === 0 ? 2 : 1.5; c.lineCap = 'round';
+    let prevSt = -1;
+    c.beginPath();
+    for (let i = 0; i <= iNow; i += 2){
+      const o = i*STRIDE, st = buf[o+11];
+      if (st >= 3) continue;
+      const col = bi === 0 ? (st === 0 ? COL.slide : COL.roll) : 'rgba(151,160,168,.7)';
+      if (st !== prevSt){ if (prevSt >= 0){ c.lineTo(X(buf[o]), Y(buf[o+1])); c.stroke(); } c.beginPath(); c.strokeStyle = col; c.globalAlpha = (bi === 0 ? 0.85 : 0.6)*fade; c.moveTo(X(buf[o]), Y(buf[o+1])); prevSt = st; }
+      else c.lineTo(X(buf[o]), Y(buf[o+1]));
+    }
+    c.stroke(); c.globalAlpha = 1;
+  });
+  if (cfg.obj === 'layout' && t === 0){
+    const lay = cfg.layout, Tb = lay.balls[lay.target].p, Gh = ghostOf(lay), [px,py,pr] = POCKETS[lay.pocket], C0 = lay.cue;
+    c.lineWidth = 1.2; c.setLineDash([4,4]); c.strokeStyle = 'rgba(216,180,81,.75)';
+    c.beginPath(); c.moveTo(X(C0[0]), Y(C0[1])); c.lineTo(X(Gh[0]), Y(Gh[1])); c.stroke();
+    c.beginPath(); c.moveTo(X(Tb[0]), Y(Tb[1])); c.lineTo(X(px), Y(py)); c.stroke(); c.setLineDash([]);
+    c.beginPath(); c.arc(X(Gh[0]), Y(Gh[1]), P.R*T.s, 0, Math.PI*2); c.stroke();
+    c.strokeStyle = COL.gold; c.lineWidth = 2;
+    c.beginPath(); c.arc(X(Tb[0]), Y(Tb[1]), P.R*T.s + 4, 0, Math.PI*2); c.stroke();
+    c.beginPath(); c.arc(X(px), Y(py), pr*T.s*1.05 + 3, 0, Math.PI*2); c.stroke();
+  }
+  const tile = 96;
+  SIM.balls.forEach((B, bi) => {
+    const s = sampleAt(SIM, bi, t);
+    if (s.st === 4) return;
+    const d = 2*P.R*T.s*(view.big ? 2.5 : 1);
+    const x = X(s.p[0]) - d/2, y = Y(s.p[1]) - d/2;
+    c.fillStyle = 'rgba(0,0,0,.35)'; dotAt(c, X(s.p[0]) + d*0.12, Y(s.p[1]) + d*0.16, d*0.52);
+    if (G){
+      const sp = blurDt > 0 ? sampleAt(SIM, bi, Math.max(0, t - blurDt)) : null;
+      renderBall(s, view.blur ? sp : null, lookOf(bi), CAM_TOP, 1, tile);
+      c.drawImage(glc, 0, glc.height - tile, tile, tile, x, y, d, d);
+    } else {
+      c.fillStyle = bi === 0 ? '#eee' : '#c22'; dotAt(c, X(s.p[0]), Y(s.p[1]), d/2);
+    }
+  });
+}
+
+/* ---------- Kính lúp ---------- */
+const acv = $('axis'), actx = acv.getContext('2d');
+let lensPx = 0;
+function layoutLens(){
+  const sz = $('lensStage').clientWidth;
+  lensPx = Math.round(sz*DPR);
+  glc.width = glc.height = Math.max(lensPx, 128);
+  acv.width = acv.height = lensPx;
+}
+const LENS_SCALE = 0.72;
+function drawLens(t, blurDt){
+  const bi = lensIdx();
+  const s = sampleAt(SIM, bi, t);
+  const cam = camFor(view.beta, cfg.aim);
+  if (G){
+    const sp = blurDt > 0 && view.blur ? sampleAt(SIM, bi, Math.max(0, t - blurDt)) : null;
+    renderBall(s, sp, lookOf(bi), cam.m, LENS_SCALE, glc.width);
+  }
+  const c = actx, W = acv.width, cx = W/2, cy = W/2, rad = W/2*LENS_SCALE;
+  c.clearRect(0, 0, W, W);
+  const sp = Math.hypot(s.v[0], s.v[1]);
+  if (sp > 0.01){
+    const vx = (s.v[0]*cam.right[0] + s.v[1]*cam.right[1]) / sp, vy = (s.v[0]*cam.up[0] + s.v[1]*cam.up[1]) / sp;
+    const m = Math.hypot(vx, vy);
+    if (m > 0.05){
+      const ux = vx/m, uy = -vy/m;
+      const r0 = rad*1.08, r1 = rad*1.3;
+      c.strokeStyle = 'rgba(237,233,224,.85)'; c.fillStyle = 'rgba(237,233,224,.85)'; c.lineWidth = 2*DPR;
+      c.beginPath(); c.moveTo(cx+ux*r0, cy+uy*r0); c.lineTo(cx+ux*r1, cy+uy*r1); c.stroke();
+      c.beginPath(); c.moveTo(cx+ux*(r1+8*DPR), cy+uy*(r1+8*DPR)); c.lineTo(cx+ux*r1-uy*5*DPR, cy+uy*r1+ux*5*DPR); c.lineTo(cx+ux*r1+uy*5*DPR, cy+uy*r1-ux*5*DPR); c.closePath(); c.fill();
+      c.font = `${11*DPR}px "IBM Plex Mono", monospace`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('v', cx+ux*(r1+20*DPR), cy+uy*(r1+20*DPR));
+    }
+  }
+  const wm = Math.hypot(s.w[0], s.w[1], s.w[2]);
+  if (view.axis && wm > 0.5){
+    const w = s.w.map(x => x/wm);
+    const ax = dot(w, cam.right), ay = -dot(w, cam.up), az = dot(w, cam.back);
+    c.strokeStyle = COL.gold; c.lineWidth = 1.5*DPR; c.setLineDash([5*DPR, 4*DPR]);
+    c.beginPath(); c.moveTo(cx - ax*rad*1.2, cy - ay*rad*1.2); c.lineTo(cx + ax*rad*1.2, cy + ay*rad*1.2); c.stroke(); c.setLineDash([]);
+    const px = cx + ax*rad, py = cy + ay*rad;
+    c.beginPath(); c.arc(px, py, 5*DPR, 0, Math.PI*2);
+    if (az >= 0){ c.fillStyle = COL.gold; c.fill(); } else { c.lineWidth = 1.5*DPR; c.stroke(); }
+    c.fillStyle = COL.gold; c.font = `600 ${12*DPR}px "IBM Plex Mono", monospace`; c.textAlign = 'left'; c.textBaseline = 'middle';
+    c.fillText("ω", cx + ax*rad*1.2 + 6*DPR, cy + ay*rad*1.2);
+  }
+  $('lensTag').textContent = (bi === 0 ? 'BI CÁI' : 'BI MỤC TIÊU') + ' · ' + (view.beta >= 89 ? 'NHÌN TỪ TRÊN' : `NHÌN NGHIÊNG ${view.beta}°`);
+  updateReads(s, bi);
+}
+
+function seeingText(s){
+  const sp = Math.hypot(s.v[0], s.v[1]), rho = rhoOf(s), wz = Math.abs(s.w[2]);
+  const wm = Math.hypot(s.w[0], s.w[1], s.w[2]);
+  const tilt = wm > 0.5 ? Math.acos(Math.min(1, wz/wm))*180/Math.PI : 0;
+  const sideNote = wz > 3 ? ` Có phê nên trục quay nghiêng ${Math.round(90 - tilt)}° so với mặt bàn.` : '';
+  switch (s.st){
+    case 0: {
+      if (sp < 0.02) return 'Bi gần như đứng chỗ nhưng mặt dưới vẫn trượt trên nỉ. Ma sát sắp kéo bi đi theo chiều xoáy.';
+      const u = slip(s), us = Math.hypot(u[0], u[1]);
+      const curve = us > 0.02 && Math.abs(u[0]*s.v[1] - u[1]*s.v[0])/(us*sp) > 0.34 ? ' Hướng trượt lệch hướng đi nên đường bi cong.' : '';
+      if (rho < -0.05) return 'Chấm chạy ngược chiều bi đi: bi đang kéo, backspin còn và bi trượt.' + curve;
+      if (rho <= 0.05) return 'Chấm gần như đứng im trong lúc bi tịnh tiến: trượt thuần (stun).' + curve;
+      if (rho < 0.97) return 'Chấm chạy cùng chiều nhưng chậm hơn bi: topspin chưa đủ, bi còn trượt.' + curve;
+      if (rho > 1.03) return 'Chấm chạy nhanh hơn bi: overspin, ma sát đang đẩy bi nhanh thêm.' + curve;
+      return 'Sắp lăn đều.' + curve;
+    }
+    case 1: return 'Lăn đều: điểm chạm nỉ đứng yên, đỉnh bi chạy gấp đôi tâm.' + sideNote;
+    case 2: return 'Bi đã đứng, chỉ còn phê làm mặt bi xoay như con quay.';
+    case 3: return 'Bi đứng yên.';
+    default: return 'Bi đã vào lỗ.';
+  }
+}
+function slip(s){ return [s.v[0] - P.R*s.w[1], s.v[1] + P.R*s.w[0]]; }
+let lastReads = '';
+function updateReads(s, bi){
+  const sp = Math.hypot(s.v[0], s.v[1]), rho = rhoOf(s), wz = s.w[2];
+  const wm = Math.hypot(s.w[0], s.w[1], s.w[2]);
+  const key = [s.st, fmt(sp,2), rho == null ? '-' : fmt(rho,2), fmt(wz,1), fmt(wm,1)].join('|');
+  if (key === lastReads) return; lastReads = key;
+  const pill = $('statePill');
+  pill.textContent = STATE_NAME[s.st]; pill.style.color = STATE_COL[s.st];
+  $('seeing').textContent = seeingText(s);
+  $('rV').textContent = fmt(sp, 2) + ' m/s';
+  $('rRho').textContent = rho == null ? '—' : fmt(rho, 2);
+  $('rhoMark').style.left = (rho == null ? 40 : Math.max(0, Math.min(100, 40 + rho*40))) + '%';
+  $('rhoMark').style.opacity = rho == null ? 0.25 : 1;
+  const rps = wz/(2*Math.PI);
+  $('rZ').textContent = Math.abs(rps) < 0.05 ? '0,0 vòng/s' : `${fmt(Math.abs(rps),1)} vòng/s ${wz > 0 ? 'phải' : 'trái'}`;
+  $('rW').textContent = fmt(wm/(2*Math.PI), 1) + ' vòng/s';
+  $('rAx').textContent = wm < 0.5 ? '—' : `nghiêng ${Math.round(Math.asin(Math.min(1, Math.abs(wz)/wm))*180/Math.PI)}° so với mặt bàn`;
+}
+
+/* ---------- Đồ thị ---------- */
+const gcv = $('graph'), gctx = gcv.getContext('2d');
+let GR = {layer:null, w:0, h:0, x0:44, x1:0, y0:0, y1:0, tMax:1};
+function buildGraph(){
+  const w = gcv.clientWidth, h = gcv.clientHeight;
+  gcv.width = Math.round(w*DPR); gcv.height = Math.round(h*DPR);
+  const L = document.createElement('canvas'); L.width = gcv.width; L.height = gcv.height;
+  const c = L.getContext('2d'); c.scale(DPR, DPR);
+  const bi = lensIdx();
+  const buf = SIM.balls[bi].buf, N = SIM.count;
+  const x0 = 44, x1 = w - 10, yTop = 16, yBot = h - 22;
+  const tMax = Math.max(0.5, SIM.tEnd);
+  let vmax = 0.1;
+  for (let i = 0; i < N; i++){
+    const o = i*STRIDE;
+    const sp = Math.hypot(buf[o+6], buf[o+7]);
+    const us = Math.hypot(buf[o+6] - P.R*buf[o+9], buf[o+7] + P.R*buf[o+8]);
+    vmax = Math.max(vmax, sp, buf[o+11] === 4 ? 0 : us, P.R*Math.abs(buf[o+10]));
+  }
+  const stepY = vmax > 4 ? 1 : vmax > 2 ? 0.5 : vmax > 0.8 ? 0.25 : 0.1;
+  vmax = Math.ceil(vmax/stepY)*stepY;
+  const tx = t => x0 + (x1-x0)*t/tMax, ty = v => yBot - (yBot-yTop)*v/vmax;
+  for (let i = 0; i < N; i += 2){
+    const st = buf[i*STRIDE+11];
+    c.fillStyle = STATE_COL[st]; c.globalAlpha = st >= 3 ? 0.25 : 0.8;
+    c.fillRect(tx(i/HZ), 4, Math.max(1, (x1-x0)*2/(HZ*tMax)) + 0.5, 6);
+  }
+  c.globalAlpha = 1;
+  c.font = '11px "IBM Plex Mono", monospace'; c.fillStyle = COL.muted; c.textAlign = 'right'; c.textBaseline = 'middle';
+  c.strokeStyle = 'rgba(151,160,168,.14)'; c.lineWidth = 1;
+  for (let v = 0; v <= vmax + 1e-9; v += stepY){ c.beginPath(); c.moveTo(x0, ty(v)); c.lineTo(x1, ty(v)); c.stroke(); c.fillText(fmt(v, stepY < 0.25 ? 1 : 2), x0 - 6, ty(v)); }
+  c.textAlign = 'center'; c.textBaseline = 'top';
+  const tStep = tMax > 8 ? 2 : tMax > 4 ? 1 : tMax > 1.5 ? 0.5 : 0.25;
+  for (let t = 0; t <= tMax + 1e-9; t += tStep) c.fillText(fmt(t, tStep < 0.5 ? 2 : 1) + ' s', tx(t), yBot + 5);
+  const line = (fn, col, wdt) => {
+    c.strokeStyle = col; c.lineWidth = wdt; c.beginPath();
+    for (let i = 0; i < N; i++){ const o = i*STRIDE; const v = fn(o); if (i === 0) c.moveTo(tx(i/HZ), ty(v)); else c.lineTo(tx(i/HZ), ty(v)); }
+    c.stroke();
+  };
+  line(o => buf[o+11] === 4 ? 0 : P.R*Math.abs(buf[o+10]), COL.spin, 1.5);
+  line(o => buf[o+11] === 4 ? 0 : Math.hypot(buf[o+6] - P.R*buf[o+9], buf[o+7] + P.R*buf[o+8]), COL.slide, 1.5);
+  line(o => Math.hypot(buf[o+6], buf[o+7]), COL.fg, 2);
+  GR = {layer:L, w, h, x0, x1, yTop, yBot, tMax};
+}
+function drawGraph(t){
+  const c = gctx;
+  c.setTransform(1,0,0,1,0,0); c.clearRect(0, 0, gcv.width, gcv.height); c.drawImage(GR.layer, 0, 0);
+  c.setTransform(DPR,0,0,DPR,0,0);
+  const x = GR.x0 + (GR.x1 - GR.x0)*Math.min(t, GR.tMax)/GR.tMax;
+  c.strokeStyle = COL.gold; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, 2); c.lineTo(x, GR.yBot); c.stroke();
+}
+function graphSeek(ev){
+  const r = gcv.getBoundingClientRect();
+  const t = (ev.clientX - r.left - GR.x0)/(GR.x1 - GR.x0)*GR.tMax;
+  simT = Math.max(0, Math.min(SIM.tEnd, t)); playing = false; syncPlay(); dirty = true;
+}
+gcv.addEventListener('pointerdown', ev => { gcv.setPointerCapture(ev.pointerId); graphSeek(ev); });
+gcv.addEventListener('pointermove', ev => { if (ev.buttons) graphSeek(ev); });
+
+/* ---------- Điểm chạm cơ ---------- */
+const tipc = $('tip'), tipx = tipc.getContext('2d');
+tipc.width = tipc.height = 180*DPR;
+function drawTip(){
+  const c = tipx, S = 180*DPR, cx = S/2, rad = S/2 - 6*DPR;
+  c.clearRect(0, 0, S, S);
+  const g = c.createRadialGradient(cx - rad*0.35, cx - rad*0.4, rad*0.1, cx, cx, rad);
+  g.addColorStop(0, '#FBFAF6'); g.addColorStop(1, '#BDB9AE');
+  c.fillStyle = g; c.beginPath(); c.arc(cx, cx, rad, 0, Math.PI*2); c.fill();
+  c.strokeStyle = 'rgba(10,12,14,.25)'; c.lineWidth = 1*DPR;
+  c.beginPath(); c.moveTo(cx - rad, cx); c.lineTo(cx + rad, cx); c.moveTo(cx, cx - rad); c.lineTo(cx, cx + rad); c.stroke();
+  c.setLineDash([4*DPR, 4*DPR]); c.strokeStyle = 'rgba(200,70,40,.75)'; c.lineWidth = 1.5*DPR;
+  c.beginPath(); c.arc(cx, cx, rad*P.aMax, 0, Math.PI*2); c.stroke();
+  c.setLineDash([2*DPR, 3*DPR]); c.strokeStyle = 'rgba(40,120,100,.8)';
+  c.beginPath(); c.arc(cx, cx, rad*0.4, 0, Math.PI*2); c.stroke(); c.setLineDash([]);
+  const px = cx + cfg.a*rad, py = cx - cfg.b*rad;
+  c.fillStyle = '#1C4FA0'; c.beginPath(); c.arc(px, py, 9*DPR, 0, Math.PI*2); c.fill();
+  c.strokeStyle = COL.gold; c.lineWidth = 2*DPR; c.stroke();
+  const side = cfg.a === 0 ? 'giữa' : `${fmt(Math.abs(cfg.a),2)}R ${cfg.a > 0 ? 'phải' : 'trái'}`;
+  const vert = cfg.b === 0 ? 'giữa' : `${fmt(Math.abs(cfg.b),2)}R ${cfg.b > 0 ? 'trên' : 'dưới'}`;
+  $('tipOut').textContent = `ngang ${side} · dọc ${vert}`;
+}
+function setTipFrom(ev){
+  const r = tipc.getBoundingClientRect(), rad = r.width/2 - 6;
+  let a = (ev.clientX - r.left - r.width/2)/rad, b = -(ev.clientY - r.top - r.height/2)/rad;
+  const m = Math.hypot(a, b); if (m > P.aMax){ a *= P.aMax/m; b *= P.aMax/m; }
+  cfg.a = Math.round(a*100)/100; cfg.b = Math.round(b*100)/100;
+  changed();
+}
+tipc.addEventListener('pointerdown', ev => { tipc.setPointerCapture(ev.pointerId); setTipFrom(ev); });
+tipc.addEventListener('pointermove', ev => { if (ev.buttons) setTipFrom(ev); });
+tipc.addEventListener('keydown', ev => {
+  const d = {ArrowLeft:[-0.05,0], ArrowRight:[0.05,0], ArrowUp:[0,0.05], ArrowDown:[0,-0.05]}[ev.key];
+  if (!d) return; ev.preventDefault();
+  let a = cfg.a + d[0], b = cfg.b + d[1]; const m = Math.hypot(a, b); if (m > P.aMax){ a *= P.aMax/m; b *= P.aMax/m; }
+  cfg.a = Math.round(a*100)/100; cfg.b = Math.round(b*100)/100; changed();
+});
+
+/* ---------- Xếp bàn ---------- */
+const POCKET_NAME = ['góc dưới trái','góc dưới phải','góc trên trái','góc trên phải','giữa trái','giữa phải'];
+function lensIdx(){
+  if (view.lensBall === 0 || SIM.balls.length < 2) return 0;
+  return cfg.obj === 'layout' ? cfg.layout.target + 1 : 1;
+}
+const toTable = ev => { const r = tcv.getBoundingClientRect(); return [(ev.clientX - r.left)/T.s - RAIL, P.L - ((ev.clientY - r.top)/T.s - RAIL)]; };
+const layPts = () => [cfg.layout.cue, ...cfg.layout.balls.map(b => b.p)];
+// 0 là bi cái, i ≥ 1 là layout.balls[i-1].
+function hitBall(q){
+  let best = -1, bd = Math.max(P.R*1.5, 16/T.s);
+  layPts().forEach((p, i) => { const d = Math.hypot(p[0]-q[0], p[1]-q[1]); if (d < bd){ bd = d; best = i; } });
+  return best;
+}
+const hitPocket = q => POCKETS.findIndex(([px,py,pr]) => Math.hypot(px-q[0], py-q[1]) < pr*1.4 + 8/T.s);
+function freeSpot(q, skip){
+  if (q[0] < P.R || q[0] > P.W-P.R || q[1] < P.R || q[1] > P.L-P.R) return false;
+  if (POCKETS.some(([px,py,pr]) => Math.hypot(px-q[0], py-q[1]) < pr + P.R*0.5)) return false;
+  return layPts().every((p, i) => i === skip || Math.hypot(p[0]-q[0], p[1]-q[1]) >= 2*P.R + 1e-4);
+}
+let drag = null, pend = 0;
+const schedule = () => { if (!pend) pend = requestAnimationFrame(() => { pend = 0; changed(); }); };
+tcv.addEventListener('pointerdown', ev => {
+  if (cfg.obj !== 'layout') return;
+  const q = toTable(ev), bi = hitBall(q);
+  if (bi >= 0){ drag = {bi, x:ev.clientX, y:ev.clientY, moved:false}; tcv.setPointerCapture(ev.pointerId); return; }
+  const k = hitPocket(q);
+  if (k >= 0){ cfg.layout.pocket = k; changed(); }
+});
+tcv.addEventListener('pointermove', ev => {
+  if (!drag) return;
+  if (!drag.moved && Math.hypot(ev.clientX - drag.x, ev.clientY - drag.y) < 4) return;
+  drag.moved = true;
+  const lim = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const q0 = toTable(ev), q = [lim(q0[0], P.R, P.W-P.R), lim(q0[1], P.R, P.L-P.R)];
+  if (!freeSpot(q, drag.bi)) return;
+  if (drag.bi === 0) cfg.layout.cue = q; else cfg.layout.balls[drag.bi-1].p = q;
+  schedule();
+});
+const endDrag = () => {
+  if (!drag) return;
+  if (!drag.moved && drag.bi > 0) cfg.layout.target = drag.bi - 1;
+  drag = null; changed();
+};
+tcv.addEventListener('pointerup', endDrag);
+tcv.addEventListener('pointercancel', endDrag);
+$('addBall').addEventListener('click', () => {
+  const lay = cfg.layout, used = lay.balls.map(b => b.n), n = [1,2,3,4,5,6,7,8].find(k => !used.includes(k));
+  if (!n) return;
+  for (let j = 0; j < 400; j++){
+    const q = [0.15 + Math.random()*(P.W - 0.3), P.L*0.4 + Math.random()*P.L*0.5];
+    if (freeSpot(q, -1)){ lay.balls.push({n, p:q}); lay.target = lay.balls.length - 1; changed(); return; }
+  }
+});
+$('delBall').addEventListener('click', () => {
+  const lay = cfg.layout;
+  if (lay.balls.length < 2) return;
+  lay.balls.splice(lay.target, 1); lay.target = 0; changed();
+});
+$('shoot').addEventListener('click', () => { simT = 0; playing = true; syncPlay(); dirty = true; });
+// Thanh Lực như app: tốc bi cái 0,3–4,5 m/s, thang bậc hai, chữ theo thang Dr. Dave.
+const forceOf = pos => 0.3 + 4.2*pos*pos, posOfForce = v => Math.sqrt(Math.max(0, v - 0.3)/4.2);
+const powerWord = v => v < 0.45 ? 'Chạm nhẹ' : v < 0.89 ? 'Chậm' : v < 1.9 ? 'Vừa' : v < 3.2 ? 'Nhanh' : 'Mạnh';
+[[0.7,'Chậm'],[1.4,'Vừa'],[2.5,'Nhanh'],[3.8,'Mạnh']].forEach(([v, l]) => {
+  const e = document.createElement('span'); e.style.left = (posOfForce(v)*100) + '%'; e.textContent = l; $('forceTicks').appendChild(e);
+});
+$('force').addEventListener('input', e => { cfg.force = forceOf(Number(e.target.value)); changed(); });
+function rackReport(){
+  const lay = cfg.layout, tb = lay.balls[lay.target], Gh = ghostOf(lay), [px,py] = POCKETS[lay.pocket];
+  const a = [Gh[0] - lay.cue[0], Gh[1] - lay.cue[1]], b = [px - tb.p[0], py - tb.p[1]];
+  const cut = Math.acos(Math.max(-1, Math.min(1, (a[0]*b[0] + a[1]*b[1])/(Math.hypot(...a)*Math.hypot(...b) || 1))))*180/Math.PI;
+  const near = p => POCKETS.reduce((k, q, i) => Math.hypot(q[0]-p[0], q[1]-p[1]) < Math.hypot(POCKETS[k][0]-p[0], POCKETS[k][1]-p[1]) ? i : k, 0);
+  const out = [];
+  if (cut > 88) out.push('Góc cắt quá mỏng, không đưa được bi về lỗ này.');
+  const TB = SIM.balls[lay.target + 1];
+  if (!TB.alive){ const k = near(TB.p); out.push(k === lay.pocket ? `Bi ${tb.n} vào lỗ.` : `Bi ${tb.n} rơi lỗ ${POCKET_NAME[k]}, không phải lỗ đã chọn.`); }
+  else out.push(`Bi ${tb.n} không vào.`);
+  SIM.balls.forEach((B, i) => { if (i === 0 || i === lay.target + 1 || B.alive) return; out.push(`Bi ${B.n} cũng rơi lỗ ${POCKET_NAME[near(B.p)]}.`); });
+  if (!SIM.balls[0].alive) out.push(`Bi cái rơi lỗ ${POCKET_NAME[near(SIM.balls[0].p)]}.`);
+  $('rackOut').textContent = `Bi ${tb.n} → lỗ ${POCKET_NAME[lay.pocket]} · cắt ${fmt(cut, 0)}° · lực ${powerWord(cfg.force)} ${fmt(cfg.force, 1)} m/s. Dự đoán: ${out.join(' ')}`;
+}
+
+/* ---------- Điều khiển ---------- */
+const presetsEl = $('presets');
+PRESETS.forEach((p, i) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = p.name; b.dataset.i = i;
+  b.addEventListener('click', () => { Object.assign(cfg, p.c); syncInputs(); changed(); });
+  presetsEl.appendChild(b);
+});
+const bind = (id, key, obj, parse, fmtOut) => {
+  const el = $(id);
+  el.addEventListener('input', () => { obj[key] = parse(el.value); if (fmtOut) $(id+'Out').textContent = fmtOut(obj[key]); obj === cfg ? changed() : viewChanged(); });
+};
+bind('v0', 'V0', cfg, Number, v => fmt(v,1) + ' m/s');
+bind('theta', 'theta', cfg, Number, v => v + '°');
+bind('aim', 'aim', cfg, Number, v => (v > 0 ? '+' : '') + v + '°');
+bind('dist', 'D', cfg, Number, v => fmt(v,2) + ' m');
+bind('obj', 'obj', cfg, String);
+bind('beta', 'beta', view, Number, v => v >= 89 ? 'từ trên' : v + '°');
+bind('lensBall', 'lensBall', view, Number);
+bind('pattern', 'pattern', view, Number);
+[['blur','blur'],['showAxis','axis'],['big','big']].forEach(([id,k]) => $(id).addEventListener('change', e => { view[k] = e.target.checked; viewChanged(); }));
+function syncInputs(){
+  $('v0').value = cfg.V0; $('v0Out').textContent = fmt(cfg.V0,1) + ' m/s';
+  $('theta').value = cfg.theta; $('thetaOut').textContent = cfg.theta + '°';
+  $('aim').value = cfg.aim; $('aimOut').textContent = (cfg.aim > 0 ? '+' : '') + cfg.aim + '°';
+  $('dist').value = cfg.D; $('distOut').textContent = fmt(cfg.D,2) + ' m';
+  $('obj').value = cfg.obj;
+  $('beta').value = view.beta; $('betaOut').textContent = view.beta >= 89 ? 'từ trên' : view.beta + '°';
+  $('lensBall').value = view.lensBall; $('pattern').value = view.pattern;
+  $('force').value = posOfForce(cfg.force); $('forceOut').textContent = `${powerWord(cfg.force)} · ${fmt(cfg.force, 1)} m/s`;
+}
+function markPreset(){
+  presetsEl.querySelectorAll('.chip').forEach(b => {
+    const p = PRESETS[+b.dataset.i].c;
+    b.classList.toggle('on', Object.keys(p).every(k => p[k] === cfg[k]));
+  });
+}
+function changed(){
+  SIM = simulate(cfg);
+  const lay = cfg.obj === 'layout';
+  $('rack').classList.toggle('on', lay); tcv.classList.toggle('edit', lay);
+  ['aim','dist','v0'].forEach(id => { $(id).disabled = lay; });
+  if (lay){
+    cfg.aim = SIM.aim;
+    $('aimOut').textContent = (cfg.aim > 0 ? '+' : '') + fmt(cfg.aim, 1) + '°';
+    $('v0Out').textContent = fmt(SIM.V0, 2) + ' m/s';
+    $('forceOut').textContent = `${powerWord(cfg.force)} · ${fmt(cfg.force, 1)} m/s`;
+    $('delBall').disabled = cfg.layout.balls.length < 2;
+    $('addBall').disabled = cfg.layout.balls.length >= 8;
+    rackReport();
+  }
+  $('lensBall').disabled = SIM.balls.length < 2;
+  if (SIM.balls.length < 2) { view.lensBall = 0; $('lensBall').value = 0; }
+  const s0 = sampleAt(SIM, 0, 0), sp = Math.hypot(s0.v[0], s0.v[1]), wm = Math.hypot(...s0.w);
+  const rho = rhoOf(s0);
+  $('strikeOut').textContent = `Ngay sau cú: bi đi ${fmt(sp,2)} m/s, quay ${fmt(wm/(2*Math.PI),1)} vòng/s, ρ = ${rho == null ? '—' : fmt(rho,2)}` +
+    (Math.abs(SIM.strike.squirtDeg) > 0.05 ? `, squirt lệch ${fmt(Math.abs(SIM.strike.squirtDeg),1)}° về bên ${SIM.strike.squirtDeg > 0 ? 'trái' : 'phải'}.` : '.');
+  buildGraph(); drawTip(); markPreset();
+  simT = 0; playing = !reduceMotion && !lay; syncPlay(); lastReads = ''; dirty = true;
+}
+function viewChanged(){ buildGraph(); lastReads = ''; dirty = true; }
+function syncPlay(){ $('play').textContent = playing ? 'Tạm dừng' : (simT >= SIM.tEnd - 1e-6 ? 'Phát lại' : 'Phát'); }
+$('play').addEventListener('click', () => { if (!playing && simT >= SIM.tEnd - 1e-6) simT = 0; playing = !playing; syncPlay(); dirty = true; });
+$('again').addEventListener('click', () => { simT = 0; playing = true; syncPlay(); dirty = true; });
+$('speedSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  speed = Number(b.dataset.s);
+  $('speedSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+});
+$('scrub').addEventListener('input', e => { simT = SIM.tEnd*Number(e.target.value)/1000; playing = false; syncPlay(); dirty = true; });
+
+/* ---------- Vòng vẽ ---------- */
+function frame(now){
+  const dtR = Math.min(0.05, (now - lastNow)/1000); lastNow = now;
+  let blurDt = 0;
+  if (playing){
+    simT += dtR*speed; blurDt = dtR*speed;
+    if (simT >= SIM.tEnd){ simT = SIM.tEnd; playing = false; syncPlay(); }
+    dirty = true;
+  }
+  if (dirty){
+    drawTable(simT, blurDt);
+    drawLens(simT, blurDt);
+    drawGraph(simT);
+    $('scrub').value = Math.round(1000*simT/Math.max(1e-6, SIM.tEnd));
+    $('tOut').textContent = fmt(simT, 2) + ' s';
+    dirty = playing;
+  }
+  requestAnimationFrame(frame);
+}
+function layoutAll(){ layoutTable(); layoutLens(); if (SIM) buildGraph(); dirty = true; }
+let rz = 0;
+addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(layoutAll); });
+
+syncInputs();
+layoutTable(); layoutLens();
+changed();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (G) { try { G = initGL(); } catch (e) {} } layoutAll(); drawTip(); });
+requestAnimationFrame(frame);
+})();
+</script>

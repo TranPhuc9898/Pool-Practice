@@ -5,11 +5,16 @@ import { Platform, type TextStyle } from 'react-native';
  * iOS cần mỗi weight là một family riêng với font custom, nên weight nằm ở đây, không ở `fontWeight`.
  */
 export const fontFamily = {
-  regular: 'Outfit_400Regular',
-  medium: 'Outfit_500Medium',
-  semibold: 'Outfit_600SemiBold',
-  bold: 'Outfit_700Bold',
-  heavy: 'Outfit_800ExtraBold',
+  regular: 'BeVietnamPro_400Regular',
+  medium: 'BeVietnamPro_500Medium',
+  semibold: 'BeVietnamPro_600SemiBold',
+  bold: 'BeVietnamPro_700Bold',
+  heavy: 'BeVietnamPro_800ExtraBold',
+  /**
+   * Doto Black: chữ chấm, họ hàng với DotMatrixDisplay. Chỉ phủ Latin-1 + đ, thiếu ạ ả ấ ơ ư ợ…
+   * nên chỉ dùng cho chữ Anh và số, không cho câu tiếng Việt.
+   */
+  dot: 'Doto_900Black',
   /** SF Mono trên iOS (Fabric map `ui-monospace` → system monospaced). Nhãn kỹ thuật, số liệu nhỏ. */
   mono: Platform.select({ ios: 'ui-monospace', default: 'monospace' }),
 } as const;
@@ -32,9 +37,13 @@ const style = (
 /** Tracking âm cho chữ to, gần 0 cho chữ thân. Leading chặt ở tiêu đề, thoáng ở thân. */
 export const typography = {
   /** Tên app trên Home: "POOL TRAINING". */
-  displayXL: style('heavy', 48, 48, -1.8, 1.2, { textTransform: 'uppercase' }),
-  displayLarge: style('heavy', 40, 44, -1.4, 1.3),
-  display: style('bold', 34, 38, -0.9, 1.3),
+  displayXL: style('heavy', 48, 52, -1.8, 1.2, { textTransform: 'uppercase' }),
+  displayLarge: style('heavy', 40, 46, -1.4, 1.3),
+  display: style('bold', 34, 40, -0.9, 1.3),
+  /** Tiêu đề màn hình bằng Doto, như "Today". Tracking dương: chấm sát nhau là dính chữ. */
+  dotDisplay: style('dot', 44, 46, 0.4, 1.2),
+  /** Số lớn bằng Doto trên bảng điểm, chỉ số. */
+  dotMetric: style('dot', 28, 30, 0.3, 1.3),
   title1: style('semibold', 28, 32, -0.6, 1.4),
   title2: style('semibold', 24, 28, -0.4, 1.5),
   title3: style('semibold', 20, 25, -0.2, 1.6),

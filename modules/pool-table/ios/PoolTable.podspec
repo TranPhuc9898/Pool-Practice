@@ -20,6 +20,8 @@ Pod::Spec.new do |s|
   s.source_files = "**/*.{h,m,swift}"
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    'SWIFT_COMPILATION_MODE' => 'wholemodule'
+    'SWIFT_COMPILATION_MODE' => 'wholemodule',
+    # Planner Gợi ý (Editor/RackPlanner.swift) chạy ~700 sim nhiều bi: -Onone mất 28 s, -O 0,7 s. Bật -O cả bản Debug.
+    'SWIFT_OPTIMIZATION_LEVEL' => '-O'
   }
 end

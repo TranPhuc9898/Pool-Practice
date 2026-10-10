@@ -3,11 +3,19 @@ import SwiftUI
 /// Cách vẽ một viên bi. Số 0 là bi cái, 1–8 bi trơn, 9–15 bi sọc.
 protocol PoolBallStyle {
   func draw(number: Int, in rect: CGRect, context: inout GraphicsContext)
+  /// Vẽ theo hướng thân bi. Style phẳng bỏ qua hướng.
+  func draw(number: Int, pose: BallPose, in rect: CGRect, context: inout GraphicsContext)
+}
+
+extension PoolBallStyle {
+  func draw(number: Int, pose: BallPose, in rect: CGRect, context: inout GraphicsContext) {
+    draw(number: number, in: rect, context: &context)
+  }
 }
 
 enum PoolBallStyles {
   /// Đổi style cho mọi bi trong app ở đúng một dòng này.
-  static let current: any PoolBallStyle = TournamentBlackStyle()
+  static let current: any PoolBallStyle = SphereBallStyle()
 }
 
 /// Stub để kiểm việc đổi style: hình tròn phẳng, chỉ có số.
@@ -25,10 +33,17 @@ struct FlatBallStyle: PoolBallStyle {
 struct PoolBallView: View, Equatable {
   let number: Int
   let diameter: CGFloat
+  /// nil: tư thế đứng yên của style.
+  var pose: BallPose?
 
   var body: some View {
     Canvas { context, size in
-      PoolBallStyles.current.draw(number: number, in: CGRect(origin: .zero, size: size), context: &context)
+      let rect = CGRect(origin: .zero, size: size)
+      if let pose {
+        PoolBallStyles.current.draw(number: number, pose: pose, in: rect, context: &context)
+      } else {
+        PoolBallStyles.current.draw(number: number, in: rect, context: &context)
+      }
     }
     .frame(width: diameter, height: diameter)
     // Bóng tiếp xúc: lệch về phía xa đèn, đậm và gần để bi "ngồi" trên vải.
