@@ -1,6 +1,21 @@
-import { TabStack } from '@/components/tab-stack';
+import { TabStack } from "@/components/tab-stack";
+import { useTheme } from "@/design-system";
 
-/** Header native trong suốt, không title: giữ scroll-edge blur dưới status bar, nút nằm ở headerRight (glass). */
+/**
+ * Large title native như Drills: cuộn lên là iOS tự co "Today" vào giữa header theo từng pixel.
+ * Chữ to giữ chất Doto gold của Home; chữ nhỏ khi co dùng style chung, trùng "Drills".
+ */
 export default function Layout() {
-  return <TabStack title="Today" rootOptions={{ headerLargeTitleEnabled: false, headerTitle: '' }} />;
+  const t = useTheme();
+  return (
+    <TabStack
+      title="Today"
+      rootOptions={{
+        headerLargeTitleStyle: {
+          fontFamily: t.type.dotDisplay.fontFamily,
+          color: t.color.accentGold,
+        },
+      }}
+    />
+  );
 }

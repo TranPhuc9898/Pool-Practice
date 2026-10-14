@@ -34,7 +34,7 @@ function layout(n: number) {
       ticks.push({ seg: s, a: ang((slot + 0.5) / slots), edge: j === 0 || j === per - 1, j });
     }
   }
-  return { ticks, segAng };
+  return { ticks, segAng, per };
 }
 
 export type ProgramGaugeProps = {
@@ -42,7 +42,11 @@ export type ProgramGaugeProps = {
   total: number;
   /** Drill đang tập, 0-based. `-1` khi program đã xong: không còn marker. */
   focus: number;
-  passed: (seg: number) => boolean;
+  /** Phần đã xong của từng cung, 0…1. Vạch sáng từ trái sang theo tỉ lệ này. */
+  fill: (seg: number) => number;
+  /** Số lớn giữa vòng: `value/of`. */
+  value: number;
+  of: number;
   caption: string;
 };
 
@@ -51,13 +55,13 @@ export type ProgramGaugeProps = {
  * Pass xong: chỉ vạch đổi trạng thái mới chuyển màu (160ms, trễ ≤18ms), marker xoay 240ms ease-out.
  * Reduce Motion: màu vẫn chuyển, marker nhảy thẳng.
  */
-export function ProgramGauge({ total, focus, passed, caption }: ProgramGaugeProps) {
+export function ProgramGauge({ total, focus, fill, value, of, caption }: ProgramGaugeProps) {
   const t = useTheme();
   const s = useStyles();
   const reduced = useReducedMotion();
   const [width, setWidth] = useState(0);
   const k = width / VB_W;
-  const { ticks, segAng } = layout(total);
+  const { ticks, segAng, per } = layout(total);
   const markDeg = focus >= 0 ? ((Math.PI / 2 - segAng[focus]) * 180) / Math.PI : 0;
   const ink = homeSurfaces.ink;
 
@@ -87,7 +91,7 @@ export function ProgramGauge({ total, focus, passed, caption }: ProgramGaugeProp
 
           {ticks.map(({ seg, a, edge, j }, i) => {
             const now = seg === focus;
-            const past = !now && passed(seg);
+            const lit = j < Math.round(fill(seg) * per);
             const rIn = edge ? R_EDGE : R_IN;
             const len = (R_OUT - rIn) * k;
             const mid = ((R_OUT + rIn) / 2) * k;
@@ -103,7 +107,7 @@ export function ProgramGauge({ total, focus, passed, caption }: ProgramGaugeProp
                   width: w,
                   height: len,
                   borderRadius: w / 2,
-                  backgroundColor: now ? ink.gold : past ? ink.tickPast : ink.tickOff,
+                  backgroundColor: lit ? (now ? ink.gold : ink.tickPast) : ink.tickOff,
                   transform: [{ rotate: `${((Math.PI / 2 - a) * 180) / Math.PI}deg` }],
                   transitionProperty: 'backgroundColor',
                   transitionDuration: 160,
@@ -117,7 +121,7 @@ export function ProgramGauge({ total, focus, passed, caption }: ProgramGaugeProp
           {total > 1 &&
             segAng.map((a, seg) => {
               const now = seg === focus;
-              const past = !now && passed(seg);
+              const past = !now && fill(seg) >= 1;
               return (
                 <AppText
                   key={seg}
@@ -142,7 +146,8 @@ export function ProgramGauge({ total, focus, passed, caption }: ProgramGaugeProp
               top: CY * k,
               width: 0,
               height: 0,
-              opacity: focus >= 0 ? 1 : 0,
+              // Program 1 drill: cả cung đã là drill đang tập, marker chỉ vào giữa cung không mang thông tin.
+              opacity: focus >= 0 && total > 1 ? 1 : 0,
               transform: [{ rotate: `${markDeg}deg` }],
               transitionProperty: ['transform', 'opacity'],
               transitionDuration: reduced ? 0 : 240,
@@ -169,8 +174,8 @@ export function ProgramGauge({ total, focus, passed, caption }: ProgramGaugeProp
 
       <View style={s.mid}>
         <View style={s.nums}>
-          <DotMatrixDisplay text={pad(focus >= 0 ? focus + 1 : total)} size="lg" glow />
-          <DotMatrixDisplay text={`/${pad(total)}`} size="sm" color="textTertiary" />
+          <DotMatrixDisplay text={pad(value)} size="lg" glow />
+          <DotMatrixDisplay text={`/${pad(of)}`} size="sm" color="textTertiary" />
         </View>
         <AppText variant="label" color="textTertiary" style={s.cap}>
           {caption}

@@ -83,7 +83,7 @@ export default function EditorScreen() {
     <View style={{ flex: 1, paddingBottom: insets.bottom }}>
       <Stack.Screen
         options={{
-          title: 'Soạn bài',
+          title: 'Shot Editor',
           // Tiêu đề nhỏ 44pt như HTML v4.1, chừa chỗ cho bàn.
           headerLargeTitleEnabled: false,
           headerRight: () => (
@@ -91,10 +91,10 @@ export default function EditorScreen() {
               <IconButton
                 icon="wand.and.stars"
                 variant="plain"
-                accessibilityLabel="Gợi ý đường"
+                accessibilityLabel="Suggest route"
                 onPress={() => setSuggestRev((r) => r + 1)}
               />
-              <IconButton icon="doc.text" variant="plain" accessibilityLabel="Thẻ bài" onPress={() => setCardRev((r) => r + 1)} />
+              <IconButton icon="doc.text" variant="plain" accessibilityLabel="Shot card" onPress={() => setCardRev((r) => r + 1)} />
             </View>
           ),
         }}

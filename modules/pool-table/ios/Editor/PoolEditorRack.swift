@@ -1,8 +1,8 @@
 import Foundation
 import SwiftUI
 
-/// Nhiều bi và Gợi ý đường. Không thêm khay hay panel: chạm đúp nỉ là đặt bi, thả bi vào lỗ là cất bi,
-/// nút Gợi ý nằm trên thanh tiêu đề. Đường gợi ý vẽ bằng guide và replay sẵn có.
+/// Nhiều bi và Gợi ý đường. Khay dưới bàn ở Tự xếp bi: kéo bi từ khay thả lên nỉ, chạm đúp nỉ cũng đặt bi,
+/// thả bi vào lỗ là cất về khay. Nút Gợi ý nằm trên thanh tiêu đề. Đường gợi ý vẽ bằng guide và replay sẵn có.
 extension PoolEditorModel {
   /// Lời gợi ý chỉ đúng cho đúng thế bi và đúng cú lúc gợi ý. Đổi bất cứ gì là lời đó thôi hiện.
   struct Hint: Equatable {
@@ -18,27 +18,59 @@ extension PoolEditorModel {
   }
 
   var hintText: String? {
-    if suggesting { return "Đang tìm đường…" }
+    if suggesting { return "Finding a route…" }
     return hint.flatMap { $0.current(self) ? $0.text : nil }
   }
 
   /// Chạm đúp chỗ trống trên nỉ: đặt bi số nhỏ nhất còn thiếu (1…9), chưa có bi cái thì đặt bi cái trước.
-  func addBall(at p: CGPoint) -> Bool {
+  /// Kéo từ khay thì `number` là bi đang cầm.
+  func addBall(at p: CGPoint, number: Int? = nil) -> Bool {
     let r = PoolTableSpec.ballDiameter / 2
     let c = CGPoint(x: min(max(p.x, r), Self.width - r), y: min(max(p.y, r), Self.length - r))
     if balls.values.contains(where: { hypot($0.x - c.x, $0.y - c.y) < PoolTableSpec.ballDiameter }) {
-      EditorHaptics.fire(.warning, "Chỗ này đã có bi")
+      EditorHaptics.fire(.warning, "A ball is already here")
       return false
     }
-    guard let n = (0...9).first(where: { balls[$0] == nil }) else {
-      EditorHaptics.fire(.warning, "Đủ 9 bi rồi")
+    if ShotPhysics.pockets.values.contains(where: { hypot($0.x - c.x, $0.y - c.y) < ShotPhysics.pocketCatch }) {
+      EditorHaptics.fire(.warning, "Too close to the pocket")
+      return false
+    }
+    guard let n = number ?? (0...9).first(where: { balls[$0] == nil }), balls[n] == nil else {
+      EditorHaptics.fire(.warning, "All 9 balls placed")
       return false
     }
     replay = nil
     picking = nil
     balls[n] = c
-    EditorHaptics.fire(.light, "Đặt \(ShotPhysics.name(n))")
+    EditorHaptics.fire(.light, "Placed \(ShotPhysics.name(n))")
     return true
+  }
+
+  /// Chỗ trống ngẫu nhiên, xa lỗ, cách bi khác hơn cỡ bi vẽ trên màn để không dính nhau.
+  func freeSpot() -> CGPoint? {
+    let gap = PoolTableSpec.ballDiameter * Self.ballZoom + 1, edge = PoolTableSpec.ballDiameter
+    for _ in 0..<200 {
+      let c = CGPoint(x: .random(in: edge...(Self.width - edge)), y: .random(in: edge...(Self.length - edge)))
+      if !balls.values.contains(where: { hypot($0.x - c.x, $0.y - c.y) < gap }),
+         !ShotPhysics.pockets.values.contains(where: { hypot($0.x - c.x, $0.y - c.y) < ShotPhysics.pocketCatch * 2 }) { return c }
+    }
+    return nil
+  }
+
+  /// Nút rải trên khay: thêm bi còn thiếu vào chỗ trống. Khay đã rỗng thì rải lại bi mục tiêu, bi cái giữ nguyên.
+  func scatter() {
+    layout()
+    if balls.count >= 10 { balls = balls.filter { $0.key == 0 } }
+    if balls[0] == nil { balls[0] = CGPoint(x: Self.width / 2, y: Self.length * 0.75) }
+    for n in 1...9 where balls[n] == nil { balls[n] = freeSpot() }
+    // Bàn mới thì cú cũ hết đúng: ngắm lại bi nhỏ nhất vào lỗ có góc cắt nhỏ nhất. Không lỗ nào ăn thì để trống, không báo "không có góc đánh" oan.
+    aimBall = (1...9).first { balls[$0] != nil }
+    aimPocket = aimBall.flatMap { b in
+      PoolEditorGuides.pocketOrder.compactMap { p in
+        ShotPhysics.shotOf(ball: b, pocket: p, balls: balls).flatMap { $0.level == .bad ? nil : (p, $0.cut ?? 180) }
+      }.min { $0.1 < $1.1 }?.0
+    }
+    EditorHaptics.fire(.light, "Spread \(balls.count - 1) balls")
   }
 
   /// Thả bi mục tiêu sát miệng lỗ là cất bi khỏi bàn. Bi cái giữ lại vì cú nào cũng cần.
@@ -46,16 +78,17 @@ extension PoolEditorModel {
     guard n != 0, let p = balls[n], ShotPhysics.pockets.values.contains(where: { hypot($0.x - p.x, $0.y - p.y) < ShotPhysics.pocketCatch }) else { return false }
     balls[n] = nil
     if aimBall == n { aimBall = nil; aimPocket = nil }
-    EditorHaptics.fire(.light, "Cất \(ShotPhysics.name(n))")
+    EditorHaptics.fire(.light, "Removed \(ShotPhysics.name(n))")
     return true
   }
 
   /// Tìm cú tự nhiên nhất cho bi số nhỏ nhất theo luật 9-ball, chạy nền. Xong thì đặt cú vào model để guide tự vẽ.
   func suggest(onDone: @escaping () -> Void) {
     guard !suggesting else { return }
-    guard let cue = balls[0] else { return note("Chưa có bi cái", good: false) }
+    if demo != nil || lesson != nil { layout() }
+    guard let cue = balls[0] else { return note("No cue ball yet", good: false) }
     let obs = balls.filter { $0.key != 0 }
-    guard let n = obs.keys.min() else { return note("Chạm đúp lên nỉ để đặt bi", good: false) }
+    guard let n = obs.keys.min() else { return note("Double-tap the cloth to place a ball", good: false) }
     let P2 = { (p: CGPoint) in RackPlanner.P2(x: Double(p.x), y: Double(p.y)) }
     let L = RackPlanner.Layout(cue: P2(cue), balls: obs.mapValues(P2))
     let before = balls
@@ -71,7 +104,7 @@ extension PoolEditorModel {
         // Bàn đã đổi trong lúc tính thì bỏ kết quả, cú đó không còn đúng.
         guard self.balls == before else { return }
         guard let b = r.best else {
-          return self.note("\(ShotPhysics.name(n).capitalized) không có cú thẳng nào ăn", good: false)
+          return self.note("No clean shot on \(ShotPhysics.name(n))", good: false)
         }
         self.aimBall = b.n
         self.aimPocket = b.pocket
@@ -79,8 +112,8 @@ extension PoolEditorModel {
         self.tipY = CGFloat((b.s.b * 100).rounded() / 100)
         self.speed = CGFloat((b.s.v * 10).rounded() / 10)
         // Một dòng trong cột chữ của panel: tỉ lệ vào và bi kế tiếp, không tên lỗ.
-        var text = "Gợi ý \(Int((b.p * 100).rounded()))% vào"
-        if b.win { text += ", hết bàn" } else if let c = b.childBall { text += ", tiếp \(ShotPhysics.name(c))" }
+        var text = "Suggested: \(Int((b.p * 100).rounded()))% to pot"
+        if b.win { text += ", runs out" } else if let c = b.childBall { text += ", then \(ShotPhysics.name(c))" }
         self.note(text, good: true)
         onDone()
       }
@@ -89,6 +122,276 @@ extension PoolEditorModel {
 
   private func note(_ text: String, good: Bool) {
     hint = Hint(text: text, good: good, balls: balls, shot: Hint.key(self))
-    EditorHaptics.fire(good ? .selection : .warning, "Gợi ý: " + text)
+    EditorHaptics.fire(good ? .selection : .warning, "Hint: " + text)
+  }
+}
+
+/// Chuỗi cú chạy bàn của drill: luồng nền dò từng cú bằng planner rồi dựng replay trên thế bi cú trước để lại,
+/// màn chính diễn lần lượt. Dò cú sau trong lúc cú trước đang chạy, nên chỉ cú đầu phải chờ.
+final class RackRun {
+  struct Step {
+    let ball: Int
+    let pocket: String
+    let tipX, tipY, speed: CGFloat
+    let replay: ShotReplay
+    /// Thế bi lúc vào cú, để vẽ tangent của đúng cú đang chạy.
+    let setup: ShotPhysics.Setup
+    /// Thế bi sau cú, bi đã rơi lỗ không còn.
+    let after: [Int: CGPoint]
+    /// Bi mục tiêu vào lỗ và bi cái không rơi.
+    let ok: Bool
+  }
+
+  struct Start { let balls: [Int: CGPoint]; let aimBall: Int?; let aimPocket: String?; let tipX, tipY, speed: CGFloat }
+
+  let start: Start
+  let onStep: (Step) -> Void
+  var steps: [Step] = []
+  /// Cú kế tiếp sẽ diễn.
+  var next = 0
+  /// Luồng nền đã dò xong, không còn cú nào tới nữa.
+  var planned = false
+  /// Đã diễn hết: hết bàn, trượt, hay không còn cú.
+  var over = false
+  private let lock = NSLock()
+  private var stop = false
+  var cancelled: Bool {
+    get { lock.lock(); defer { lock.unlock() }; return stop }
+    set { lock.lock(); stop = newValue; lock.unlock() }
+  }
+
+  init(start: Start, onStep: @escaping (Step) -> Void) {
+    self.start = start
+    self.onStep = onStep
+  }
+}
+
+extension PoolEditorModel {
+  /// Play shot của drill chạy bàn: đánh bi số nhỏ nhất bằng cú `RackShotSolver`, bi cái dừng đâu đánh bi kế từ đó,
+  /// tới khi hết bàn, trượt bi hay không còn cú thẳng nào.
+  func startRack(reduceMotion: Bool, zone: DrillTargetSolver.Zone? = nil, onStep: @escaping (RackRun.Step) -> Void) {
+    stopRack()
+    let run = RackRun(start: .init(balls: balls, aimBall: aimBall, aimPocket: aimPocket, tipX: tipX, tipY: tipY, speed: speed), onStep: onStep)
+    rack = run
+    let first = balls
+    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+      var cur = first
+      // Cú đầu theo lỗ drill đặt sẵn (drill 17: bi 1 vào lỗ giữa trái), các cú sau solver tự chọn.
+      var only = run.start.aimBall == first.keys.filter({ $0 != 0 }).min() ? run.start.aimPocket : nil
+      while !run.cancelled, let cue = cur[0] {
+        let obs = cur.filter { $0.key != 0 }
+        guard !obs.isEmpty else { break }
+        let t0 = Date()
+        guard let b = RackShotSolver.best(cur, only: only, zone: only == nil ? nil : zone), !run.cancelled else { break }
+        only = nil
+        let ms = b.setup, tipX = b.tipX, tipY = b.tipY, speed = b.speed
+        let took = Date().timeIntervalSince(t0) * 1000
+        let replay = ShotReplay(ms, ball: b.ball, tipX: tipX, tipY: tipY, speed: speed, jump: reduceMotion)
+        var after = cur
+        after[0] = replay.cue.sink ? nil : replay.cue.pts.last
+        after[b.ball] = replay.ob.sink ? nil : replay.ob.pts.last
+        for (n, t) in replay.others { after[n] = t.sink ? nil : t.pts.last }
+        let ok = replay.ob.sink && !replay.cue.sink
+        NSLog("[rack] %d→%@ a %.2f b %.2f v %.1f, %.0f ms, %@", b.ball, b.pocket, tipX, tipY, speed, took, ok ? "in" : "miss")
+        let step = RackRun.Step(ball: b.ball, pocket: b.pocket, tipX: tipX, tipY: tipY, speed: speed, replay: replay, setup: ms, after: after, ok: ok)
+        DispatchQueue.main.async {
+          guard let self, self.rack === run else { return }
+          run.steps.append(step)
+          self.advanceRack()
+        }
+        guard ok else { break }
+        cur = after
+      }
+      DispatchQueue.main.async {
+        guard let self, self.rack === run else { return }
+        run.planned = true
+        self.advanceRack()
+      }
+    }
+  }
+
+  /// Dừng chuỗi và trả bàn về thế bi lúc bấm Play.
+  func stopRack() {
+    guard let run = rack else { return }
+    run.cancelled = true
+    rack = nil
+    replay = nil
+    let s = run.start
+    balls = s.balls; aimBall = s.aimBall; aimPocket = s.aimPocket; tipX = s.tipX; tipY = s.tipY; speed = s.speed
+  }
+
+  /// Bàn đang rảnh thì diễn cú kế. Hết cú đã dò mà luồng nền xong thì chốt chuỗi.
+  private func advanceRack() {
+    guard let run = rack, !run.over, replay == nil else { return }
+    guard run.next < run.steps.count else {
+      if run.planned { endRack(run) }
+      return
+    }
+    let step = run.steps[run.next]
+    run.next += 1
+    aimBall = step.ball; aimPocket = step.pocket
+    tipX = step.tipX; tipY = step.tipY; speed = step.speed
+    run.onStep(step)
+    var r = step.replay
+    r.start = Date()
+    play(r)
+  }
+
+  /// Gọi lúc replay của chuỗi tự đóng: bi đứng lại đúng chỗ cú vừa để lại, nghỉ một nhịp rồi đánh tiếp.
+  func rackStepEnded() {
+    guard let run = rack, run.next > 0 else { return }
+    let step = run.steps[run.next - 1]
+    balls = step.after
+    guard step.ok else { return endRack(run) }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+      guard let self, self.rack === run else { return }
+      self.advanceRack()
+    }
+  }
+
+  private func endRack(_ run: RackRun) {
+    guard !run.over else { return }
+    run.over = true
+    let left = balls.keys.filter { $0 != 0 }.sorted()
+    if left.isEmpty {
+      EditorHaptics.fire(.selection, "Rack cleared in \(run.steps.count) shots")
+    } else if let last = run.steps.last, !last.ok {
+      EditorHaptics.fire(.warning, balls[0] == nil ? "Cue ball scratched" : "Missed \(ShotPhysics.name(last.ball))")
+    } else {
+      EditorHaptics.fire(.warning, "No clean shot on \(ShotPhysics.name(left[0]))")
+    }
+  }
+}
+
+/// Chọn cú chạy bàn bằng chính `ShotPhysics` mà replay dùng, để bi dừng đúng chỗ đã chấm. Planner 9 bi chấm bằng
+/// `RackSim`, hai engine lệch nhau đủ để cú "đẹp" của planner thành bốn băng đâm vào bi khác. Chỉ mượn hình học
+/// của planner: lọc lỗ ăn được, ghost, góc cắt, khoảng cách. Nhìn trước hai tầng.
+enum RackShotSolver {
+  struct Pick {
+    let ball: Int
+    let pocket: String
+    let tipX, tipY, speed: CGFloat
+    let setup: ShotPhysics.Setup
+    let after: [Int: CGPoint]
+    let score: Double
+  }
+
+  struct Grid { let xs, ys, vs: [CGFloat] }
+  /// Lưới thường cho cú giữa chuỗi.
+  static let coarse = Grid(xs: [0], ys: [-0.4, -0.2, 0, 0.2, 0.4], vs: [1.0, 1.4, 1.8, 2.3, 2.9, 3.6])
+  /// Lưới mịn cho cú phải đưa bi cái vào vùng vẽ sẵn của drill: vùng chỉ rộng ~4,5 inch, lưới thường hay trượt.
+  static let fine = Grid(xs: [-0.3, -0.15, 0, 0.15, 0.3], ys: stride(from: -0.5, through: 0.5, by: 0.1).map { CGFloat($0) },
+                         vs: (4...18).map { CGFloat($0) / 5 })
+
+  /// Thế bi đánh được bi kế, như vùng của bài điều bi (`PoolEditorModel.Position`): bi cái cách ghost từ 8 inch,
+  /// góc cắt không quá 30° (luật drill 15). Sát bi thì hết đường điều tiếp, mỏng quá thì khó vào và khó điều.
+  static let maxCut = 30.0, minDist = 8.0
+
+  static func layout(_ balls: [Int: CGPoint]) -> RackPlanner.Layout? {
+    guard let c = balls[0] else { return nil }
+    let p = { (q: CGPoint) in RackPlanner.P2(x: Double(q.x), y: Double(q.y)) }
+    return RackPlanner.Layout(cue: p(c), balls: balls.filter { $0.key != 0 }.mapValues(p))
+  }
+
+  /// Giá trị thế bi: hết bi là 1, bi cái rơi là 0, còn lại là cú thẳng tốt nhất vào bi nhỏ nhất. Độ dễ nhân phạt
+  /// khi bi cái gần ghost dưới 8 inch (dính bi cho độ dễ cao nhưng là thế chết) và khi góc cắt quá 30°.
+  static func value(_ balls: [Int: CGPoint]) -> Double {
+    guard let L = layout(balls) else { return 0 }
+    guard let n = RackPlanner.lowest(L) else { return 1 }
+    var best = 0.01
+    for h in RackPlanner.T.holes {
+      let g = RackPlanner.geom(L, n, h)
+      var e = RackPlanner.easeOf(g, h)
+      if g.d1 < minDist { e *= pow(max(g.d1, 1) / minDist, 2) }
+      if g.cut > maxCut { e *= 0.05 }
+      best = max(best, e)
+    }
+    return best
+  }
+
+  /// Mọi cú ăn bi nhỏ nhất, bi cái không rơi, chấm một tầng và xếp từ tốt tới tệ.
+  static func level(_ balls: [Int: CGPoint], only: String? = nil, grid: Grid = coarse) -> [Pick] {
+    guard let L = layout(balls), let n = RackPlanner.lowest(L), let cue = balls[0], let o = balls[n] else { return [] }
+    let others = balls.filter { $0.key != 0 && $0.key != n }.map { ShotPhysics.Obstacle(n: $0.key, p: $0.value) }
+    let holes = RackPlanner.T.holes.filter { only == nil || $0.id == only }.compactMap { h -> (RackSim.Hole, Double)? in
+      let e = RackPlanner.easeOf(RackPlanner.geom(L, n, h), h)
+      return e > 0.05 ? (h, e) : nil
+    }
+    let tips = grid.xs.flatMap { a in grid.ys.compactMap { b in hypot(a, b) <= DrillTargetSolver.tipLimit + 1e-6 ? (a, b) : nil } }
+    let lock = NSLock()
+    var out: [Pick] = []
+    DispatchQueue.concurrentPerform(iterations: holes.count * tips.count) { k in
+      let (hole, ease) = holes[k / tips.count], (a, b) = tips[k % tips.count], pocket = hole.id
+      let ms = ShotPhysics.Setup(c: cue, o: o, pocket: pocket, others: others, ball: n)
+      var found: [Pick] = []
+      for v in grid.vs {
+        let r = ShotPhysics.runWith(ms, tipX: a, tipY: b, speed: v)
+        // Cú thẳng thật: bi mục tiêu vào đúng lỗ đã chọn, không đụng bi nào khác, và cả đường đi nằm trên tia
+        // từ bi mục tiêu theo hướng sau va chạm (lệch dưới 1 inch) cho tới miệng lỗ. Thiếu điều này solver nhận
+        // cả cú bốn băng tình cờ rơi lỗ. Không dùng `bounces` vì chạm hàm lỗ cũng tính một lần.
+        guard r.short == nil, r.scratch == nil, r.ob.pocket == pocket, r.ob.hit ?? 0 == 0,
+              straight(r.ob.pts, from: o, dir: r.d, hole: hole.c) else { continue }
+        var after = balls
+        after[0] = r.stop
+        after[n] = nil
+        for (m, t) in r.moved { after[m] = t.pocket == nil ? t.stop : nil }
+        let pen = Double(max(0, hypot(a, b) - 0.2) + 0.25 * max(0, v - 2)) + 0.15 * Double(r.moved.count)
+        let score = ease * exp(-pen) * value(after)
+        found.append(Pick(ball: n, pocket: pocket, tipX: a, tipY: b, speed: v, setup: ms, after: after, score: score))
+      }
+      lock.lock(); out += found; lock.unlock()
+    }
+    return out.sorted { $0.score > $1.score }
+  }
+
+  /// Mọi điểm của vệt bi cách tâm lỗ quá 6 inch đều nằm sát tia `from` + t·`dir`, t ≥ 0.
+  static func straight(_ pts: [CGPoint], from o: CGPoint, dir d: CGPoint, hole c: RackPlanner.P2) -> Bool {
+    pts.allSatisfy { p in
+      if hypot(Double(p.x) - c.x, Double(p.y) - c.y) < 6 { return true }
+      let dx = p.x - o.x, dy = p.y - o.y
+      return dx * d.x + dy * d.y > -0.5 && abs(dx * d.y - dy * d.x) < 1
+    }
+  }
+
+  /// Bốn cú tốt nhất tầng đầu, mỗi cú cộng nửa điểm cú tốt nhất của tầng sau.
+  /// `only`: lỗ drill đã chọn cho cú này. `zone`: vùng drill vẽ cho bi cái dừng. Có cú dừng trong vùng thì chỉ xét
+  /// các cú đó; lỗ hay vùng không có cú nào đạt thì quay về chọn tự do.
+  static func best(_ balls: [Int: CGPoint], only: String? = nil, zone: DrillTargetSolver.Zone? = nil) -> Pick? {
+    let grid = zone == nil ? coarse : fine
+    let forced = only.map { level(balls, only: $0, grid: grid) } ?? []
+    var all = forced.isEmpty ? level(balls, grid: grid) : forced
+    if let z = zone {
+      let inside = all.filter { p in p.after[0].map { hypot($0.x - z.c.x, $0.y - z.c.y) <= z.r } ?? false }
+      if !inside.isEmpty { all = inside }
+    }
+    return all.prefix(4).max { score($0) < score($1) }
+  }
+
+  private static func score(_ p: Pick) -> Double {
+    guard p.after.count > 1 else { return p.score }
+    let next = level(p.after).first?.score ?? 0.015
+    return p.score * (0.5 + 0.5 * max(next, 0.015) / max(value(p.after), 0.015))
+  }
+}
+
+/// Tangent của cú đang chạy trong chuỗi chạy bàn, chép đúng nét tangent của drill-editor-v7: gold #D8B451 0,55,
+/// dài 12 inch từ ghost về phía bi cái đi, nét .12 đứt .6/.6 inch. Cú gần thẳng (cắt ≤ 1°) thì không vẽ.
+struct RackTangentLayer: View {
+  let setup: ShotPhysics.Setup
+  let geometry: PoolTableGeometry
+
+  var body: some View {
+    let ghost = PoolGuideMath.ghost(object: setup.o, pocket: setup.P)
+    let t = PoolGuideMath.tangent(cue: setup.c, object: setup.o, pocket: setup.P)
+    let wall = PoolGuideMath.toCushion(from: ghost, dir: t)
+    let len = min(12, hypot(wall.x - ghost.x, wall.y - ghost.y))
+    let end = CGPoint(x: ghost.x + t.x * len, y: ghost.y + t.y * len)
+    let a = ShotPhysics.unit(ghost.x - setup.c.x, ghost.y - setup.c.y)
+    let cut = asin(min(1, abs(a.x * t.x + a.y * t.y))) * 180 / .pi
+    let s = geometry.scale
+    Path { $0.move(to: geometry.point(inchesX: ghost.x, inchesY: ghost.y)); $0.addLine(to: geometry.point(inchesX: end.x, inchesY: end.y)) }
+      .stroke(PoolAimPalette.gold.opacity(cut > 1 ? 0.55 : 0), style: StrokeStyle(lineWidth: max(1, 0.12 * s), dash: [0.6 * s, 0.6 * s]))
+      .allowsHitTesting(false)
+      .accessibilityHidden(true)
   }
 }

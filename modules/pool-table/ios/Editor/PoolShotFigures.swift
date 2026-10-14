@@ -9,18 +9,26 @@ import SwiftUI
 struct PoolShotTile: View {
   let fig: ShotFigure?
   let mode: EditorViewMode
+  /// Cảnh mẫu không bi mục tiêu: ô Ngắm chỉ vẽ mặt bi cái nhìn từ sau, chấm là điểm đặt đầu cơ.
+  var tip: CGPoint? = nil
   let open: () -> Void
 
   var body: some View {
     let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
     Button(action: open) {
       ZStack(alignment: .bottomLeading) {
-        Canvas { ctx, size in
-          guard let fig else {
-            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(ShotFigure.top))
-            return
+        if let tip {
+          Canvas { ctx, size in Self.drawCue(&ctx, size, tip) }
+            .transition(.opacity)
+        } else {
+          Canvas { ctx, size in
+            guard let fig else {
+              ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(ShotFigure.top))
+              return
+            }
+            if mode == .back { fig.drawBack(&ctx, size, cyK: 0.3, mini: true) } else { fig.drawTop(&ctx, size, cyK: 0.3, mini: true) }
           }
-          if mode == .back { fig.drawBack(&ctx, size, cyK: 0.3, mini: true) } else { fig.drawTop(&ctx, size, cyK: 0.3, mini: true) }
+          .transition(.opacity)
         }
         LinearGradient(colors: [.black.opacity(0), .black.opacity(0.62)], startPoint: .top, endPoint: .bottom)
           .frame(height: 64)
@@ -29,7 +37,7 @@ struct PoolShotTile: View {
             .font(.custom("BeVietnamPro-SemiBold", size: 13, relativeTo: .footnote))
             .tracking(-0.1)
             .foregroundStyle(PoolShotPanel.ink)
-          Text(fig.map { mode == .back ? $0.backShort : $0.topShort } ?? "Chưa chọn lỗ")
+          Text(value)
             .font(.custom("BeVietnamPro-Medium", size: 12, relativeTo: .caption))
             .foregroundStyle(Color(red: 235 / 255, green: 235 / 255, blue: 245 / 255).opacity(0.7))
         }
@@ -37,22 +45,77 @@ struct PoolShotTile: View {
         .padding(EdgeInsets(top: 0, leading: 12, bottom: 10, trailing: 12))
       }
       .overlay(alignment: .topTrailing) {
-        Image(systemName: "arrow.up.left.and.arrow.down.right")
-          .font(.system(size: 10, weight: .bold))
-          .foregroundStyle(Color.white.opacity(0.85))
-          .frame(width: 24, height: 24)
-          .background(Circle().fill(Color.black.opacity(0.38)))
-          .padding(8)
+        if tip == nil {
+          Image(systemName: "arrow.up.left.and.arrow.down.right")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(Color.white.opacity(0.85))
+            .frame(width: 24, height: 24)
+            .background(Circle().fill(Color.black.opacity(0.38)))
+            .padding(8)
+            .transition(.opacity)
+        }
       }
       .clipShape(shape)
       .overlay(shape.strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5))
       .contentShape(shape)
     }
     .buttonStyle(PoolPressStyle())
-    .disabled(fig == nil)
+    .disabled(fig == nil || tip != nil)
     .accessibilityLabel(mode.title)
-    .accessibilityValue(fig.map { mode == .back ? $0.backSay : $0.topSay } ?? "Chưa chọn lỗ")
-    .accessibilityHint("Chạm để phóng to")
+    .accessibilityValue(tip != nil ? value : fig.map { mode == .back ? $0.backSay : $0.topSay } ?? "No pocket chosen")
+    .accessibilityHint(tip != nil ? "" : "Tap to enlarge")
+  }
+
+  private var value: String {
+    if let tip { return Self.tipWord(tip) }
+    return fig.map { mode == .back ? $0.backShort : $0.topShort } ?? "No pocket chosen"
+  }
+
+  /// Chỗ đặt đầu cơ nói bằng chữ: Chính giữa, Trên tâm, Dưới trái...
+  static func tipWord(_ t: CGPoint) -> String {
+    let v = abs(t.y) < 0.06 ? nil : t.y > 0 ? "Above" : "Below"
+    let h = abs(t.x) < 0.06 ? nil : t.x > 0 ? "right" : "left"
+    switch (v, h) {
+    case (nil, nil): return "Dead center"
+    case let (v?, nil): return "\(v) center"
+    case let (nil, h?): return h == "right" ? "Right of center" : "Left of center"
+    case let (v?, h?): return "\(v) \(h)"
+    }
+  }
+
+  /// Mặt bi cái ở giữa ô, cùng nét với bàn đầu cơ của panel: mép bi là `tipMax`, chấm xanh là đầu cơ.
+  /// Vạch đứt dọc qua tâm là đường cơ, mũi tên trên là hướng bi đi.
+  static func drawCue(_ ctx: inout GraphicsContext, _ size: CGSize, _ tip: CGPoint) {
+    let W = size.width, H = size.height
+    ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .linearGradient(
+      Gradient(colors: [ShotFigure.top, ShotFigure.felt]), startPoint: .zero, endPoint: CGPoint(x: 0, y: H)))
+    let R = min(W * 0.36, H * 0.16), c = CGPoint(x: W / 2, y: H * 0.46)
+    var aim = Path()
+    aim.move(to: CGPoint(x: c.x, y: H)); aim.addLine(to: CGPoint(x: c.x, y: 22))
+    ctx.stroke(aim, with: .color(.white.opacity(0.35)), style: StrokeStyle(lineWidth: 1.2, dash: [2, 4]))
+    var arrow = Path()
+    arrow.move(to: CGPoint(x: c.x, y: 14)); arrow.addLine(to: CGPoint(x: c.x - 4, y: 22)); arrow.addLine(to: CGPoint(x: c.x + 4, y: 22))
+    arrow.closeSubpath()
+    ctx.fill(arrow, with: .color(ShotFigure.pot.opacity(0.9)))
+
+    let rect = CGRect(x: c.x - R, y: c.y - R, width: 2 * R, height: 2 * R), face = Path(ellipseIn: rect)
+    ctx.fill(face, with: .radialGradient(
+      Gradient(stops: [.init(color: .white, location: 0),
+                       .init(color: Color(hex: 0xECE9E2), location: 0.6),
+                       .init(color: Color(hex: 0xBDB8AE), location: 1)]),
+      center: CGPoint(x: rect.minX + 0.4 * rect.width, y: rect.minY + 0.34 * rect.height),
+      startRadius: 0, endRadius: 0.72 * rect.width))
+    ctx.stroke(face, with: .color(.white.opacity(0.25)), lineWidth: 1)
+    var cross = Path()
+    cross.move(to: CGPoint(x: c.x - R * 0.9, y: c.y)); cross.addLine(to: CGPoint(x: c.x + R * 0.9, y: c.y))
+    cross.move(to: CGPoint(x: c.x, y: c.y - R * 0.9)); cross.addLine(to: CGPoint(x: c.x, y: c.y + R * 0.9))
+    ctx.stroke(cross, with: .color(.black.opacity(0.12)), style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
+
+    let k = R / ShotPhysics.tipMax, p = CGPoint(x: c.x + tip.x * k, y: c.y - tip.y * k), blue = Color(hex: 0x3F6DA8)
+    ctx.fill(Path(ellipseIn: CGRect(x: p.x - 9, y: p.y - 9, width: 18, height: 18)), with: .color(blue.opacity(0.18)))
+    let dot = Path(ellipseIn: CGRect(x: p.x - 6.5, y: p.y - 6.5, width: 13, height: 13))
+    ctx.fill(dot, with: .color(blue))
+    ctx.stroke(dot, with: .color(.white), lineWidth: 2)
   }
 }
 
@@ -161,7 +224,7 @@ struct PoolShotFigureOverlay: View {
     }
     .buttonStyle(PoolPressStyle())
     .padding(4)
-    .accessibilityLabel("Thu hình về")
+    .accessibilityLabel("Collapse")
   }
 }
 
@@ -200,19 +263,32 @@ struct ShotFigure {
   static let felt = PoolTableTheme.tournament.clothLit
 
   init?(_ m: PoolEditorModel) {
+    let slip = hypot(m.tipX, m.tipY) > ShotPhysics.tipMax + 0.001
+    // Cảnh mẫu có bi 1: không lỗ đích, đánh theo hướng `aim`. Đích là hướng bi 1 đi sau va chạm,
+    // theo đường nối tâm lúc chạm, nên Ngắm và Dày mỏng vẫn vẽ được như bài thường.
+    if let p = m.demo {
+      guard let c = m.balls[0], let o = m.balls[1] else { return nil }
+      let f = p.heading, v = CGPoint(x: o.x - c.x, y: o.y - c.y), side = ShotPhysics.dot(v, Self.right(f))
+      guard abs(side) < ShotPhysics.ballDiameter else { return nil }
+      let t = ShotPhysics.dot(v, f) - sqrt(ShotPhysics.ballDiameter * ShotPhysics.ballDiameter - side * side)
+      let G = CGPoint(x: c.x + f.x * t, y: c.y + f.y * t), d = ShotPhysics.unit(o.x - G.x, o.y - G.y)
+      self.init(c: c, o: o, P: CGPoint(x: o.x + d.x * 60, y: o.y + d.y * 60), ball: 1, tipX: slip ? 0 : m.tipX, h: nil)
+      return
+    }
     guard let ball = m.aimBall, let pocket = m.aimPocket, let c = m.balls[0], let o = m.balls[ball],
           let P = ShotPhysics.target(pocket) else { return nil }
-    self.c = c; self.o = o; self.P = P; self.ball = ball
+    let ok = ShotPhysics.shotOf(ball: ball, pocket: pocket, balls: m.balls)?.level != .bad
+    let solved = ok ? m.shotSetup.flatMap { ShotPhysics.solve($0, tipX: m.tipX, tipY: m.tipY, speed: m.speed) } : nil
+    self.init(c: c, o: o, P: P, ball: ball, tipX: slip ? 0 : m.tipX, h: solved.flatMap { $0.reached ? $0 : nil })
+  }
+
+  private init(c: CGPoint, o: CGPoint, P: CGPoint, ball: Int, tipX: CGFloat, h: ShotPhysics.Contact?) {
+    self.c = c; self.o = o; self.P = P; self.ball = ball; self.tipX = tipX; self.h = h
     let (G, d) = ShotPhysics.ghost(o, P)
     self.G = G; self.d = d
     a = ShotPhysics.unit(G.x - c.x, G.y - c.y)
     contact = CGPoint(x: o.x - d.x * Self.R, y: o.y - d.y * Self.R)
     cut = acos(min(max(ShotPhysics.dot(a, d), -1), 1)) * 180 / .pi
-    let slip = hypot(m.tipX, m.tipY) > ShotPhysics.tipMax + 0.001
-    tipX = slip ? 0 : m.tipX
-    let ok = ShotPhysics.shotOf(ball: ball, pocket: pocket, balls: m.balls)?.level != .bad
-    let solved = ok ? m.shotSetup.flatMap { ShotPhysics.solve($0, tipX: m.tipX, tipY: m.tipY, speed: m.speed) } : nil
-    h = solved.flatMap { $0.reached ? $0 : nil }
     // `Contact.L` là hướng sau squirt; quay ngược lại ra hướng cơ.
     stick = h.map { ShotPhysics.rot($0.L, -$0.squirtDeg * .pi / 180) } ?? a
   }
@@ -229,40 +305,40 @@ struct ShotFigure {
 
   /// Độ lệch điểm ngắm nói bằng chữ, không số: số đo nằm trong hình, không nằm trong câu.
   static func aimWord(_ k: CGFloat) -> String {
-    let m = abs(k), side = k > 0 ? "phải" : "trái"
-    if m < 0.06 { return "Thẳng tâm" }
-    if m < 0.4 { return "Hơi \(side)" }
-    if m < 0.94 { return "Bên \(side)" }
-    if m <= 1.06 { return "Sát mép \(side)" }
-    return "Ngoài mép \(side)"
+    let m = abs(k), side = k > 0 ? "right" : "left"
+    if m < 0.06 { return "Center" }
+    if m < 0.4 { return "Slightly \(side)" }
+    if m < 0.94 { return side == "right" ? "Right side" : "Left side" }
+    if m <= 1.06 { return side == "right" ? "Right edge" : "Left edge" }
+    return "Outside \(side) edge"
   }
 
   var topShort: String { Self.aimWord(aimK(a)) }
-  var topSay: String { "Ngắm \(topShort.lowercased()) \(ballName)." }
+  var topSay: String { "Aim \(topShort.lowercased()) of \(ballName)." }
   /// Throw và squirt nói bằng việc phải làm, không nói bằng độ.
   var topComp: String {
-    var s = "Đưa tâm bi trắng vào giữa vòng nét đứt."
+    var s = "Put the cue ball center in the dashed circle."
     guard h != nil else { return s }
     let diff = abs(aimK(stick)) - abs(aimK(a))
     if abs(diff) > 0.02 {
-      s += (abs(tipX) >= 0.03 ? " Có ép phê nên ngắm " : " Mẹo: ngắm ") + (diff > 0 ? "mỏng" : "dày")
-        + " hơn vòng đó " + (abs(diff) < 0.15 ? "một chút" : "khá nhiều") + "."
+      s += (abs(tipX) >= 0.03 ? " With english, aim " : " Tip: aim ") + (diff > 0 ? "thinner" : "thicker")
+        + " than that circle" + (abs(diff) < 0.15 ? ", slightly" : ", by a lot") + "."
     }
     return s
   }
-  var topLabel: String { "Nhìn từ trên: ngắm \(topShort.lowercased()) \(ballName)." }
+  var topLabel: String { "Top view: aim \(topShort.lowercased()) of \(ballName)." }
 
   /// Độ ăn theo phần bi bị che, gọi bằng tiếng lóng bàn bida: ăn trọn, ăn dày, 3/4, 1/2, 1/4, cắt mỏng.
-  private static let marks: [(CGFloat, String)] = [(1, "ăn trọn"), (0.875, "ăn dày"), (0.75, "ăn 3/4"), (0.5, "ăn 1/2"), (0.25, "ăn 1/4"), (0.125, "cắt mỏng")]
+  private static let marks: [(CGFloat, String)] = [(1, "full ball"), (0.875, "⅞ ball"), (0.75, "¾ ball"), (0.5, "½ ball"), (0.25, "¼ ball"), (0.125, "thin cut")]
   var thick: String {
-    if cut < 0.3 { return "đánh thẳng" }
+    if cut < 0.3 { return "straight in" }
     let fr = 1 - sin(cut * .pi / 180)
     return Self.marks.min(by: { abs($0.0 - fr) < abs($1.0 - fr) })!.1
   }
   var backShort: String { thick.prefix(1).uppercased() + thick.dropFirst() }
   var backSay: String { backShort + "." }
-  let backMore = "Phần vàng là chỗ hai bi chồng lên nhau. Chấm vàng là chỗ chạm."
-  var backLabel: String { "Nhìn từ sau cơ: \(thick)." }
+  let backMore = "Gold area is where the balls overlap. Gold dot is the contact point."
+  var backLabel: String { "Behind-the-cue view: \(thick)." }
 
   // MARK: nét chung
 
@@ -349,7 +425,7 @@ struct ShotFigure {
     ctx.fill(arrow, with: .color(Self.pot.opacity(0.9)))
     // Giữ nhãn cách mép 12pt: dấu Ề Ỗ chồng hai tầng, sát mép là bị cắt mất dấu.
     if !mini {
-      label(&ctx, "VỀ LỖ", at: CGPoint(x: min(max(far.x + uS.x * 12, 12), W - 12), y: min(max(far.y + uS.y * 12, 12), Ht - 12)),
+      label(&ctx, "TO POCKET", at: CGPoint(x: min(max(far.x + uS.x * 12, 12), W - 12), y: min(max(far.y + uS.y * 12, 12), Ht - 12)),
             anchor: uS.x > 0.3 ? .leading : uS.x < -0.3 ? .trailing : .center, Self.pot.opacity(0.95))
     }
 
@@ -358,12 +434,12 @@ struct ShotFigure {
       l.opacity = 0.55
       ball(&l, 0, at: cb, Rp)
     }
-    if !mini { label(&ctx, "BI TRẮNG", at: CGPoint(x: cb.x + side * (Rp + 8), y: cb.y), anchor: sideA, Self.cream.opacity(0.7)) }
+    if !mini { label(&ctx, "CUE BALL", at: CGPoint(x: cb.x + side * (Rp + 8), y: cb.y), anchor: sideA, Self.cream.opacity(0.7)) }
     ball(&ctx, ball, at: Op, Rp)
     ghostRing(&ctx, at: Gp, Rp, fill: 0.06)
     contactDot(&ctx, at: Cp, max(3.5, Rp * 0.1))
     // Không nhãn R, góc φ hay khoảng k: số đo cho người mới là nhiễu, vòng nét đứt và chấm vàng là đủ.
-    if !mini { label(&ctx, "ĐÍCH", at: CGPoint(x: Gp.x + side * (Rp + 8), y: Gp.y), anchor: sideA, .white.opacity(0.7)) }
+    if !mini { label(&ctx, "TARGET", at: CGPoint(x: Gp.x + side * (Rp + 8), y: Gp.y), anchor: sideA, .white.opacity(0.7)) }
   }
 
   // MARK: nhìn từ sau bi cái
@@ -394,10 +470,10 @@ struct ShotFigure {
     let dotR = max(4, Rp * 0.11)
     contactDot(&ctx, at: CGPoint(x: X(xC), y: cy), dotR)
     guard !mini else { return }
-    label(&ctx, "ĐIỂM CHẠM", at: CGPoint(x: X(xC), y: cy - Rp - 16), Self.gold)
+    label(&ctx, "CONTACT", at: CGPoint(x: X(xC), y: cy - Rp - 16), Self.gold)
     if abs(xG - xOb) > R * 0.15 {
       let gLx = gP.x + gS * (Rp + 8), fits = gLx + gS * 50 > 2 && gLx + gS * 50 < W - 2
-      label(&ctx, "ĐÍCH", at: fits ? CGPoint(x: gLx, y: cy) : CGPoint(x: gP.x, y: cy + Rp + 12),
+      label(&ctx, "TARGET", at: fits ? CGPoint(x: gLx, y: cy) : CGPoint(x: gP.x, y: cy + Rp + 12),
             anchor: fits ? (gS > 0 ? .leading : .trailing) : .center, .white.opacity(0.7))
     }
   }

@@ -56,6 +56,7 @@ export {
   materialStyle,
   reflectionLayer,
   sheenSweep,
+  sheenSweepStrong,
   type MaterialName,
   type ReflectionName,
 } from './tokens/material';

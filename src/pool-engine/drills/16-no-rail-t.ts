@@ -1,0 +1,41 @@
+import type { PoolDrill } from '../types';
+
+/** Cuestars "No Cushions" chuyển sang pool: chữ T quanh foot spot, mỗi nhánh 3 bi, cách nhau 6.5". */
+export const noRailT = {
+  id: '16',
+  number: 16,
+  title: 'No-Rail T',
+  subtitle: 'Ten balls in a T. The cue ball never touches a cushion.',
+  category: 'patternPlay',
+  skill: 'noRail',
+  skillLabel: 'No-Rail Runout',
+  difficulty: 5,
+  objective: 'Ball in hand. Clear all ten in any order. Cue ball hits a rail and the run ends.',
+  cueBall: { x: 0.24, y: 0.455 },
+  objectBalls: [
+    { number: 1, x: 0.5, y: 0.445 },
+    { number: 2, x: 0.5, y: 0.38 },
+    { number: 3, x: 0.5, y: 0.315 },
+    { number: 4, x: 0.5, y: 0.25 },
+    { number: 5, x: 0.37, y: 0.25 },
+    { number: 6, x: 0.24, y: 0.25 },
+    { number: 7, x: 0.11, y: 0.25 },
+    { number: 8, x: 0.63, y: 0.25 },
+    { number: 9, x: 0.76, y: 0.25 },
+    { number: 10, x: 0.89, y: 0.25 },
+  ],
+  targetPocket: 'sideRight',
+  cueBallTargetZones: [],
+  guideLines: [
+    { kind: 'objectBallPath', ball: 1, pocket: 'sideRight' },
+    { kind: 'ghostBall', ball: 1, pocket: 'sideRight' },
+    { kind: 'tangentLine', ball: 1, pocket: 'sideRight' },
+  ],
+  recommendedContactPoint: { x: 0, y: -0.1 },
+  recommendedSpin: 'stun',
+  recommendedSpeed: 'soft',
+  allowedRails: 0,
+  attemptCount: 5,
+  passCondition: { kind: 'pocketed', required: 2 },
+  tips: ['Read the pattern for stop shots first.', 'Log how many balls each run gets, not just clears.'],
+} satisfies PoolDrill;

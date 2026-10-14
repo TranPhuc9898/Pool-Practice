@@ -38,7 +38,12 @@ export type DrillSkill =
   | 'tangent'
   | 'threePositions'
   | 'oneRail'
-  | 'pattern';
+  | 'pattern'
+  | 'wagonWheel'
+  | 'lineUp'
+  | 'correctSide'
+  | 'noRail'
+  | 'runout';
 export type Difficulty = 1 | 2 | 3 | 4 | 5;
 export type Spin = 'center' | 'stun' | 'follow' | 'draw';
 export type Speed = 'soft' | 'medium' | 'firm';

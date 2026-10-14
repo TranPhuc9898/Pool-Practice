@@ -46,15 +46,15 @@ enum ShotPhysics {
     "headLeft": CGPoint(x: 0, y: 100), "headRight": CGPoint(x: 50, y: 100),
   ]
   static let pocketNames = [
-    "footLeft": "góc trên trái", "footRight": "góc trên phải", "sideLeft": "giữa trái",
-    "sideRight": "giữa phải", "headLeft": "góc dưới trái", "headRight": "góc dưới phải",
+    "footLeft": "top-left corner", "footRight": "top-right corner", "sideLeft": "left side",
+    "sideRight": "right side", "headLeft": "bottom-left corner", "headRight": "bottom-right corner",
   ]
 
   // MARK: đích
 
   /// Đích của bi mục tiêu là một trong sáu lỗ, hoặc một điểm trên băng với id `railLeft@37.5` (băng và inch dọc
   /// băng). Với băng, đích là tâm bi lúc chạm băng, cách mũi băng một bán kính; bi tới đó rồi dội ra theo `cushion`.
-  static let railNames = ["railLeft": "băng trái", "railRight": "băng phải", "railFoot": "băng trên", "railHead": "băng dưới"]
+  static let railNames = ["railLeft": "left rail", "railRight": "right rail", "railFoot": "top rail", "railHead": "bottom rail"]
   static func isPocket(_ id: String) -> Bool { pockets[id] != nil }
   /// id đích băng, inch làm tròn nửa inch để cùng một chỗ chạm cho cùng một id.
   static func railId(_ side: String, at s: CGFloat) -> String {
@@ -192,26 +192,26 @@ enum ShotPhysics {
     func bad(_ why: String) -> Verdict { r.level = .bad; r.why = why; return r }
     let tol: CGFloat = 0.05
     if G.x < ballRadius - tol || G.x > width - ballRadius + tol || G.y < ballRadius - tol || G.y > length - ballRadius + tol {
-      return bad("sát băng, lỗ này không vào được")
+      return bad("frozen to the rail, can't make this pocket")
     }
     let c = balls[0]
     if let c {
       let v = unit(G.x - c.x, G.y - c.y)
       let cut = acos(min(max(v.x * d.x + v.y * d.y, -1), 1)) * 180 / .pi
       r.cut = cut
-      if cut >= 89.5 { return bad("không có góc đánh") }
+      if cut >= 89.5 { return bad("no angle to hit") }
     }
     for (m, q) in balls.sorted(by: { $0.key < $1.key }) where m != ball && m != 0 {
-      if let c, segDist(q, c, G) < ballDiameter - 0.02 { return bad("\(name(m)) chắn bi cái") }
-      if segDist(q, o, P) < ballDiameter - 0.02 { return bad("\(name(m)) chắn đường \(isPocket(pocket) ? "vào lỗ" : "tới băng")") }
+      if let c, segDist(q, c, G) < ballDiameter - 0.02 { return bad("\(name(m)) blocks the cue ball") }
+      if segDist(q, o, P) < ballDiameter - 0.02 { return bad("\(name(m)) blocks the path \(isPocket(pocket) ? "to the pocket" : "to the rail")") }
     }
-    if let cut = r.cut, cut > cutWarn { r.level = .warn; r.why = "quá mỏng" }
+    if let cut = r.cut, cut > cutWarn { r.level = .warn; r.why = "too thin" }
     return r
   }
 
-  static func name(_ n: Int) -> String { n == 0 ? "bi cái" : "bi \(n)" }
+  static func name(_ n: Int) -> String { n == 0 ? "cue ball" : "ball \(n)" }
 
-  private static let fracs: [(CGFloat, String)] = [(1, "cả bi"), (0.75, "¾ bi"), (0.5, "½ bi"), (0.25, "¼ bi"), (0.125, "⅛ bi")]
+  private static let fracs: [(CGFloat, String)] = [(1, "full ball"), (0.75, "¾ ball"), (0.5, "½ ball"), (0.25, "¼ ball"), (0.125, "⅛ ball")]
 
   /// Phần bi chồng nhau nhìn từ bi cái: 1 − sin(góc cắt), làm tròn về mốc người chơi dùng.
   static func fraction(cut: CGFloat) -> String {
@@ -458,6 +458,15 @@ enum ShotPhysics {
     return (CGPoint(x: L.x * CGFloat(V), y: L.y * CGFloat(V)), CGPoint(x: R * om.y, y: R * om.x), CGFloat(om.z))
   }
 
+  /// Tốc bi cái (m/s) ngay sau cú với tốc cơ `stick`, đúng xung `j` của `strike()` trên web (cơ 0,54 kg, bi 0,17 kg,
+  /// e đầu cơ 1, điểm chạm kẹp 0,5R). Điểm chạm vuông góc trục cơ nên |r×d|² = (a²+b²)R²; squirt không đổi độ lớn.
+  static func cueBallSpeed(stick: CGFloat, tipX: CGFloat, tipY: CGFloat, theta: CGFloat) -> CGFloat {
+    let M: CGFloat = 0.54, m: CGFloat = 0.17
+    let k = min(1, 0.5 / max(hypot(tipX, tipY), 1e-9)), r2 = (tipX * tipX + tipY * tipY) * k * k
+    let j = 2 * stick / (1 / M + (1 + 2.5 * r2) / m)
+    return cos(theta * .pi / 180) * j / m
+  }
+
   /// Một cú với hướng cơ `aim` (radian). Squirt lệch đường bi cái; bi cái trượt rồi lăn tới bi mục tiêu bằng đúng bước
   /// của `simulate()` (nâng cơ thì đường cong); va chạm có throw theo Aim Lab: μ giữa hai bi giảm theo tốc độ trượt mặt
   /// tiếp xúc, lực ngang không vượt mức làm mặt tiếp xúc hết trượt. `reached` false là bi cái dừng (hay trượt qua) mà
@@ -570,13 +579,13 @@ enum ShotPhysics {
   static func why(_ r: Run?) -> String {
     guard let r else { return "" }
     switch r.short {
-    case .cue: return "bi cái không tới bi mục tiêu"
+    case .cue: return "cue ball doesn't reach the object ball"
     case .ob:
-      if let m = r.ob.hit { return "bi mục tiêu đụng \(name(m))" }
-      if r.toRail { return "thiếu lực, không tới băng" }
-      if r.ob.bounces > 0 { return "bi mục tiêu dội băng, trật lỗ" }
-      return "thiếu lực, hụt lỗ \(max(1, Int(r.gap.rounded())))\""
-    case nil: return r.scratch.map { "bi cái vào lỗ \(pocketNames[$0] ?? $0)" } ?? ""
+      if let m = r.ob.hit { return "object ball hits \(name(m))" }
+      if r.toRail { return "too soft, doesn't reach the rail" }
+      if r.ob.bounces > 0 { return "object ball rattles off the rail, misses" }
+      return "too soft, short of the pocket by \(max(1, Int(r.gap.rounded())))\""
+    case nil: return r.scratch.map { "cue ball scratches in the \(pocketNames[$0] ?? $0)" } ?? ""
     }
   }
 }
@@ -586,7 +595,7 @@ enum ShotPhysics {
 enum ShotPhysicsFixture {
   static func logDrill03(_ model: PoolEditorModel) {
     guard let ball = model.aimBall, let pocket = model.aimPocket, let c = model.balls[0], let o = model.balls[ball] else {
-      NSLog("[ShotPhysics] d03 thiếu bi cái hoặc đường vào lỗ")
+      NSLog("[ShotPhysics] d03 missing cue ball or pocket line")
       return
     }
     let others = model.balls.filter { $0.key != 0 && $0.key != ball }.map { ShotPhysics.Obstacle(n: $0.key, p: $0.value) }

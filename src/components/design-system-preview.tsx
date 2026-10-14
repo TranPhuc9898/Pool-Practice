@@ -108,14 +108,14 @@ function TypographySection() {
   const t = useTheme();
   const s = useStyles();
   return (
-    <Section title="Typography" caption="Be Vietnam Pro · Doto cho tiêu đề chấm · Dynamic Type capped per style." gap="md">
+    <Section title="Typography" caption="Be Vietnam Pro · Doto for dot-matrix titles · Dynamic Type capped per style." gap="md">
       {(Object.keys(t.type) as (keyof typeof t.type)[]).map((k) => (
         <View key={k} style={s.typeRow}>
           <AppText variant="captionSmall" color="textTertiary">
             {k} · {t.type[k].fontSize}/{t.type[k].lineHeight}
           </AppText>
           <AppText variant={k} numberOfLines={1}>
-            {k.includes('etric') ? '9 / 10' : k.startsWith('dot') ? 'Today' : 'Chạy hết bàn, đặt bi cái'}
+            {k.includes('etric') ? '9 / 10' : k.startsWith('dot') ? 'Today' : 'Run the rack, place the cue ball'}
           </AppText>
         </View>
       ))}

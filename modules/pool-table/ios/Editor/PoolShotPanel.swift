@@ -2,22 +2,21 @@ import SwiftUI
 
 /// Bảng cú đánh dưới bàn, port card của Soạn bài v5.2: chữ cho người mới, không đơn vị, số đo nằm trong hình.
 /// Hàng 1: mặt bi cái 2D và cột chữ. Hàng 2: lực. Hàng 3: Đường đi và Đánh. Kéo chỉ đổi model, nhấc tay mới commit.
-/// Lúc chạy thử: cột chữ thành số đo sống (tốc bi, ρ, phê, spin tổng, trục quay) và hàng lực thành thanh tua kèm
-/// bốn mức tốc độ, cùng bộ số với bảng đọc của trang bi-cai-xoay.html.
+/// Lúc chạy thử: cột chữ thành số đo sống (tốc bi, ρ, phê, spin tổng, trục quay) và hàng lực thành thanh tua,
+/// cùng bộ số với bảng đọc của trang bi-cai-xoay.html. Chạy thử luôn ở tốc độ thật 1×.
 struct PoolShotPanel: View {
   @ObservedObject var model: PoolEditorModel
   let onCommit: () -> Void
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-  /// Card 318 như HTML cộng hàng cú mẫu 44 và hàng Nâng cơ 44, rồi 12 hở trên và 8 lề dưới. JS để native view flex
-  /// nên chỉ đổi ở đây.
-  static let height: CGFloat = 426
-  static let cardHeight: CGFloat = 406
+  /// Card 318 như HTML cộng hàng cú mẫu 44, rồi 12 hở trên và 8 lề dưới. JS để native view flex nên chỉ đổi ở đây.
+  static let height: CGFloat = 382
+  static let cardHeight: CGFloat = 362
   /// Thang tốc độ bi cái của Dr. Dave: chậm 0.45–0.89, vừa 0.89–1.9, nhanh 1.9–3.2, mạnh 3.2–4.5 m/s.
   /// Mốc đặt giữa từng khoảng. Phá bi (11 m/s trở lên) không thuộc bảng này.
   static let vMin: CGFloat = 0.3
   static let vMax: CGFloat = 4.5
-  static let marks: [(v: CGFloat, label: String)] = [(0.7, "Chậm"), (1.4, "Vừa"), (2.5, "Nhanh"), (3.8, "Mạnh")]
+  static let marks: [(v: CGFloat, label: String)] = [(0.7, "Soft"), (1.4, "Medium"), (2.5, "Firm"), (3.8, "Power")]
 
   static let ink = Color(hex: 0xF5F5F7)
   static let secondary = Color(red: 235 / 255, green: 235 / 255, blue: 245 / 255).opacity(0.6)
@@ -36,8 +35,6 @@ struct PoolShotPanel: View {
         if let r = model.replay { PoolReplayScrub(model: model, replay: r) } else { power }
       }
       .padding(.top, 14)
-      elevation
-        .padding(.top, 16)
       HStack(spacing: 10) {
         paths
         shoot(s)
@@ -56,26 +53,21 @@ struct PoolShotPanel: View {
     .frame(height: Self.height)
   }
 
-  /// Hàng cú mẫu, cuộn ngang, như hàng preset của web. Bấm là đặt pad và Lực, chip trùng cú hiện tại thì vàng.
+  /// Hàng cú mẫu, cuộn ngang, như hàng preset của web. Tự xếp bi là bàn của bài, chip khác bày cảnh mẫu của web.
+  /// Cảnh mẫu không đổi bài nên không commit.
   private var presets: some View {
     ScrollView(.horizontal, showsIndicators: false) {
       HStack(spacing: 8) {
+        chip("Auto rack", on: model.demo == nil && model.lesson == nil) { model.layout() }
+        // Một chip cho cả bộ bài điều bi: chạm lần nữa là sang bài kế. Bi cái đã kéo đi thì chạm là đưa về chỗ của bài.
+        let n = PoolEditorModel.positions.count, moved = model.cueMoved
+        chip(model.lesson.map { "\(moved ? "Reset" : "Position") \($0 + 1)/\(n)" } ?? "Position", on: model.lesson != nil) {
+          model.play(model.lesson.map { moved ? $0 : ($0 + 1) % n } ?? 0)
+        }
+        .accessibilityHint(moved ? "Return the cue ball to the lesson spot"
+          : model.position.map { $0.lesson + ". Drag the cue ball to try another spot, tap again for the next lesson" } ?? "Pot ball 1, leave the cue ball in the zone for ball 2")
         ForEach(PoolEditorModel.presets) { p in
-          let on = model.preset?.id == p.id
-          Button {
-            model.apply(p)
-            onCommit()
-          } label: {
-            Text(p.name)
-              .font(.custom("BeVietnamPro-SemiBold", size: 13, relativeTo: .footnote))
-              .foregroundStyle(on ? Color(hex: 0x1B1504) : Self.ink)
-              .padding(.horizontal, 12)
-              .frame(height: 32)
-              .background(Capsule().fill(on ? PoolAimPalette.gold : Color.white.opacity(0.08)))
-              .contentShape(Capsule())
-          }
-          .buttonStyle(PoolPressStyle())
-          .accessibilityAddTraits(on ? .isSelected : [])
+          chip(p.name, on: model.demo?.id == p.id) { model.apply(p) }
         }
       }
       .padding(.horizontal, 20)
@@ -84,13 +76,31 @@ struct PoolShotPanel: View {
     .frame(height: 32)
   }
 
+  private func chip(_ name: String, on: Bool, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Text(name)
+        .font(.custom("BeVietnamPro-SemiBold", size: 13, relativeTo: .footnote))
+        .foregroundStyle(on ? Color(hex: 0x1B1504) : Self.ink)
+        .padding(.horizontal, 12)
+        .frame(height: 32)
+        .background(Capsule().fill(on ? PoolAimPalette.gold : Color.white.opacity(0.08)))
+        .contentShape(Capsule())
+    }
+    .buttonStyle(PoolPressStyle())
+    .accessibilityAddTraits(on ? .isSelected : [])
+  }
+
   /// Cột chữ bên phải pad: điểm đánh, phê (ẩn khi không phê), bi trắng sau chạm, trạng thái.
   private func column(_ s: ShotPanelState) -> some View {
     let dot = s.kind.map { PoolEditorGuides.spin[$0] } ?? Color(red: 235 / 255, green: 235 / 255, blue: 245 / 255).opacity(0.3)
     return VStack(alignment: .leading, spacing: 0) {
-      Text(s.tipText)
+      // Đang bày cú mẫu và chưa chỉnh đầu cơ thì gọi đúng tên cú mẫu, không suy từ vùng của pad.
+      Text(model.demo.flatMap { $0.tipX == model.tipX && $0.tipY == model.tipY ? $0.name : nil }
+        ?? model.position.flatMap { model.tipX == 0 && $0.tipY == model.tipY ? $0.name : nil } ?? s.tipText)
         .font(.custom("BeVietnamPro-SemiBold", size: 26, relativeTo: .title2))
         .tracking(-0.5)
+        .lineLimit(2)
+        .minimumScaleFactor(0.7)
         .foregroundStyle(s.slip ? PoolEditorGuides.red : Self.ink)
         .frame(minHeight: 30)
       if !s.sideText.isEmpty {
@@ -122,7 +132,7 @@ struct PoolShotPanel: View {
   private var power: some View {
     VStack(spacing: 10) {
       HStack {
-        Text("Lực")
+        Text("Speed")
           .font(.custom("BeVietnamPro-Medium", size: 15, relativeTo: .subheadline))
           .foregroundStyle(Self.secondary)
         Spacer()
@@ -139,39 +149,35 @@ struct PoolShotPanel: View {
     }
   }
 
-  /// Hàng Nâng cơ, một dòng 28: nhãn, thanh kéo 0–75° tuyến tính, số độ vàng. `theta` của web; trên 0 là massé.
-  private var elevation: some View {
-    HStack(spacing: 12) {
-      Text("Nâng cơ")
-        .font(.custom("BeVietnamPro-Medium", size: 15, relativeTo: .subheadline))
-        .foregroundStyle(Self.secondary)
-        .fixedSize()
-      PoolElevationTrack(model: model, onCommit: onCommit)
-      Text("\(Int(model.theta.rounded()))°")
-        .font(.custom("BeVietnamPro-SemiBold", size: 17, relativeTo: .body))
-        .foregroundStyle(model.theta > 0.5 ? PoolAimPalette.gold : Self.secondary)
-        .monospacedDigit()
-        .frame(width: 40, alignment: .trailing)
-    }
-    .frame(height: 28)
-  }
-
   /// Bật tắt đường bi cái và bi mục tiêu. Bấm nhiều nên không animation, đổi icon và độ sáng là đủ.
+  /// Trong bài điều bi nút thành Đoán: bật thì giấu đường đi, chạm bàn để đoán chỗ bi cái dừng.
   private var paths: some View {
-    Button { model.showPaths.toggle() } label: {
+    let lesson = model.lesson != nil, on = lesson ? model.guessing : model.showPaths
+    return Button {
+      if lesson { model.guessing.toggle(); model.guess = nil; model.guessed = nil } else { model.showPaths.toggle() }
+    } label: {
       HStack(spacing: 8) {
-        Image(systemName: model.showPaths ? "eye" : "eye.slash").font(.system(size: 20))
-        Text("Đường đi").font(.custom("BeVietnamPro-Medium", size: 15, relativeTo: .subheadline)).fixedSize()
+        Image(systemName: lesson ? "scope" : on ? "eye" : "eye.slash").font(.system(size: 20))
+        Text(lesson ? "Guess" : "Path").font(.custom("BeVietnamPro-Medium", size: 15, relativeTo: .subheadline)).fixedSize()
+        // Chuỗi đoán trúng của bài, số gold cạnh chữ. Trượt là về 0 và ẩn.
+        if lesson, let s = model.streak, s.now > 0 {
+          Text("\(s.now)")
+            .font(.custom("BeVietnamPro-SemiBold", size: 15, relativeTo: .subheadline))
+            .foregroundStyle(PoolAimPalette.gold)
+            .monospacedDigit()
+        }
       }
       .foregroundStyle(Self.ink)
       .padding(.horizontal, 16)
       .frame(height: 50)
-      .background(Capsule().fill(Color.white.opacity(model.showPaths ? 0.16 : 0.08)))
+      .background(Capsule().fill(Color.white.opacity(on ? 0.16 : 0.08)))
       .contentShape(Capsule())
     }
     .buttonStyle(PoolPressStyle())
-    .accessibilityAddTraits(model.showPaths ? .isSelected : [])
-    .accessibilityHint("Tắt thì chỉ còn đường ngắm từ bi cái tới bi mục tiêu")
+    .accessibilityAddTraits(on ? .isSelected : [])
+    .accessibilityValue(lesson ? model.streak.map { "Streak \($0.now), best \($0.best)" } ?? "" : "")
+    .accessibilityHint(lesson ? "Turn on, then tap the table to guess where the cue ball stops. The answer shows after the shot"
+      : "Off shows only the aim line from cue ball to object ball")
   }
 
   private func shoot(_ s: ShotPanelState) -> some View {
@@ -181,7 +187,7 @@ struct PoolShotPanel: View {
     } label: {
       HStack(spacing: 8) {
         Image(systemName: playing && !held ? "stop.fill" : "play.fill").font(.system(size: 16, weight: .semibold))
-        Text(held ? "Tiếp" : playing ? "Dừng" : "Đánh").font(.custom("BeVietnamPro-SemiBold", size: 17, relativeTo: .body))
+        Text(held ? "Resume" : playing ? "Stop" : "Shoot").font(.custom("BeVietnamPro-SemiBold", size: 17, relativeTo: .body))
       }
       .foregroundStyle(Color(hex: 0x1B1504))
       .frame(maxWidth: .infinity)
@@ -192,7 +198,7 @@ struct PoolShotPanel: View {
     .buttonStyle(PoolPressStyle())
     .disabled(!s.ran && !playing)
     .opacity(s.ran || playing ? 1 : 0.4)
-    .accessibilityHint(held ? "Chạy tiếp từ chỗ đang dừng" : playing ? "Dừng chạy thử" : "Chạy thử cú này trên bàn")
+    .accessibilityHint(held ? "Resume from where it paused" : playing ? "Stop the test run" : "Test this shot on the table")
   }
 
   /// Thanh lực: thumb 28 nằm trong 14…W−14, thang bậc hai như HTML (`pos = sqrt((v−0.3)/4.2)`).
@@ -204,7 +210,7 @@ struct PoolShotPanel: View {
   }
   static func fmt1(_ v: CGFloat) -> String { String(format: "%.1f", Double(v)) }
   static func powerWord(_ v: CGFloat) -> String {
-    v < 0.45 ? "Chạm nhẹ" : v < 0.89 ? "Chậm" : v < 1.9 ? "Vừa" : v < 3.2 ? "Nhanh" : "Mạnh"
+    v < 0.45 ? "Touch" : v < 0.89 ? "Soft" : v < 1.9 ? "Medium" : v < 3.2 ? "Firm" : "Power"
   }
 }
 
@@ -225,33 +231,58 @@ struct ShotPanelState {
     let verdict = m.aimBall.flatMap { b in m.aimPocket.flatMap { ShotPhysics.shotOf(ball: b, pocket: $0, balls: m.balls) } }
     let ms = verdict?.level == .bad ? nil : m.shotSetup
     let run = ms.map { ShotPhysics.runWith($0, tipX: m.tipX, tipY: m.tipY, theta: m.theta, speed: m.speed) }
-    let name = m.aimBall.map { ShotPhysics.name($0) } ?? "bi"
+    let name = m.aimBall.map { ShotPhysics.name($0) } ?? "ball"
     let cut = verdict?.cut ?? 0
     slip = hypot(m.tipX, m.tipY) > ShotPhysics.tipMax + 0.001
-    ran = !slip && run != nil && run?.short != .cue
+    // Cảnh mẫu đánh theo hướng cố định như web, không cần tới bi nào.
+    ran = !slip && (m.demo != nil || (run != nil && run?.short != .cue))
     sunk = run?.scratch != nil
     stop = ran && !sunk ? run?.stop : nil
     stun = ms.flatMap { ShotPhysics.stunTip($0, speed: m.speed) }
-    lastGear = ran && abs(run!.gear) < 0.6 ? (run!.gear * 100).rounded() / 100 : nil
-    stunWord = cut < 5 ? "Dừng" : "Ngang"
+    lastGear = ran ? run.flatMap { abs($0.gear) < 0.6 ? ($0.gear * 100).rounded() / 100 : nil } : nil
+    stunWord = cut < 5 ? "Stop" : "Stun"
 
-    let ay = abs(m.tipY), vw = m.tipY > 0 ? "Culê" : "Kéo"
-    tipText = slip ? "Trượt cơ" : ay < 0.05 ? "Đánh tâm" : ay < 0.2 ? vw + " nhẹ" : ay < 0.45 ? vw : vw + " mạnh"
+    let ay = abs(m.tipY), vw = m.tipY > 0 ? "Follow" : "Draw"
+    tipText = slip ? "Miscue" : ay < 0.05 ? "Center" : ay < 0.2 ? "Light " + vw.lowercased() : ay < 0.45 ? vw : "Strong " + vw.lowercased()
     let ax = abs(m.tipX)
-    sideText = slip || ax < 0.03 ? "" : "Phê \(m.tipX > 0 ? "phải" : "trái")" + (ax < 0.2 ? " nhẹ" : ax < 0.5 ? "" : " mạnh")
+    sideText = slip || ax < 0.03 ? "" : (ax < 0.2 ? "Light " : ax < 0.5 ? "" : "Strong ") + (m.tipX > 0 ? "right" : "left") + " english"
 
     var good = false, text = "", bad = false
     if let v = verdict, v.level == .bad { text = v.why.prefix(1).uppercased() + v.why.dropFirst(); bad = true }
-    else if slip { text = "Không đánh được"; bad = true }
-    else if run?.short == .cue { text = "Lực yếu quá"; bad = true }
+    else if slip { text = "Can't play this"; bad = true }
+    else if run?.short == .cue { text = "Too soft"; bad = true }
     else if let r = run, r.short == .ob {
-      text = r.ob.hit.map { "\(name.capitalized) đụng \(ShotPhysics.name($0))" }
-        ?? (r.toRail ? "\(name.capitalized) không tới băng" : r.ob.bounces > 0 ? "\(name.capitalized) trật lỗ" : "\(name.capitalized) không tới lỗ")
+      text = r.ob.hit.map { "\(name.capitalized) hits \(ShotPhysics.name($0))" }
+        ?? (r.toRail ? "\(name.capitalized) doesn't reach the rail" : r.ob.bounces > 0 ? "\(name.capitalized) misses the pocket" : "\(name.capitalized) comes up short")
       bad = true
     }
-    else if let r = run, r.toRail { text = sunk ? "Chạm băng, nhưng trắng rơi lỗ" : "\(name.capitalized) chạm băng"; bad = sunk; good = !sunk }
-    else if sunk { text = "Vào, nhưng trắng rơi lỗ"; bad = true }
-    else if run != nil { text = "\(name.capitalized) vào lỗ"; good = true }
+    else if let r = run, r.toRail { text = sunk ? "Hits the rail, but the cue ball scratches" : "\(name.capitalized) hits the rail"; bad = sunk; good = !sunk }
+    else if sunk { text = "Pocketed, but the cue ball scratches"; bad = true }
+    else if run != nil { text = "\(name.capitalized) pocketed"; good = true }
+    // Bài điều bi, chế độ đoán: chưa đánh thì không lộ chỗ dừng, đánh xong thì chấm độ lệch của điểm đoán.
+    if !bad, let p = m.position, m.guessing {
+      if m.revealed, let c = stop, let g = m.guess {
+        // Chấm theo số đã làm tròn, khớp với chữ đang hiện.
+        let e = hypot(c.x - g.x, c.y - g.y).rounded()
+        text = "Off by \(Int(e)) in, \(p.contains(c) ? "in zone" : "out of zone")"
+        good = e <= PoolEditorModel.guessGood
+        bad = e > PoolEditorModel.guessBad
+      } else {
+        text = m.guess == nil ? "Tap the table to guess" : "Guessed, tap Shoot"
+        good = false
+      }
+    }
+    // Bài điều bi: cú vẫn sạch thì dòng trạng thái chấm chỗ bi cái dừng so với vùng đánh bi 2.
+    else if !bad, let p = m.position, let c = stop {
+      let k = p.cut(from: c)
+      if p.contains(c) { text = "In zone for ball 2, \(Int(k.deg.rounded()))° cut"; good = true }
+      else {
+        text = k.deg < 0 ? "Cue ball on the wrong side of ball 2" : k.dist > PoolEditorModel.Position.dists.upperBound ? "Cue ball too far from ball 2, \(Int(k.dist.rounded())) in"
+          : k.dist < PoolEditorModel.Position.dists.lowerBound ? "Cue ball too close to ball 2" : k.deg < PoolEditorModel.Position.cuts.lowerBound ? "Ball 2 nearly straight" : "Ball 2 cut too thin"
+        bad = true
+        good = false
+      }
+    }
     // Lời Gợi ý thay dòng trạng thái khi cú vẫn đúng như lúc gợi ý.
     if !bad, let h = m.hintText {
       text = h
@@ -264,11 +295,11 @@ struct ShotPanelState {
     if ran, let r = run {
       let k = PoolEditorGuides.spinIndex(r.f)
       kind = k
-      spinText = k == 0 ? "Trắng kéo về" : k == 1 ? (cut < 5 ? "Trắng đứng im" : "Trắng đi ngang")
-        : m.tipY < -0.05 ? "Trắng vẫn chạy theo" : "Trắng chạy theo"
+      spinText = k == 0 ? "Cue draws back" : k == 1 ? (cut < 5 ? "Cue stops dead" : "Cue goes sideways")
+        : m.tipY < -0.05 ? "Cue still follows" : "Cue follows"
     } else {
       kind = nil
-      spinText = slip ? "Kéo chấm vào trong" : run?.short == .cue ? "Trắng không tới \(name)" : ""
+      spinText = slip ? "Drag the dot inward" : run?.short == .cue ? "Cue ball doesn't reach \(name)" : ""
     }
   }
 }
@@ -321,19 +352,19 @@ struct PoolTipPad: View {
           }
       )
       .accessibilityElement()
-      .accessibilityLabel("Điểm đánh trên bi cái: lên là culê, xuống là kéo, ngang là phê")
+      .accessibilityLabel("Tip position on the cue ball: up is follow, down is draw, sideways is english")
       .accessibilityValue(accessibilityText)
       .accessibilityAdjustableAction { dir in
         guard dir == .increment || dir == .decrement else { return }
         nudge(dx: 0, dy: dir == .increment ? 0.05 : -0.05)
       }
-      .accessibilityAction(named: "Phê phải thêm") { nudge(dx: 0.05, dy: 0) }
-      .accessibilityAction(named: "Phê trái thêm") { nudge(dx: -0.05, dy: 0) }
+      .accessibilityAction(named: "More right english") { nudge(dx: 0.05, dy: 0) }
+      .accessibilityAction(named: "More left english") { nudge(dx: -0.05, dy: 0) }
   }
 
   private var accessibilityText: String {
     let s = ShotPanelState(model)
-    return s.tipText + ", " + (s.sideText.isEmpty ? "Không phê" : s.sideText)
+    return s.tipText + ", " + (s.sideText.isEmpty ? "No english" : s.sideText)
   }
 
   private func nudge(dx: CGFloat, dy: CGFloat) {
@@ -351,15 +382,15 @@ struct PoolTipPad: View {
     var y = -(p.y - Self.center.y) / Self.ppr
     let h = hypot(x, y)
     if h > Self.reach { x *= Self.reach / h; y *= Self.reach / h }
-    var ys: [(String, CGFloat)] = [("tâm", 0), ("culê", ShotPhysics.rollTip)]
+    var ys: [(String, CGFloat)] = [("center", 0), ("follow", ShotPhysics.rollTip)]
     if let stun { ys.append((stunWord.lowercased(), stun)) }
-    var xs: [(String, CGFloat)] = [("không phê", 0)]
-    if let gear, abs(gear) > 0.03 { xs.append(("hết throw", gear)) }
+    var xs: [(String, CGFloat)] = [("no english", 0)]
+    if let gear, abs(gear) > 0.03 { xs.append(("zero throw", gear)) }
     var hitY: String?, hitX: String?
     for (id, v) in ys where abs(y - v) < 0.025 { y = v; hitY = id }
     for (id, v) in xs where abs(x - v) < 0.025 { x = v; hitX = id }
     let fresh = [hitY != snapY ? hitY : nil, hitX != snapX ? hitX : nil].compactMap { $0 }
-    if !fresh.isEmpty { EditorHaptics.fire(.selection, "Đầu cơ hít mốc " + fresh.joined(separator: ", ")) }
+    if !fresh.isEmpty { EditorHaptics.fire(.selection, "Tip snapped to " + fresh.joined(separator: ", ")) }
     snapY = hitY
     snapX = hitX
     model.tipX = (x * 100).rounded() / 100
@@ -370,7 +401,7 @@ struct PoolTipPad: View {
 
   /// Nhãn Culê / Tâm / Dừng (hoặc Ngang) bên phải, đẩy nhau ra tối thiểu 15pt, không quá y = 122.
   private func labels() -> [Label] {
-    var ls = [Label(text: "Culê", v: ShotPhysics.rollTip, y: 0), Label(text: "Tâm", v: 0, y: 0)]
+    var ls = [Label(text: "Follow", v: ShotPhysics.rollTip, y: 0), Label(text: "Center", v: 0, y: 0)]
     if let stun, abs(stun) > 0.06 { ls.append(Label(text: stunWord, v: stun, y: 0)) }
     for i in ls.indices { ls[i].y = Self.center.y - ls[i].v * Self.ppr }
     ls.sort { $0.y < $1.y }
@@ -448,7 +479,6 @@ struct PoolReplayScrub: View {
       let t = min(replay.time(tl.date), replay.end)
       VStack(spacing: 10) {
         HStack(spacing: 0) {
-          rates
           Spacer(minLength: 8)
           Text(Self.num(t, 2))
             .font(.custom("BeVietnamPro-SemiBold", size: 17, relativeTo: .body))
@@ -494,41 +524,16 @@ struct PoolReplayScrub: View {
     }
     .frame(height: 28)
     .accessibilityElement()
-    .accessibilityLabel("Thời gian chạy thử")
-    .accessibilityValue("\(Self.num(t, 2)) trên \(Self.num(replay.end, 2)) giây")
+    .accessibilityLabel("Test run time")
+    .accessibilityValue("\(Self.num(t, 2)) of \(Self.num(replay.end, 2)) seconds")
     .accessibilityAdjustableAction { dir in
       let d: CGFloat = dir == .increment ? 0.1 : dir == .decrement ? -0.1 : 0
       if d != 0 { model.scrubReplay(to: t + d) }
     }
   }
 
-  /// Bốn mức tốc độ như `speedSeg` của web. Nút đang chọn nền vàng.
-  private var rates: some View {
-    HStack(spacing: 4) {
-      ForEach(PoolEditorModel.rates, id: \.self) { r in
-        let on = abs(replay.rate - r) < 1e-6
-        Button { model.setReplayRate(r) } label: {
-          Text(Self.rateText(r))
-            .font(.custom("BeVietnamPro-SemiBold", size: 13, relativeTo: .footnote))
-            .foregroundStyle(on ? Color(hex: 0x1B1504) : PoolShotPanel.ink)
-            .padding(.horizontal, 9)
-            .frame(height: 24)
-            .background(Capsule().fill(on ? PoolAimPalette.gold : Color.white.opacity(0.1)))
-            .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Tốc độ \(Self.rateText(r))")
-        .accessibilityAddTraits(on ? .isSelected : [])
-      }
-    }
-  }
-
-  static func rateText(_ r: CGFloat) -> String {
-    r == 1 ? "1×" : num(r, r == 0.25 ? 2 : 1) + "×"
-  }
-
   static func num(_ v: CGFloat, _ digits: Int) -> String {
-    String(format: "%.\(digits)f", Double(v)).replacingOccurrences(of: ".", with: ",")
+    String(format: "%.\(digits)f", Double(v))
   }
 }
 
@@ -542,17 +547,17 @@ struct PoolReplayReads: View {
       let s = replay.cue.read(min(replay.time(tl.date), replay.end))
       let n = PoolReplayScrub.num
       let wz = s.wz / (2 * .pi), wm = s.revs * 2 * .pi
-      let tilt = wm < 0.5 ? "—" : "nghiêng \(Int((asin(min(1, abs(s.wz) / wm)) * 180 / .pi).rounded()))°"
+      let tilt = wm < 0.5 ? "—" : "tilt \(Int((asin(min(1, abs(s.wz) / wm)) * 180 / .pi).rounded()))°"
       VStack(alignment: .leading, spacing: 0) {
         Text(s.phase.name)
           .font(.custom("BeVietnamPro-SemiBold", size: 20, relativeTo: .title3))
           .foregroundStyle(s.phase.color)
           .frame(minHeight: 26)
-        row("Tốc bi", n(s.speed / ShotPhysics.inchesPerMeter, 2) + " m/s")
-        row("Tỉ số lăn ρ", s.rho.map { n($0, 2) } ?? "—")
-        row("Phê", abs(wz) < 0.05 ? "0,0 vòng/s" : n(abs(wz), 1) + " vòng/s " + (s.wz > 0 ? "phải" : "trái"))
-        row("Spin tổng", n(s.revs, 1) + " vòng/s")
-        row("Trục quay", tilt)
+        row("Ball speed", n(s.speed / ShotPhysics.inchesPerMeter, 2) + " m/s")
+        row("Roll ratio ρ", s.rho.map { n($0, 2) } ?? "—")
+        row("Side spin", abs(wz) < 0.05 ? "0.0 rev/s" : n(abs(wz), 1) + " rev/s " + (s.wz > 0 ? "right" : "left"))
+        row("Total spin", n(s.revs, 1) + " rev/s")
+        row("Spin axis", tilt)
       }
       .lineLimit(1)
       .monospacedDigit()
@@ -627,7 +632,7 @@ struct PoolPowerTrack: View {
     }
     .frame(height: 28)
     .accessibilityElement()
-    .accessibilityLabel("Lực")
+    .accessibilityLabel("Speed")
     .accessibilityValue(PoolShotPanel.powerWord(model.speed))
     .accessibilityAdjustableAction { dir in
       let d: CGFloat = dir == .increment ? 0.1 : dir == .decrement ? -0.1 : 0
@@ -641,91 +646,8 @@ struct PoolPowerTrack: View {
     let v = (min(max(raw, PoolShotPanel.vMin), PoolShotPanel.vMax) * 10).rounded() / 10
     let old = model.speed
     if let p = PoolShotPanel.marks.first(where: { (old - $0.v) * (v - $0.v) < 0 || (v == $0.v && old != $0.v) }) {
-      EditorHaptics.fire(.selection, "Lực qua mốc \(p.label.lowercased()) \(PoolShotPanel.fmt1(p.v)) m/s")
+      EditorHaptics.fire(.selection, "Speed passed \(p.label.lowercased()) \(PoolShotPanel.fmt1(p.v)) m/s")
     }
     model.speed = v
-  }
-}
-
-/// Thanh Nâng cơ 0 đến 75°, cao 28, cùng dáng với thanh lực nhưng thang tuyến tính, bước 1°.
-/// Chạm không kéo thì đặt đúng chỗ chạm, gần mốc 0 / 30 / 60 trong 12pt thì hít mốc. Kéo là dừng chạy thử.
-struct PoolElevationTrack: View {
-  @ObservedObject var model: PoolEditorModel
-  let onCommit: () -> Void
-  @State private var drag: (x0: CGFloat, t0: CGFloat, moved: Bool)?
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-  static let marks: [CGFloat] = [0, 30, 60]
-  static func x(of t: CGFloat, width: CGFloat) -> CGFloat {
-    14 + min(max(t / PoolEditorModel.thetaMax, 0), 1) * (width - 28)
-  }
-  static func t(at x: CGFloat, width: CGFloat) -> CGFloat {
-    min(max((x - 14) / max(width - 28, 1), 0), 1) * PoolEditorModel.thetaMax
-  }
-
-  var body: some View {
-    GeometryReader { geo in
-      let w = geo.size.width
-      let x = Self.x(of: model.theta, width: w)
-      ZStack(alignment: .topLeading) {
-        RoundedRectangle(cornerRadius: 3).fill(Color.white.opacity(0.12))
-          .frame(width: w, height: 6).offset(y: 11)
-        RoundedRectangle(cornerRadius: 3).fill(PoolAimPalette.gold)
-          .frame(width: max(14, x), height: 6).offset(y: 11)
-        ForEach(Self.marks, id: \.self) { m in
-          RoundedRectangle(cornerRadius: 1).fill(Color.white.opacity(0.32))
-            .frame(width: 2, height: 5)
-            .offset(x: Self.x(of: m, width: w) - 1, y: 22)
-        }
-        Circle().fill(.white)
-          .shadow(color: .black.opacity(0.3), radius: 1, y: 1)
-          .shadow(color: .black.opacity(0.35), radius: 5, y: 3)
-          .frame(width: 28, height: 28)
-          .scaleEffect(drag != nil && !reduceMotion ? 1.1 : 1)
-          .animation(.spring(response: 0.25, dampingFraction: 1), value: drag != nil)
-          .offset(x: x - 14)
-      }
-      .frame(width: w, height: 28, alignment: .topLeading)
-      .contentShape(Rectangle())
-      .gesture(
-        DragGesture(minimumDistance: 0)
-          .onChanged { v in
-            if drag == nil { drag = (v.startLocation.x, model.theta, false); model.replay = nil }
-            guard var d = drag else { return }
-            let dx = v.location.x - d.x0
-            if !d.moved && abs(dx) < 4 { return }
-            d.moved = true
-            drag = d
-            set(Self.t(at: Self.x(of: d.t0, width: w) + dx, width: w))
-          }
-          .onEnded { v in
-            if drag?.moved != true {
-              let at = Self.t(at: v.location.x, width: w)
-              set(Self.marks.first { abs(Self.x(of: $0, width: w) - v.location.x) < 12 } ?? at)
-            }
-            drag = nil
-            onCommit()
-          }
-      )
-    }
-    .frame(height: 28)
-    .accessibilityElement()
-    .accessibilityLabel("Nâng cơ")
-    .accessibilityValue("\(Int(model.theta.rounded())) độ")
-    .accessibilityAdjustableAction { dir in
-      let d: CGFloat = dir == .increment ? 5 : dir == .decrement ? -5 : 0
-      guard d != 0 else { return }
-      set(model.theta + d)
-      onCommit()
-    }
-  }
-
-  private func set(_ raw: CGFloat) {
-    let t = min(max(raw, 0), PoolEditorModel.thetaMax).rounded()
-    let old = model.theta
-    if let m = Self.marks.first(where: { (old - $0) * (t - $0) < 0 || (t == $0 && old != $0) }) {
-      EditorHaptics.fire(.selection, "Nâng cơ qua mốc \(Int(m))°")
-    }
-    model.theta = t
   }
 }

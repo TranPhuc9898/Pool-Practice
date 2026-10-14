@@ -1,11 +1,14 @@
 import { Storage } from 'expo-sqlite/kv-store';
 import { useSyncExternalStore } from 'react';
 
+import { logAttempt } from './attempt-log';
 import type { PoolDrill } from './types';
+import { uuid7 } from './uuid7';
 
 /** Tiến độ lưu một khoá JSON trong SQLite kv-store, đọc đồng bộ lúc khởi động. */
 export type AttemptResult = 'pass' | 'fail';
-export type DrillProgress = { started: boolean; attempts: readonly AttemptResult[]; best: number };
+/** `sessionId` sinh lúc Start, gắn vào mọi cú của lượt đó trong attempt log. Optional nên dữ liệu v1 vẫn đọc được. */
+export type DrillProgress = { started: boolean; attempts: readonly AttemptResult[]; best: number; sessionId?: string };
 export type DrillStatus = 'notStarted' | 'inProgress' | 'passed' | 'notPassed';
 
 const EMPTY: DrillProgress = { started: false, attempts: [], best: 0 };
@@ -73,7 +76,7 @@ export const passes = (p: DrillProgress) => p.attempts.filter((a) => a === 'pass
 export function startDrill(id: string) {
   const p = snapshot.get(id) ?? EMPTY;
   lastDrillId = id;
-  write(id, { ...p, started: true, attempts: [] });
+  write(id, { ...p, started: true, attempts: [], sessionId: uuid7() });
 }
 
 export function recordAttempt(drill: PoolDrill, result: AttemptResult) {
@@ -82,7 +85,8 @@ export function recordAttempt(drill: PoolDrill, result: AttemptResult) {
   const attempts = [...p.attempts, result];
   const done = attempts.length === drill.attemptCount;
   const score = attempts.filter((a) => a === 'pass').length;
-  write(drill.id, { started: !done, attempts, best: Math.max(p.best, score) });
+  write(drill.id, { started: !done, attempts, best: Math.max(p.best, score), sessionId: p.sessionId });
+  logAttempt(drill.id, result, p.sessionId);
 }
 
 export function resetDrill(id: string) {

@@ -9,4 +9,4 @@ export type {
   NativeTargetZone,
   PoolTableViewProps,
 } from './src/PoolTableView';
-export type { EditorCommit, EditorState, EditorViewMode, PoolEditorViewProps } from './src/PoolEditorView';
+export type { EditorCommit, EditorState, EditorViewMode, PoolEditorViewProps, TargetPick } from './src/PoolEditorView';

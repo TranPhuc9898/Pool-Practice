@@ -3,6 +3,7 @@ import { useWindowDimensions, View } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 
 import { AppIcon, AppText, DotMatrixDisplay, homeSurfaces, makeStyles, PressableScale, useTheme } from '@/design-system';
+import type { PoolDrill } from '@/pool-engine/types';
 
 /** Cỡ AX1 trở lên (fontScale ≥ 1.6) thì bento 2 cột chật, xếp 1 cột. xxxL (1.35) vẫn 2 cột, đã xem trên simulator. */
 const ONE_COLUMN_FONT_SCALE = 1.6;
@@ -11,6 +12,8 @@ const TRACK_DOTS = 29;
 export type ProgramStat = { total: number; done: number };
 
 export type ProgramBentoProps = {
+  /** Drill chưa qua kế tiếp của program; `null` khi đã qua hết. Hero giờ là daily nên con trỏ program nằm ở đây. */
+  next: { drill: PoolDrill; label: string } | null;
   fundamentals: ProgramStat;
   /** `current`: drill đang tập trong Cue Ball Control, 0-based, -1 nếu đang ở program khác. */
   cueBall: ProgramStat & { current: number };
@@ -22,13 +25,14 @@ const pct = (n: number, total: number) => Math.round((n / total) * 100);
 
 /** Ba ô: Cue Ball Control vuông bên trái, hai pill xếp chồng bên phải. Không gold đặc, gold chỉ ở vạch.
  * Dưới cùng là ô Điểm chết rộng bằng cả hàng: tự xếp lại thế bi hay hỏng để tập riêng. */
-export function ProgramBento({ fundamentals, cueBall, advanced }: ProgramBentoProps) {
+export function ProgramBento({ next, fundamentals, cueBall, advanced }: ProgramBentoProps) {
   const s = useStyles();
   const { fontScale } = useWindowDimensions();
   const stacked = fontScale >= ONE_COLUMN_FONT_SCALE;
 
   return (
     <View style={s.stack}>
+      {next && <UpNextTile {...next} />}
       <View style={[s.row, stacked && s.column]}>
         <CueBallTile {...cueBall} stacked={stacked} />
         <View style={[s.right, stacked && s.rightStacked]}>
@@ -169,20 +173,44 @@ function AdvancedPill({ total, done }: ProgramStat) {
   );
 }
 
+function UpNextTile({ drill, label }: { drill: PoolDrill; label: string }) {
+  const s = useStyles();
+  return (
+    <PressableScale
+      onPress={() => router.push(`/drill/${drill.number}`)}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: drill ${drill.number}, ${drill.title}.`}
+      style={[s.tile, s.pill, s.wide, homeSurfaces.graphiteTile]}>
+      <DotMatrixDisplay text={String(drill.number).padStart(2, '0')} size="xs" />
+      <View style={s.ptext}>
+        <AppText variant="caption" style={s.meta} numberOfLines={1}>
+          {label}
+        </AppText>
+        <AppText variant="tileTitle" style={s.title} numberOfLines={1}>
+          {drill.title}
+        </AppText>
+      </View>
+      <View style={s.knob}>
+        <AppIcon name="arrow.right" size="small" color="textInverse" weight="semibold" />
+      </View>
+    </PressableScale>
+  );
+}
+
 function DeadSpotTile() {
   const s = useStyles();
   return (
     <PressableScale
       onPress={() => router.push('/editor')}
       accessibilityRole="button"
-      accessibilityLabel="Điểm chết. Tự xếp thế bi hay hỏng rồi tập riêng."
+      accessibilityLabel="Weak spots. Set up the layouts you miss and drill them."
       style={[s.tile, s.pill, s.wide, homeSurfaces.graphiteTile]}>
       <View style={s.ptext}>
         <AppText variant="tileTitle" style={s.title} numberOfLines={1}>
-          Điểm chết
+          Weak spots
         </AppText>
         <AppText variant="caption" style={s.meta} numberOfLines={2}>
-          Xếp lại thế bi hay hỏng rồi tập
+          Rebuild the layouts you miss and drill them
         </AppText>
       </View>
       <View style={s.knob}>

@@ -11,31 +11,65 @@ final class PoolEditorViewProps: ExpoSwiftUI.ViewProps {
   @Field var cardRev: Int = 0
   /// JS tăng mỗi lần bấm "Gợi ý" trên thanh tiêu đề; đổi số là chạy planner.
   @Field var suggestRev: Int = 0
+  /// Màn drill: chỉ còn bàn và hai ô hình, không khay, không bảng cú, không kéo bi.
+  @Field var stageOnly: Bool = false
+  /// Màn drill: vùng đích và guide của drill vẽ thay nét dự đoán của editor. `id` rỗng là không có.
+  @Field var drill: DrillRecord = DrillRecord()
+  @Field var showGhostBall: Bool = true
+  @Field var showTangentLine: Bool = true
+  @Field var showCuePath: Bool = true
+  @Field var showTarget: Bool = true
+  /// Màn drill: JS tăng mỗi lần bấm Play shot; đổi số là chạy cú đang hiện từ đầu.
+  @Field var playRev: Int = 0
   /// Bắn lúc nhấc tay, mang cả state. Không bắn trong lúc kéo.
   var onCommit = EventDispatcher()
+  /// Màn drill: chạm vùng đích. `label` rỗng là bỏ chọn.
+  var onTargetPick = EventDispatcher()
 }
 
 /// Bàn soạn bài tập. Kéo bi 1:1, giữ đúng chỗ cầm.
 struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
   @ObservedObject var props: PoolEditorViewProps
   @StateObject private var model = PoolEditorModel()
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   private let theme = PoolTableTheme.tournament
+  /// Khung bàn trong toạ độ của cả màn, để bi kéo từ khay biết rơi vào chỗ nào trên nỉ.
+  @State private var tableFrame: CGRect = .zero
+  @State private var carry: PoolBallTray.Carry?
+  /// Màn drill: cú tới từng vùng đích, nil là đang dò. Vùng đang chọn và vệt của cú đó.
+  @State private var targetShots: [DrillTargetSolver.Shot?]?
+  @State private var targetPick: Int?
+  @State private var targetReplay: ShotReplay?
+  static let root = "poolEditorRoot"
 
   var body: some View {
     VStack(spacing: 0) {
+      // Màn drill tự lo lề, view chỉ là khối bàn.
       stage
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
-      // Chưa có đường vào lỗ thì chỗ này để trống, chỉ hiện lời Gợi ý nếu có.
-      if model.aimBall != nil && model.aimPocket != nil {
+        .padding(.horizontal, props.stageOnly ? 0 : 16)
+        .padding(.top, props.stageOnly ? 0 : 10)
+      if !props.stageOnly {
+        // Khay chỉ có ở Tự xếp bi: cảnh mẫu và bài điều bi không cho thêm bi.
+        if model.demo == nil && model.lesson == nil {
+          PoolBallTray(model: model, carry: $carry, onDrop: drop, onScatter: { model.scatter(); commit() })
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .transition(.opacity)
+        }
+        // Luôn hiện như bảng điều khiển của web: chưa có đường vào lỗ vẫn bấm được cú mẫu, lời Gợi ý nằm ở dòng trạng thái.
         PoolShotPanel(model: model) { commit() }
-      } else {
-        Text(model.hintText ?? "")
-          .font(.custom("BeVietnamPro-Medium", size: 15, relativeTo: .subheadline))
-          .foregroundStyle(PoolShotPanel.secondary)
-          .padding(.top, 24)
-          .frame(maxWidth: .infinity, alignment: .top)
-          .frame(height: PoolShotPanel.height, alignment: .top)
+      }
+    }
+    .animation(reduceMotion ? .easeOut(duration: 0.2) : .timingCurve(0.23, 1, 0.32, 1, duration: 0.42), value: model.demo == nil && model.lesson == nil)
+    .coordinateSpace(name: Self.root)
+    // Bi đang cầm từ khay nổi trên mọi thứ, cỡ đúng bằng bi trên bàn để thả xuống là khớp.
+    .overlay(alignment: .topLeading) {
+      if let c = carry {
+        PoolBallView(number: c.n, diameter: PoolTableGeometry(container: tableFrame.size).ballDiameter * PoolEditorModel.ballZoom)
+          .equatable()
+          .shadow(color: .black.opacity(0.45), radius: 6, y: 4)
+          .position(c.at)
+          .allowsHitTesting(false)
       }
     }
     .onAppear {
@@ -59,9 +93,15 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
     // Sheet hệ thống: kéo xuống để đóng, hai mức, không tự viết animation.
     .sheet(isPresented: $model.card) { PoolShotCard(model: model) }
     .onChange(of: props.state.rev) { _ in model.adopt(props.state) }
+    .task(id: props.drill.id) { solveTargets() }
     .onChange(of: props.view) { _ in adoptView() }
     .onChange(of: props.fixture) { _ in applyPresetFixture() }
     .onChange(of: props.suggestRev) { _ in model.suggest { commit() } }
+    .onChange(of: props.playRev) { _ in
+      if props.drill.skill == "runout" { return playRack() }
+      model.replay = nil
+      model.toggleReplay(reduceMotion: reduceMotion)
+    }
     .onChange(of: props.cardRev) { _ in
       model.replay = nil
       model.card = true
@@ -87,16 +127,25 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
       ZStack(alignment: .topLeading) {
         HStack(alignment: .top, spacing: 12) {
           table(CGSize(width: tableW, height: H))
-          VStack(spacing: 12) {
+          // Cảnh mẫu không bi mục tiêu: Dày mỏng mờ đi, Ngắm dài xuống bằng bàn, chỉ còn mặt bi cái và đầu cơ.
+          let solo = model.demo != nil && model.balls[1] == nil
+          ZStack(alignment: .top) {
             ForEach([EditorViewMode.top, .back]) { mode in
-              PoolShotTile(fig: fig, mode: mode) {
+              let top = mode == .top
+              PoolShotTile(fig: fig, mode: mode, tip: top && solo ? CGPoint(x: model.tipX, y: model.tipY) : nil) {
                 model.replay = nil
                 model.fig = mode
                 model.figShown = true
               }
-              .frame(width: tileW, height: tileH)
+              .frame(width: tileW, height: top && solo ? H : tileH)
+              .opacity(!top && solo ? 0 : 1)
+              .scaleEffect(!top && solo ? 0.94 : 1)
+              .offset(y: top ? 0 : tileH + 12)
+              .allowsHitTesting(top || !solo)
             }
           }
+          .frame(width: tileW, height: H, alignment: .top)
+          .animation(reduceMotion ? .easeOut(duration: 0.2) : .timingCurve(0.23, 1, 0.32, 1, duration: 0.42), value: solo)
         }
         if let fig {
           PoolShotFigureOverlay(
@@ -112,23 +161,61 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
     let geometry = PoolTableGeometry(container: box)
     return ZStack(alignment: .topLeading) {
       PoolTableSurface(geometry: geometry, theme: theme).equatable()
-        // Chạm nỉ là thôi chọn lỗ, chạm đúp là đặt bi mới đúng chỗ đó.
+        // Chạm nỉ là thôi chọn lỗ, chạm đúp là đặt bi mới đúng chỗ đó. Bài điều bi đang đoán thì chạm là cắm điểm đoán.
         .contentShape(Rectangle())
         .gesture(
           SpatialTapGesture(count: 2)
             .onEnded { v in
+              guard model.demo == nil, model.lesson == nil else { return }
               let n = geometry.normalized(v.location)
               if model.addBall(at: CGPoint(x: n.x * PoolEditorModel.width, y: n.y * PoolEditorModel.length)) { commit() }
             }
-            .exclusively(before: TapGesture().onEnded { model.picking = nil })
+            .exclusively(before: SpatialTapGesture().onEnded { v in
+              guard model.lesson != nil, model.guessing, model.replay == nil else { model.picking = nil; return }
+              let n = geometry.normalized(v.location)
+              model.place(guess: CGPoint(x: n.x * PoolEditorModel.width, y: n.y * PoolEditorModel.length))
+            })
         )
-      PoolEditorGuides(model: model, geometry: geometry)
-      ForEach(model.order, id: \.self) { n in
-        PoolEditorBall(number: n, model: model, geometry: geometry) { commit() }
+      let drill = props.drill
+      if drill.id.isEmpty {
+        PoolEditorGuides(model: model, geometry: geometry)
+      } else {
+        // Đang chạy bàn: vùng đích và guide của drill chỉ đúng cho cú đầu, giấu đi cho khỏi lệch với bàn đang đổi.
+        let racking = model.rack != nil
+        if props.showTarget && !racking {
+          PoolTargetLayer(drillId: drill.id, zones: drill.cueBallTargetZones, geometry: geometry)
+        }
+        // Đã chọn vùng thì vệt mô phỏng thay cho tangent và đường bi cái vẽ tay của drill.
+        if !racking {
+        PoolGuideLayer(
+          drill: drill,
+          geometry: geometry,
+          visible: PoolGuideVisibility(
+            ghostBall: props.showGhostBall,
+            tangentLine: props.showTangentLine && targetReplay == nil,
+            cuePath: props.showCuePath && targetReplay == nil
+          ),
+          ballScale: PoolEditorModel.ballZoom
+        )
+        }
+        // Chỉ vẽ lúc cú đang chạy: hết bàn hay nghỉ giữa hai cú thì bàn sạch. `run.over` không publish nên không bám vào nó.
+        if racking, props.showTangentLine, model.replay != nil, let r = model.rack, r.next > 0, r.next <= r.steps.count {
+          RackTangentLayer(setup: r.steps[r.next - 1].setup, geometry: geometry)
+        }
+        if !racking, let r = targetReplay, let i = targetPick, i < drill.cueBallTargetZones.count {
+          // Đang chạy thì giấu vệt tĩnh, không lộ trước đường bi sắp chạy.
+          PoolDrillPickLayer(replay: r, zone: drill.cueBallTargetZones[i], geometry: geometry, trails: model.replay == nil)
+        }
       }
-      PoolEditorContactPoint(model: model, geometry: geometry)
+      ForEach(model.order, id: \.self) { n in
+        // Bài điều bi không tới JS: kéo bi cái trong bài không commit.
+        PoolEditorBall(number: n, model: model, geometry: geometry) { if model.lesson == nil { commit() } }
+      }
+      if drill.id.isEmpty {
+        PoolEditorGuides(model: model, geometry: geometry, top: true)
+      }
       if let r = model.replay {
-        PoolShotReplayLayer(replay: r, geometry: geometry, showAxis: model.showPaths).transition(.opacity)
+        PoolShotReplayLayer(replay: r, geometry: geometry).transition(.opacity)
       }
       if model.picking != nil {
         PoolEditorPocketPicker(geometry: geometry) { pocket in
@@ -138,15 +225,120 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
       }
     }
     .frame(width: box.width, height: box.height)
+    // Drill là thế cố định: không kéo bi, không thêm bi, không chọn lỗ. Chỉ chạm được vùng đích.
+    .allowsHitTesting(!props.stageOnly)
+    .overlay(alignment: .topLeading) {
+      if props.stageOnly, !props.drill.id.isEmpty {
+        PoolDrillTargetPicker(zones: props.drill.cueBallTargetZones, geometry: geometry, picked: targetPick) { i in
+          // Chạm lại vùng đang chọn là đánh lại. Bỏ chọn bằng chạm vùng khác hay rời màn.
+          targetPick = i
+          applyTarget()
+        }
+      }
+    }
     .coordinateSpace(name: PoolEditorBall.space)
+    .background(GeometryReader { g in
+      let f = g.frame(in: .named(Self.root))
+      Color.clear.onAppear { tableFrame = f }.onChange(of: f) { tableFrame = $0 }
+    })
   }
 
-  /// Chỉ để kiểm: `?fixture=preset:Kéo` bấm cú mẫu đó, lúc mở màn hay khi đổi URL đang mở. Dòng NSLog commit cho thấy pad và lực.
+  /// Đổi drill thì bỏ vùng đã chọn và dò lại cả lưới, chạy nền như Gợi ý.
+  private func solveTargets() {
+    model.stopRack()
+    targetPick = nil
+    targetReplay = nil
+    targetShots = nil
+    let d = props.drill
+    guard props.stageOnly, !d.cueBallTargetZones.isEmpty, let ms = DrillTargetSolver.setup(d) else { return }
+    let zones = DrillTargetSolver.zones(d), id = d.id
+    if let hit = DrillTargetSolver.cache[id] { targetShots = hit; pickFirst(); return }
+    DispatchQueue.global(qos: .userInitiated).async {
+      let t0 = Date()
+      let shots = DrillTargetSolver.solve(ms, zones)
+      NSLog("[targets] %@ %.0f ms: %@", id, Date().timeIntervalSince(t0) * 1000, shots.enumerated().map { i, s in
+        s.map {
+          String(format: "%d a%.2f b%.2f v%.1f miss%.1f%@", i + 1, $0.tipX, $0.tipY, $0.speed, $0.miss, $0.inZone ? "" : "!")
+        } ?? "\(i + 1) none"
+      }.joined(separator: " | "))
+      DispatchQueue.main.async {
+        DrillTargetSolver.cache[id] = shots
+        guard props.drill.id == id else { return }
+        targetShots = shots
+        if targetPick == nil { pickFirst() } else { applyTarget() }
+      }
+    }
+  }
+
+  /// Drill nhiều đích: chọn sẵn đích đầu để ô Shot và Play shot có cú ngay lúc mở màn. Không tự chạy, không rung.
+  private func pickFirst() {
+    guard props.drill.cueBallTargetZones.count > 1 else { return }
+    targetPick = 0
+    applyTarget(play: false)
+  }
+
+  /// Đặt cú của vùng đang chọn lên model (hai ô Ngắm, Dày mỏng vẽ theo) và báo JS. Bỏ chọn thì trả cú gợi ý của drill.
+  private func applyTarget(play: Bool = true) {
+    model.replay = nil
+    guard let i = targetPick else {
+      targetReplay = nil
+      model.tipX = props.state.tipX
+      model.tipY = props.state.tipY
+      model.speed = props.state.speed
+      props.onTargetPick(["label": ""])
+      return
+    }
+    // Còn đang dò: kết quả về sẽ gọi lại.
+    guard let shots = targetShots, i < shots.count else { return }
+    let zone = props.drill.cueBallTargetZones[i]
+    let label = zone.label ?? String(i + 1)
+    guard let s = shots[i] else {
+      targetReplay = nil
+      props.onTargetPick(["label": label, "found": false])
+      return
+    }
+    model.tipX = s.tipX
+    model.tipY = s.tipY
+    model.speed = s.speed
+    targetReplay = model.shotSetup.map {
+      ShotReplay($0, ball: model.aimBall ?? 1, tipX: s.tipX, tipY: s.tipY, speed: s.speed, jump: true)
+    }
+    if play { EditorHaptics.fire(.selection, "Zone \(label)") }
+    props.onTargetPick([
+      "label": label, "found": true, "tipX": Double(s.tipX), "tipY": Double(s.tipY),
+      "speed": Double(s.speed), "miss": Double(s.miss), "inZone": s.inZone,
+    ])
+    // Chọn xong cho bi tự chạy. Reduce Motion: nhảy thẳng tới cuối, vệt tĩnh vẫn còn.
+    if play { model.toggleReplay(reduceMotion: reduceMotion) }
+  }
+
+  /// Drill chạy bàn: bấm lúc đang chạy là dừng và trả bàn về đầu, bấm lúc rảnh hay đã xong là chạy lại từ đầu.
+  /// Mỗi cú báo JS như một vùng đích để ô Shot hiện đúng cú đang đánh.
+  private func playRack() {
+    let busy = model.rack.map { !$0.over } ?? false
+    model.stopRack()
+    guard !busy else { return props.onTargetPick(["label": ""]) }
+    model.startRack(reduceMotion: reduceMotion, zone: DrillTargetSolver.zones(props.drill).first) { step in
+      props.onTargetPick([
+        "label": "Ball \(step.ball)", "found": true, "runout": true,
+        "tipX": Double(step.tipX), "tipY": Double(step.tipY), "speed": Double(step.speed),
+      ])
+    }
+  }
+
+  /// Chỉ để kiểm: `?fixture=preset:Draw` bấm cú mẫu đó, lúc mở màn hay khi đổi URL đang mở. Dòng NSLog commit cho thấy pad và lực.
   private func applyPresetFixture() {
     guard props.fixture.hasPrefix("preset:"),
           let p = PoolEditorModel.presets.first(where: { $0.name == props.fixture.dropFirst(7) }) else { return }
     model.apply(p)
     commit()
+  }
+
+  /// Thả bi từ khay: ngoài bàn thì bi về khay, trên nỉ thì đặt đúng chỗ thả.
+  private func drop(_ n: Int, _ p: CGPoint) {
+    guard tableFrame.contains(p) else { return }
+    let q = PoolTableGeometry(container: tableFrame.size).normalized(CGPoint(x: p.x - tableFrame.minX, y: p.y - tableFrame.minY))
+    if model.addBall(at: CGPoint(x: q.x * PoolEditorModel.width, y: q.y * PoolEditorModel.length), number: n) { commit() }
   }
 
   private func commit() {
@@ -181,6 +373,8 @@ struct PoolEditorBall: View {
       .contentShape(Rectangle())
       .position(geometry.point(inchesX: p.x, inchesY: p.y))
       .zIndex(model.dragging == number ? 1 : 0)
+      // Cảnh mẫu không kéo được, như web chỉ cho xếp bàn ở Tự xếp bi. Bài điều bi chỉ cho kéo bi cái để thử chỗ khác.
+      .allowsHitTesting(model.demo == nil && (model.lesson == nil || number == 0))
       .gesture(
         DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.space))
           .onChanged { value in
@@ -211,4 +405,62 @@ struct PoolEditorBall: View {
   }
 
   static let space = "poolEditor"
+}
+
+/// Khay bi dưới bàn: bi nào chưa lên bàn nằm ở đây, kéo thả lên nỉ. Bi nhấc cao hơn ngón tay để thấy chỗ thả.
+struct PoolBallTray: View {
+  struct Carry { var n: Int; var at: CGPoint }
+  @ObservedObject var model: PoolEditorModel
+  @Binding var carry: Carry?
+  let onDrop: (Int, CGPoint) -> Void
+  let onScatter: () -> Void
+  static let lift: CGFloat = 36
+
+  var body: some View {
+    let missing = (0...9).filter { model.balls[$0] == nil }
+    HStack(spacing: 0) {
+      if missing.isEmpty {
+        Text("Drop a ball in a pocket to return it to the tray")
+          .font(.custom("BeVietnamPro-Medium", size: 13, relativeTo: .footnote))
+          .foregroundStyle(PoolShotPanel.secondary)
+          .padding(.leading, 12)
+      }
+      ForEach(missing, id: \.self) { n in
+        PoolBallView(number: n, diameter: 26).equatable()
+          .opacity(carry?.n == n ? 0.25 : 1)
+          .frame(width: 34, height: 44)
+          .contentShape(Rectangle())
+          .gesture(
+            DragGesture(minimumDistance: 0, coordinateSpace: .named(PoolEditorView.root))
+              .onChanged { v in
+                if carry == nil { EditorHaptics.fire(.light, "Picked up \(ShotPhysics.name(n))") }
+                carry = Carry(n: n, at: CGPoint(x: v.location.x, y: v.location.y - Self.lift))
+              }
+              .onEnded { v in
+                carry = nil
+                onDrop(n, CGPoint(x: v.location.x, y: v.location.y - Self.lift))
+              }
+          )
+          .accessibilityElement()
+          .accessibilityLabel(ShotPhysics.name(n).capitalized)
+          .accessibilityHint("Drag onto the table to place")
+          .accessibilityAction(named: "Place on table") {
+            if let p = model.freeSpot(), model.addBall(at: p, number: n) { onScatter() }
+          }
+          .transition(.scale.combined(with: .opacity))
+      }
+      Spacer(minLength: 0)
+      Button(action: onScatter) {
+        Image(systemName: "shuffle")
+          .font(.system(size: 15, weight: .semibold))
+          .foregroundStyle(PoolShotPanel.ink)
+          .frame(width: 44, height: 44)
+      }
+      .buttonStyle(PoolPressStyle())
+      .accessibilityLabel(missing.isEmpty ? "Re-spread balls" : "Spread all balls on the table")
+    }
+    .frame(height: 44)
+    .background(Capsule().fill(Color.white.opacity(0.06)))
+    .animation(.timingCurve(0.23, 1, 0.32, 1, duration: 0.3), value: missing)
+  }
 }

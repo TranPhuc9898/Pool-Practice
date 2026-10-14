@@ -37,6 +37,8 @@ struct GuideLineRecord: Record {
 
 struct DrillRecord: Record {
   @Field var id: String = ""
+  /// "runout" thì Play shot chạy cả bàn theo planner thay vì một cú.
+  @Field var skill: String = ""
   @Field var cueBall: PointRecord = PointRecord()
   @Field var objectBalls: [BallRecord] = []
   @Field var targetPocket: String = ""

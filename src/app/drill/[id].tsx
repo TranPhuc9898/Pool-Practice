@@ -1,65 +1,103 @@
-import * as Clipboard from 'expo-clipboard';
-import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import * as ScreenOrientation from 'expo-screen-orientation';
-import { useCallback, useState } from 'react';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Clipboard from "expo-clipboard";
+import {
+  router,
+  Stack,
+  useFocusEffect,
+  useLocalSearchParams,
+} from "expo-router";
+import * as ScreenOrientation from "expo-screen-orientation";
+import { useCallback, useState } from "react";
+import { ScrollView, useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
-  AimReadout,
   FooterNav,
   GoldAction,
   GraphiteAction,
   GuideToggles,
   Scoreboard,
-  SpecStrip,
-  ViewSwitch,
-} from '@/components/drill/drill-ui';
-import { areaOf, drillsIn } from '@/components/home/training-areas';
-import { AppText, homeSurfaces, IconButton, makeStyles, SecondaryButton, useGutter } from '@/design-system';
-import { aimOf, fullnessLabel } from '@/pool-engine/aim';
-import { DRILLS, drillByNumber } from '@/pool-engine/drills';
-import { drillStatus, passes, recordAttempt, resetDrill, startDrill, useDrillProgress } from '@/pool-engine/progress';
-import type { PoolDrill } from '@/pool-engine/types';
+  ShotCard,
+} from "@/components/drill/drill-ui";
+import { areaOf, drillsIn } from "@/components/home/training-areas";
+import {
+  AppText,
+  homeSurfaces,
+  IconButton,
+  makeStyles,
+  SecondaryButton,
+  useGutter,
+} from "@/design-system";
+import { DRILLS, drillByNumber } from "@/pool-engine/drills";
+import {
+  drillStatus,
+  passes,
+  recordAttempt,
+  resetDrill,
+  startDrill,
+  useDrillProgress,
+} from "@/pool-engine/progress";
+import type { PoolDrill } from "@/pool-engine/types";
 
-import { PoolAimView, PoolTableView, type BallMoveEvent } from '../../../modules/pool-table';
+import {
+  PoolEditorView,
+  PoolTableView,
+  type BallMoveEvent,
+  type EditorState,
+  type TargetPick,
+} from "../../../modules/pool-table";
 
-const spinLabel: Record<PoolDrill['recommendedSpin'], string> = {
-  center: 'Center',
-  stun: 'Stun',
-  follow: 'Follow',
-  draw: 'Draw',
+const spinLabel: Record<PoolDrill["recommendedSpin"], string> = {
+  center: "Center",
+  stun: "Stun",
+  follow: "Follow",
+  draw: "Draw",
 };
 
 /** Tổng cả băng: 61" × 111". Khung bàn giữ đúng tỉ lệ này thì native không chừa dải trống. */
 const TABLE_ASPECT = 111 / 61;
+/** Bàn dọc chiếm nửa bề ngang khối, nửa kia là hai ô Ngắm / Dày mỏng; 12 là khe giữa, khớp Swift. */
+const STAGE_TABLE_SHARE = 0.5;
+const STAGE_GAP = 12;
 
-type GuideKey = 'showGhostBall' | 'showTangentLine' | 'showCuePath' | 'showTarget';
+/** m/s, cùng thang thanh Lực của Soạn bài: Chậm < 0,89 ≤ Vừa < 1,9 ≤ Nhanh. */
+const speedMs: Record<PoolDrill["recommendedSpeed"], number> = {
+  soft: 0.8,
+  medium: 1.8,
+  firm: 2.6,
+};
+
+/** `rev` theo số drill: Prev/Next đổi rev là Swift nạp lại thế bi. */
+const stageState = (d: PoolDrill): EditorState => ({
+  rev: d.number,
+  balls: [{ number: 0, ...d.cueBall }, ...d.objectBalls],
+  aimBall: d.objectBalls[0]?.number ?? -1,
+  aimPocket: d.targetPocket,
+  tipX: d.recommendedContactPoint.x,
+  tipY: d.recommendedContactPoint.y,
+  speed: speedMs[d.recommendedSpeed],
+  theta: 0,
+});
+
+type GuideKey =
+  "showGhostBall" | "showTangentLine" | "showCuePath" | "showTarget";
 const GUIDES: { key: GuideKey; label: string }[] = [
-  { key: 'showGhostBall', label: 'Ghost' },
-  { key: 'showTangentLine', label: 'Tangent' },
-  { key: 'showCuePath', label: 'Path' },
-  { key: 'showTarget', label: 'Target' },
+  { key: "showGhostBall", label: "Ghost" },
+  { key: "showTangentLine", label: "Tangent" },
+  { key: "showCuePath", label: "Path" },
+  { key: "showTarget", label: "Target" },
 ];
 
-type Mode = 'table' | 'aim';
-const MODES: { key: Mode; label: string }[] = [
-  { key: 'table', label: 'Table' },
-  { key: 'aim', label: 'Aim' },
-];
-
-const pad = (n: number) => String(n).padStart(2, '0');
+const pad = (n: number) => String(n).padStart(2, "0");
 
 export default function DrillScreen() {
   // `debug=1` bật lưới hình học, `w=<pt>` ép bề rộng container để kiểm tỉ lệ, `guide=0` tắt guide,
-  // `dev=1` (chỉ bản dev) kéo bi + Copy JSON để soạn toạ độ drill, `view=aim` mở thẳng góc ngắm.
-  const { id, debug, w, guide, dev, view } = useLocalSearchParams<{
+  // `dev=1` (chỉ bản dev) kéo bi + Copy JSON để soạn toạ độ drill. `debug`, `guide=0`, `dev` dùng bàn ngang cũ.
+  const { id, debug, w, guide, dev } = useLocalSearchParams<{
     id: string;
     debug?: string;
     w?: string;
     guide?: string;
     dev?: string;
-    view?: string;
   }>();
   const s = useStyles();
   const gutter = useGutter();
@@ -67,15 +105,17 @@ export default function DrillScreen() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const landscape = windowWidth > windowHeight;
   const [showInfo, setShowInfo] = useState(false);
-  const [picked, setMode] = useState<Mode>();
-  const mode = picked ?? (view === 'aim' ? 'aim' : 'table');
-  const devMode = __DEV__ && dev === '1';
+  const devMode = __DEV__ && dev === "1";
+  // Bàn ngang cũ chỉ còn cho công cụ dev: kéo bi, lưới hình học, tắt guide.
+  const legacyTable = devMode || debug === "1" || guide === "0";
   const [guides, setGuides] = useState<Record<GuideKey, boolean>>({
     showGhostBall: true,
     showTangentLine: true,
     showCuePath: true,
     showTarget: true,
   });
+  const [pick, setPick] = useState<{ drillId: string; shot: TargetPick }>();
+  const [playRev, setPlayRev] = useState(0);
   const [moves, setMoves] = useState<{
     drillId: string;
     balls: Record<number, BallMoveEvent>;
@@ -86,7 +126,9 @@ export default function DrillScreen() {
     useCallback(() => {
       ScreenOrientation.unlockAsync();
       return () => {
-        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        ScreenOrientation.lockAsync(
+          ScreenOrientation.OrientationLock.PORTRAIT_UP,
+        );
       };
     }, []),
   );
@@ -99,7 +141,8 @@ export default function DrillScreen() {
 
   // Bi đã kéo đè lên data gốc, để guide vẽ lại theo chỗ mới. Đổi drill thì bỏ. React Compiler tự memo.
   const balls = moves?.drillId === drill.id ? moves.balls : undefined;
-  const at = (n: number, p: { x: number; y: number }) => (balls?.[n] ? { x: balls[n].x, y: balls[n].y } : p);
+  const at = (n: number, p: { x: number; y: number }) =>
+    balls?.[n] ? { x: balls[n].x, y: balls[n].y } : p;
   const tableDrill = balls
     ? {
         ...drill,
@@ -117,61 +160,99 @@ export default function DrillScreen() {
     }));
   const copyJson = () =>
     Clipboard.setStringAsync(
-      JSON.stringify({ cueBall: tableDrill.cueBall, objectBalls: tableDrill.objectBalls }, null, 2),
+      JSON.stringify(
+        { cueBall: tableDrill.cueBall, objectBalls: tableDrill.objectBalls },
+        null,
+        2,
+      ),
     );
+  // Vùng đích đang chọn trên bàn: Spin/Speed đổi theo cú tới vùng đó. Đổi drill thì bỏ.
+  const target =
+    pick?.drillId === drill.id && pick.shot.label ? pick.shot : undefined;
+  const zoneCount = drill.cueBallTargetZones.length;
+  // Drill nhiều đích: cú gợi ý chung không đúng cho đích nào, phải chọn đích mới có cú.
+  const multi = zoneCount > 1 && !legacyTable;
+  const shot = target?.found
+    ? {
+        tipX: target.tipX ?? 0,
+        tipY: target.tipY ?? 0,
+        speed: target.speed ?? 0,
+      }
+    : multi
+      ? undefined
+      : {
+          tipX: drill.recommendedContactPoint.x,
+          tipY: drill.recommendedContactPoint.y,
+          speed: speedMs[drill.recommendedSpeed],
+        };
+  const targetNote =
+    !target || target.runout
+      ? undefined
+      : !target.found
+        ? `Target ${target.label}: no clean shot from here.`
+        : `Target ${target.label}: ${
+            target.inZone
+              ? `cue ball stops ${Math.round(target.miss ?? 0)}" from center.`
+              : `out of reach from this spot. Closest shot stops ${Math.round(target.miss ?? 0)}" off.`
+          }`;
   const status = drillStatus(drill, progress);
   const done = progress.attempts.length;
   const total = drill.attemptCount;
   const required = drill.passCondition.required;
   const finished = !progress.started && done === total;
   const rounds = drill.rounds;
-  const round = rounds?.[Math.min(Math.floor(done / (total / rounds.length)), rounds.length - 1)];
+  const round =
+    rounds?.[
+      Math.min(Math.floor(done / (total / rounds.length)), rounds.length - 1)
+    ];
   const caption = progress.started
-    ? `${round ? `${round.title} · ` : ''}Shot ${Math.min(done + 1, total)} of ${total}`
+    ? `${round ? `${round.title} · ` : ""}Shot ${Math.min(done + 1, total)} of ${total}`
     : finished
-      ? 'Last session'
+      ? "Last session"
       : `${total} shots`;
 
   // Prev/Next đổi param tại chỗ: bàn native giữ nguyên, chỉ data drill đổi.
   const go = (n: number) => router.setParams({ id: String(n) });
 
-  const aim = aimOf(tableDrill);
-  const showAim = mode === 'aim' && aim !== null;
+  const stageWidth = (width ?? windowWidth) - 2 * gutter;
+  const stageHeight =
+    (stageWidth - STAGE_GAP) * STAGE_TABLE_SHARE * TABLE_ASPECT;
 
-  const table = (
-    <View style={[s.tableCard, homeSurfaces.graphiteTile, landscape && s.tableCardLandscape]}>
-      {showAim ? (
-        <>
-          <PoolAimView drill={tableDrill} style={[landscape ? s.flex : s.tablePortrait, s.aim]} />
-          <AimReadout
-            items={[
-              {
-                label: 'CUT',
-                value: aim.cutDeg === 0 ? 'Straight' : `${aim.cutDeg}°`,
-              },
-              { label: 'HIT', value: fullnessLabel(aim.fullness) },
-              {
-                label: 'CONTACT',
-                value: aim.side === 'straight' ? 'Center' : aim.side === 'right' ? 'Right side' : 'Left side',
-              },
-            ]}
-          />
-        </>
-      ) : (
-        <PoolTableView
-          style={[landscape ? s.flex : s.tablePortrait, width ? { width, alignSelf: 'center' } : null]}
-          drill={tableDrill}
-          showGeometry={debug === '1'}
-          showGuide={guide !== '0'}
-          {...guides}
-          devMode={devMode}
-          onBallMove={onBallMove}
-        />
-      )}
+  const table = legacyTable ? (
+    <View
+      style={[
+        s.tableCard,
+        homeSurfaces.graphiteTile,
+        landscape && s.tableCardLandscape,
+      ]}
+    >
+      <PoolTableView
+        style={[
+          landscape ? s.flex : s.tablePortrait,
+          width ? { width, alignSelf: "center" } : null,
+        ]}
+        drill={tableDrill}
+        showGeometry={debug === "1"}
+        showGuide={guide !== "0"}
+        {...guides}
+        devMode={devMode}
+        onBallMove={onBallMove}
+      />
     </View>
+  ) : (
+    // Khối bàn của Soạn bài: bàn dọc bên trái, Ngắm và Dày mỏng bên phải, chạm ô là nở ra.
+    <PoolEditorView
+      style={landscape ? s.flex : { width: stageWidth, height: stageHeight }}
+      stageOnly
+      state={stageState(drill)}
+      drill={drill}
+      {...guides}
+      playRev={playRev}
+      onTargetPick={({ nativeEvent: shot }) =>
+        setPick({ drillId: drill.id, shot })
+      }
+    />
   );
-
-  const aimSwitch = aim && <ViewSwitch items={MODES} value={mode} onChange={setMode} />;
 
   const panel = (
     <>
@@ -207,33 +288,62 @@ export default function DrillScreen() {
           </AppText>
           {drill.steps && (
             <AppText variant="monoSmall" color="textTertiary">
-              {drill.steps.map((step) => `${step.label} ${step.caption}`).join('  ·  ')}
+              {drill.steps
+                .map((step) => `${step.label} ${step.caption}`)
+                .join("  ·  ")}
             </AppText>
           )}
         </View>
       )}
 
-      <SpecStrip
-        items={[
-          { label: 'Spin', value: spinLabel[drill.recommendedSpin] },
-          {
-            label: 'Speed',
-            value: drill.recommendedSpeed.charAt(0).toUpperCase() + drill.recommendedSpeed.slice(1),
-          },
-          { label: 'Pass', value: `${required} of ${total}` },
-        ]}
+      <ShotCard
+        title={
+          target?.found
+            ? `Shot → ${target.label}`
+            : multi
+              ? "Shot"
+              : `Shot · ${spinLabel[drill.recommendedSpin]}`
+        }
+        shot={shot}
+        pass={`${required} of ${total}`}
+      />
+      {/* Chạy đúng cú ô Shot đang hiện. Drill nhiều đích chưa chọn đích thì chưa có cú để chạy. */}
+      {shot && !legacyTable && (
+        <GraphiteAction
+          sheen
+          title="Play shot"
+          icon="play.fill"
+          onPress={() => setPlayRev((n) => n + 1)}
+        />
+      )}
+      {targetNote && (
+        <AppText variant="monoSmall" color="textTertiary">
+          {targetNote}
+        </AppText>
+      )}
+
+      <GuideToggles
+        items={GUIDES}
+        value={guides}
+        onToggle={(k) => setGuides((v) => ({ ...v, [k]: !v[k] }))}
       />
 
-      <GuideToggles items={GUIDES} value={guides} onToggle={(k) => setGuides((v) => ({ ...v, [k]: !v[k] }))} />
-
-      {devMode && <SecondaryButton title="Copy JSON" icon="doc.on.doc" size="medium" fullWidth onPress={copyJson} />}
+      {devMode && (
+        <SecondaryButton
+          title="Copy JSON"
+          icon="doc.on.doc"
+          size="medium"
+          fullWidth
+          onPress={copyJson}
+        />
+      )}
 
       <Scoreboard
         attempts={progress.attempts}
         total={total}
         passed={passes(progress)}
         required={required}
-        isPassed={status === 'passed'}
+        isPassed={status === "passed"}
         caption={caption}
       />
 
@@ -244,13 +354,18 @@ export default function DrillScreen() {
             icon="checkmark"
             haptic="light"
             style={s.flex}
-            onPress={() => recordAttempt(drill, 'pass')}
+            onPress={() => recordAttempt(drill, "pass")}
           />
-          <GraphiteAction title="Miss" icon="xmark" style={s.flex} onPress={() => recordAttempt(drill, 'fail')} />
+          <GraphiteAction
+            title="Miss"
+            icon="xmark"
+            style={s.flex}
+            onPress={() => recordAttempt(drill, "fail")}
+          />
         </View>
       ) : (
         <GoldAction
-          title={finished ? 'Go again' : 'Start drill'}
+          title={finished ? "Go again" : "Start drill"}
           icon="play.fill"
           haptic="medium"
           onPress={() => startDrill(drill.id)}
@@ -268,15 +383,21 @@ export default function DrillScreen() {
   );
 
   return (
-    <View style={[s.root, landscape && s.rootLandscape, landscape && { paddingHorizontal: gutter }]}>
+    <View
+      style={[
+        s.root,
+        landscape && s.rootLandscape,
+        landscape && { paddingHorizontal: gutter },
+      ]}
+    >
       <Stack.Screen
         options={{
           // Tên drill nằm trong nội dung, thanh trên chỉ giữ back và info.
-          title: '',
+          title: "",
           headerLargeTitleEnabled: false,
           headerRight: () => (
             <IconButton
-              icon={showInfo ? 'info.circle.fill' : 'info.circle'}
+              icon={showInfo ? "info.circle.fill" : "info.circle"}
               variant="plain"
               selected={showInfo}
               accessibilityLabel="Drill tips"
@@ -288,19 +409,23 @@ export default function DrillScreen() {
 
       {landscape ? (
         <>
-          <View style={[s.flex, s.tableColumn]}>
-            {aimSwitch}
-            {table}
-          </View>
-          <ScrollView style={s.panelLandscape} contentContainerStyle={s.panel} showsVerticalScrollIndicator={false}>
+          <View style={[s.flex, s.tableColumn]}>{table}</View>
+          <ScrollView
+            style={s.panelLandscape}
+            contentContainerStyle={s.panel}
+            showsVerticalScrollIndicator={false}
+          >
             {panel}
           </ScrollView>
         </>
       ) : (
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={[s.panel, { paddingHorizontal: gutter, paddingBottom: insets.bottom + 16 }]}>
-          {aimSwitch}
+          contentContainerStyle={[
+            s.panel,
+            { paddingHorizontal: gutter, paddingBottom: insets.bottom + 16 },
+          ]}
+        >
           {table}
           {panel}
         </ScrollView>
@@ -312,16 +437,15 @@ export default function DrillScreen() {
 const useStyles = makeStyles((t) => ({
   root: { flex: 1, backgroundColor: t.color.backgroundPrimary },
   rootLandscape: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: t.space.md,
     paddingBottom: t.space.md,
   },
   flex: { flex: 1 },
-  tableCard: { borderRadius: 24, borderCurve: 'continuous', padding: 8 },
+  tableCard: { borderRadius: 24, borderCurve: "continuous", padding: 8 },
   tableCardLandscape: { flex: 1 },
-  tablePortrait: { width: '100%', aspectRatio: TABLE_ASPECT },
+  tablePortrait: { width: "100%", aspectRatio: TABLE_ASPECT },
   tableColumn: { gap: t.space.sm },
-  aim: { borderRadius: 16, borderCurve: 'continuous', overflow: 'hidden' },
   panel: { gap: t.space.md },
   panelLandscape: { width: 340, flexGrow: 0 },
   heading: { gap: 2, marginTop: t.space.xs },
@@ -332,8 +456,8 @@ const useStyles = makeStyles((t) => ({
   info: {
     gap: t.space.xs,
     borderRadius: 20,
-    borderCurve: 'continuous',
+    borderCurve: "continuous",
     padding: 16,
   },
-  row: { flexDirection: 'row', gap: 10 },
+  row: { flexDirection: "row", gap: 10 },
 }));

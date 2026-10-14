@@ -37,17 +37,17 @@ struct PoolShotCard: View {
               .foregroundStyle(Color(hex: 0xF5F5F7))
           }
           Grid(alignment: .topLeading, horizontalSpacing: 12, verticalSpacing: 10) {
-            row("Đặt bi", t.place)
-            row("Cú gợi ý", t.shot)
-            row("Bù ngắm", t.comp)
-            row("Bi trắng", t.cue)
+            row("Setup", t.place)
+            row("Shot", t.shot)
+            row("Aim adjust", t.comp)
+            row("Cue ball", t.cue)
           }
           Text(ShotCardText.foot)
             .font(.custom("BeVietnamPro-Regular", size: 12, relativeTo: .caption))
             .foregroundStyle(Color(red: 235 / 255, green: 235 / 255, blue: 245 / 255).opacity(0.45))
             .padding(.top, 4)
         } else {
-          Text("Chọn bi rồi chọn lỗ trên Bàn, thẻ sẽ tự viết.")
+          Text("Pick a ball, then a pocket on the Table. The card fills itself in.")
             .font(.custom("BeVietnamPro-Regular", size: 15, relativeTo: .body))
             .foregroundStyle(Color.white.opacity(0.64))
         }
@@ -77,8 +77,8 @@ struct PoolShotCard: View {
 
 /// Chữ trên thẻ, đọc lại đúng chữ của `ShotPanelState` và `ShotFigure`, không tính riêng.
 struct ShotCardText {
-  static let eyebrow = "BẢN NHÁP · CHƯA LƯU"
-  static let foot = "Toạ độ (a, b): đứng đầu break nhìn về phía xếp bi. a đếm diamond từ băng trái (0–4), b từ băng trên (0–8). Bàn 9 ft: 1 diamond = 31.75 cm."
+  static let eyebrow = "DRAFT · NOT SAVED"
+  static let foot = "Coordinates (a, b): stand at the break end facing the rack. a counts diamonds from the left rail (0–4), b from the top rail (0–8). 9 ft table: 1 diamond = 31.75 cm."
   let title, goal, place, shot, comp, cue: String
 
   init?(_ m: PoolEditorModel) {
@@ -87,14 +87,14 @@ struct ShotCardText {
     let ball = fig.ballName.capitalized
     let s = ShotPanelState(m)
 
-    title = "\(ball) vào \(pocketName)"
-    goal = s.ran && !s.sunk ? "Rồi để trắng dừng trong vòng." : ""
-    place = "Trắng \(Self.dia(fig.c)) · \(ball) \(Self.dia(fig.o)) → \(pocketName)"
+    title = "\(ball) to \(pocketName)"
+    goal = s.ran && !s.sunk ? "Then stop the cue ball inside the circle." : ""
+    place = "Cue \(Self.dia(fig.c)) · \(ball) \(Self.dia(fig.o)) → \(pocketName)"
     shot = s.tipText + (s.sideText.isEmpty ? "" : ", " + s.sideText.lowercased())
-      + " · lực " + PoolShotPanel.powerWord(m.speed).lowercased()
+      + " · speed " + PoolShotPanel.powerWord(m.speed).lowercased()
       + (s.spinText.isEmpty ? "" : " · " + s.spinText.lowercased())
     comp = fig.topSay + " " + fig.topComp
-    cue = !s.ran ? "—" : s.sunk ? "Rơi lỗ, cú hỏng" : s.stop.map { "Dừng ở \(Self.dia($0))" } ?? "—"
+    cue = !s.ran ? "—" : s.sunk ? "Scratched, shot failed" : s.stop.map { "Stops at \(Self.dia($0))" } ?? "—"
   }
 
   /// Diamond tính từ băng trái và băng trên, làm tròn ⅛.

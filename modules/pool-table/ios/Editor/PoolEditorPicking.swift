@@ -108,7 +108,7 @@ struct PoolEditorPocketPicker: View {
         onPick(pick)
       })
       .accessibilityElement()
-      .accessibilityLabel("Băng")
-      .accessibilityHint("Chạm vào băng để bi mục tiêu đi vào băng ở chỗ đó")
+      .accessibilityLabel("Rail")
+      .accessibilityHint("Tap a rail to send the object ball to that spot")
   }
 }

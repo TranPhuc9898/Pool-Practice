@@ -87,7 +87,7 @@ enum RackPlanner {
   /// Xác suất ăn kiểu người chơi khá, σ ngắm 0.5°. Heuristic, chưa hiệu chỉnh.
   static func easeOf(_ g: Geom, _ h: RackSim.Hole) -> Double {
     if g.cueBlocked || g.obBlocked || g.offTable || g.cut > 80 { return 0 }
-    if g.psi > (h.corner ? 62 : 50) { return 0 }
+    if g.psi > (h.corner ? 62 : 60) { return 0 }
     let half = h.corner ? 1.15 * max(0.35, cos(g.psi * deg * 0.9)) : 1.35 * max(0.2, cos(g.psi * deg * 1.4))
     let alpha = atan(half / max(g.d2, 3))
     let sOb = 0.5 * deg * max(g.d1, 3) / (D * max(0.15, cos(g.cut * deg))) + 0.2 * deg

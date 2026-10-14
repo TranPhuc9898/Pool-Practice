@@ -80,7 +80,8 @@ struct PoolStaticShape: Shape {
 }
 
 enum PoolGuideBuilder {
-  static func strokes(drill: DrillRecord, geometry g: PoolTableGeometry, visible: PoolGuideVisibility = .all) -> [PoolGuideStroke] {
+  /// `ballScale`: bàn vẽ bi phóng to (editor ×2,5) thì ghost cũng phóng theo, không thì vòng ghost nhỏ hơn bi.
+  static func strokes(drill: DrillRecord, geometry g: PoolTableGeometry, visible: PoolGuideVisibility = .all, ballScale: CGFloat = 1) -> [PoolGuideStroke] {
     let M = PoolGuideMath.self
     let cue = M.inches(x: drill.cueBall.x, y: drill.cueBall.y)
     func object(_ n: Int) -> CGPoint? {
@@ -96,8 +97,20 @@ enum PoolGuideBuilder {
     let solid = StrokeStyle(lineWidth: 1.5, lineCap: .round)
     let dashed = StrokeStyle(lineWidth: 1.25, lineCap: .round, dash: [4, 4])
 
+    // Drill nào cũng phải thấy đánh vào đâu: thiếu ghost hay vạch bi cái tới ghost của bi đầu thì tự thêm.
+    var guides = drill.guideLines
+    if let first = drill.objectBalls.first, !drill.targetPocket.isEmpty {
+      for kind in ["ghostBall", "cueBallPath"] where !guides.contains(where: { $0.kind == kind && $0.ball == first.number }) {
+        var g = GuideLineRecord()
+        g.kind = kind
+        g.ball = first.number
+        g.pocket = drill.targetPocket
+        guides.append(g)
+      }
+    }
+
     var out: [PoolGuideStroke] = []
-    for guide in drill.guideLines where visible.shows(guide.kind) {
+    for guide in guides where visible.shows(guide.kind) {
       switch guide.kind {
       case "objectBallPath":
         guard let o = object(guide.ball), let p = M.pocketAim(guide.pocket) else { continue }
@@ -108,7 +121,7 @@ enum PoolGuideBuilder {
       case "ghostBall":
         guard let o = object(guide.ball), let p = M.pocketAim(guide.pocket) else { continue }
         let c = screen(M.ghost(object: o, pocket: p))
-        let r = g.ballDiameter / 2
+        let r = g.ballDiameter * ballScale / 2
         let path = Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
         out.append(.init(path: path, color: PoolGuidePalette.ghost, style: StrokeStyle(lineWidth: 1, dash: [3, 2.5])))
       case "tangentLine":
@@ -160,11 +173,12 @@ struct PoolGuideLayer: View {
   let drill: DrillRecord
   let geometry: PoolTableGeometry
   var visible: PoolGuideVisibility = .all
+  var ballScale: CGFloat = 1
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var progress: CGFloat = 0
 
   var body: some View {
-    let strokes = PoolGuideBuilder.strokes(drill: drill, geometry: geometry, visible: visible)
+    let strokes = PoolGuideBuilder.strokes(drill: drill, geometry: geometry, visible: visible, ballScale: ballScale)
     ZStack {
       ForEach(strokes.indices, id: \.self) { i in
         PoolStaticShape(path: strokes[i].path)

@@ -25,14 +25,14 @@ export const TRAINING_AREAS: readonly TrainingArea[] = [
   {
     id: 'positionPlay',
     title: 'Position Play',
-    topics: 'Cut angles · Tangent · One rail',
-    a11y: 'Cut angles, tangent line, one rail',
+    topics: 'Tangent · One rail · Wagon wheel',
+    a11y: 'Tangent line, one rail, wagon wheel',
   },
   {
     id: 'patterns',
     title: '9-Ball Patterns',
-    topics: '2-ball · 3-ball · Runouts',
-    a11y: 'Two ball, three ball, runouts',
+    topics: 'Line-ups · 3-ball · Runouts',
+    a11y: 'Line-ups, three ball, runouts',
   },
 ];
 
@@ -47,6 +47,11 @@ const areaBySkill: Record<DrillSkill, TrainingAreaId> = {
   threePositions: 'positionPlay',
   oneRail: 'positionPlay',
   pattern: 'patterns',
+  wagonWheel: 'positionPlay',
+  lineUp: 'patterns',
+  correctSide: 'patterns',
+  noRail: 'patterns',
+  runout: 'patterns',
 };
 
 export const areaOf = (drill: PoolDrill) => TRAINING_AREAS.find((a) => a.id === areaBySkill[drill.skill])!;

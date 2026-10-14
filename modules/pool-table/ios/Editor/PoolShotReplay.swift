@@ -8,7 +8,7 @@ struct ShotReplay {
   enum Phase: Int {
     case slide, roll, spin, still, sunk
 
-    var name: String { ["Trượt", "Lăn", "Xoay tại chỗ", "Đứng", "Vào lỗ"][rawValue] }
+    var name: String { ["Sliding", "Rolling", "Spinning", "Stopped", "Pocketed"][rawValue] }
     var color: Color {
       switch self {
       case .slide: Color(hex: 0xE8896A)
@@ -149,17 +149,23 @@ struct ShotReplay {
     return jump ? end : max(0, CGFloat(now.timeIntervalSince(start))) * rate
   }
 
-  init(_ ms: ShotPhysics.Setup, ball: Int, tipX: CGFloat, tipY: CGFloat, theta: CGFloat = 0, speed: CGFloat, jump: Bool, rate: CGFloat = 1) {
+  /// Cảnh mẫu không có bi mục tiêu: `ob` vẫn dựng (bi đặt ngoài bàn) nhưng không vẽ.
+  var solo = false
+
+  /// `aim` (radian) cho sẵn là đánh đúng hướng đó như cảnh mẫu của web, nil là tự ngắm cho bi vào lỗ.
+  init(_ ms: ShotPhysics.Setup, ball: Int, tipX: CGFloat, tipY: CGFloat, theta: CGFloat = 0, speed: CGFloat, aim: CGFloat? = nil, jump: Bool, rate: CGFloat = 1) {
     self.ball = ball
     self.jump = jump
     self.rate = rate
-    let r = ShotPhysics.runWith(ms, tipX: tipX, tipY: tipY, theta: theta, speed: speed)
+    let r = ShotPhysics.runWith(ms, tipX: tipX, tipY: tipY, theta: theta, speed: speed, aim: aim)
     // Đoạn từ đầu cơ tới chỗ chạm lấy thẳng từ mô phỏng tiếp cận: nâng cơ thì đường cong, spin và phê đã hãm theo đó.
     var cue = Track()
     for i in r.pre.ts.indices { cue.add(r.pre.ts[i], r.pre.pts[i], v: r.pre.vs[i], w: r.pre.ws[i], wz: r.pre.wzs[i]) }
     guard r.short != .cue, cue.ts.count > 1 else {
-      // Bi cái dừng trước khi tới: mô phỏng đã chốt tốc về 0 ở mẫu cuối, chỉ còn đuôi xoay.
-      Self.spinOut(&cue)
+      // Bi cái dừng trước khi tới: mô phỏng đã chốt tốc về 0 ở mẫu cuối, chỉ còn đuôi xoay. Cảnh mẫu không bi
+      // mục tiêu thì bi cái đi hết đường, có thể rơi lỗ.
+      cue.sink = r.pre.pocket != nil
+      if !cue.sink { Self.spinOut(&cue) }
       cue.orient(from: PoolBallSphere.restPose(0))
       self.cue = cue
       var ob = Track()
@@ -207,13 +213,26 @@ extension PoolEditorModel {
   /// Bấm Đánh: chạy cú, bấm lần nữa là dừng. Một haptic, đúng lúc bi cái chạm bi mục tiêu.
   func toggleReplay(reduceMotion: Bool) {
     if replay != nil { replay = nil; return }
+    if let p = demo {
+      // Cảnh mẫu: đánh đúng hướng của web. Không có bi mục tiêu thì đặt bi 1 ngoài bàn, bi cái không bao giờ chạm.
+      guard let c = balls[0], hypot(tipX, tipY) <= ShotPhysics.tipMax + 0.001 else { return }
+      let ms = ShotPhysics.Setup(c: c, o: balls[1] ?? CGPoint(x: -1000, y: -1000), pocket: "footRight", others: [], ball: 1)
+      var r = ShotReplay(ms, ball: 1, tipX: tipX, tipY: tipY, theta: theta, speed: speed, aim: atan2(p.heading.y, p.heading.x), jump: reduceMotion)
+      r.solo = balls[1] == nil
+      return play(r)
+    }
     guard let ball = aimBall, let pocket = aimPocket, let ms = shotSetup,
           ShotPhysics.shotOf(ball: ball, pocket: pocket, balls: balls)?.level != .bad
     else { return }
+    if lesson != nil, guessing { guessed = guessKey }
+    play(ShotReplay(ms, ball: ball, tipX: tipX, tipY: tipY, theta: theta, speed: speed, jump: reduceMotion))
+  }
+
+  func play(_ r: ShotReplay) {
     // Chạy thử luôn trên Bàn: đang phóng hình hay đang mở thẻ thì thu về trước.
     if figShown { figShown = false }
     if card { card = false }
-    replay = ShotReplay(ms, ball: ball, tipX: tipX, tipY: tipY, theta: theta, speed: speed, jump: reduceMotion, rate: rate)
+    replay = r
     scheduleReplay()
   }
 
@@ -225,14 +244,19 @@ extension PoolEditorModel {
     if let c = r.contact, !r.jump, c > now {
       DispatchQueue.main.asyncAfter(deadline: .now() + (c - now) / r.rate) {
         guard alive() else { return }
-        EditorHaptics.fire(.light, "Bi cái chạm \(ShotPhysics.name(r.ball))")
+        EditorHaptics.fire(.light, "Cue ball hits \(ShotPhysics.name(r.ball))")
       }
     }
     // Giữ vị trí cuối một nhịp cho mắt đọc, rồi bàn về như cũ.
     let hold = r.jump ? 1.2 : max(0, r.end - now) / r.rate + 0.6
     DispatchQueue.main.asyncAfter(deadline: .now() + hold) { [weak self] in
       guard alive() else { return }
+      // Chuỗi chạy bàn: dời bi về chỗ dừng trước khi bản chạy tắt, để bi thật hiện đúng chỗ đó.
+      self?.rackStepEnded()
       withAnimation(.easeOut(duration: 0.2)) { self?.replay = nil }
+      if let m = self, let e = m.score(), let s = m.streak {
+        EditorHaptics.fire(e <= PoolEditorModel.guessGood ? .selection : .warning, "Guess off by \(Int(e)) in, streak \(s.now), best \(s.best)")
+      }
     }
   }
 
@@ -242,18 +266,6 @@ extension PoolEditorModel {
     r.paused = min(max(t, 0), r.end)
     r.epoch += 1
     replay = r
-  }
-
-  /// Đổi tốc phát giữa chừng: dời mốc giờ để giây mô phỏng đứng nguyên, hẹn giờ cũ huỷ qua `epoch`.
-  func setReplayRate(_ v: CGFloat) {
-    rate = v
-    guard var r = replay, r.rate != v else { return }
-    let t = r.time(Date())
-    r.rate = v
-    r.epoch += 1
-    if r.paused == nil { r.start = Date().addingTimeInterval(-Double(t / v)) }
-    replay = r
-    scheduleReplay()
   }
 
   /// Chạy tiếp từ chỗ đang dừng. Dừng ở cuối thì chạy lại từ đầu.
@@ -273,49 +285,18 @@ extension PoolEditorModel {
 struct PoolShotReplayLayer: View {
   let replay: ShotReplay
   let geometry: PoolTableGeometry
-  /// Vẽ trục ω trên bi cái, đi theo nút Đường đi.
-  var showAxis = true
 
   var body: some View {
     TimelineView(.animation(paused: replay.jump || replay.paused != nil)) { tl in
       let t = replay.time(tl.date)
       ZStack(alignment: .topLeading) {
-        Canvas { ctx, _ in trails(&ctx, t) }
+        Canvas { ctx, _ in Self.trails(&ctx, replay, t, geometry) }
         ForEach(replay.others.keys.sorted(), id: \.self) { n in ball(n, replay.others[n]!, t) }
-        ball(replay.ball, replay.ob, t)
+        if !replay.solo { ball(replay.ball, replay.ob, t) }
         ball(0, replay.cue, t)
-        if showAxis { Canvas { ctx, _ in axis(&ctx, t) } }
       }
     }
     .allowsHitTesting(false)
-  }
-
-  /// Trục quay ω của bi cái, chép ô kính lúp của bi-cai-xoay.html nhìn từ trên: vạch gold đứt qua tâm theo hình chiếu
-  /// của ω, chấm ở đầu trục (đặc khi đầu đó hướng lên mắt). Phê thuần thì trục đứng, chỉ còn chấm giữa bi; lăn hay kéo
-  /// thuần thì vạch nằm ngang vuông góc hướng đi. Hết quay thì ẩn.
-  private func axis(_ ctx: inout GraphicsContext, _ t: CGFloat) {
-    let cue = replay.cue, r = cue.read(t)
-    guard r.phase != .still, r.phase != .sunk else { return }
-    let R = ShotPhysics.ballRadius
-    // Lăn: ω = ẑ × w / R với ẑ hướng vào mắt. Khung bàn y xuống trên màn hình, nên (wx, wy) bàn thành (wy, −wx);
-    // `Track.orient` ra (wy, wx) vì khung bi 3D lật y so với màn hình. wz dương là ngược kim đồng hồ, hướng vào mắt.
-    let w = SIMD3<Double>(Double(r.w.y / R), Double(-r.w.x / R), Double(r.wz))
-    let m = simd_length(w)
-    guard m > 0.5 else { return }
-    let a = w / m
-    let c = geometry.point(inchesX: cue.at(t).x, inchesY: cue.at(t).y)
-    let rad = geometry.ballDiameter * PoolEditorModel.ballZoom / 2, k = geometry.scale
-    let gold = PoolAimPalette.gold
-    let dx = CGFloat(a.x) * rad * 1.2, dy = CGFloat(a.y) * rad * 1.2
-    if hypot(dx, dy) > 0.5 {
-      var line = Path()
-      line.move(to: CGPoint(x: c.x - dx, y: c.y - dy))
-      line.addLine(to: CGPoint(x: c.x + dx, y: c.y + dy))
-      ctx.stroke(line, with: .color(gold), style: StrokeStyle(lineWidth: max(1, 0.1 * k), lineCap: .round, dash: [0.35 * k, 0.28 * k]))
-    }
-    let d = max(2.5, 0.22 * k)
-    let dot = Path(ellipseIn: CGRect(x: c.x + CGFloat(a.x) * rad - d / 2, y: c.y + CGFloat(a.y) * rad - d / 2, width: d, height: d))
-    if a.z >= 0 { ctx.fill(dot, with: .color(gold)) } else { ctx.stroke(dot, with: .color(gold), lineWidth: max(1, 0.1 * k)) }
   }
 
   private func ball(_ n: Int, _ track: ShotReplay.Track, _ t: CGFloat) -> some View {
@@ -328,32 +309,53 @@ struct PoolShotReplayLayer: View {
       .position(geometry.point(inchesX: p.x, inchesY: p.y))
   }
 
-  /// Vệt đã đi: bi cái theo màu trạng thái (trượt, lăn), bi mục tiêu trắng mờ.
-  private func trails(_ ctx: inout GraphicsContext, _ t: CGFloat) {
-    let k = geometry.scale
-    let pt = { (p: CGPoint) in geometry.point(inchesX: p.x, inchesY: p.y) }
-    func stroke(_ pts: [CGPoint], _ color: Color, _ width: CGFloat) {
-      guard pts.count > 1 else { return }
-      var path = Path()
-      path.addLines(pts.map(pt))
-      ctx.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: width * k, lineCap: .round, lineJoin: .round))
+  /// Vệt như `drawTable` của web: bi cái tô trượt/lăn nét 2, bi khác xám nét 1,5, bỏ đoạn đứng, xoay tại chỗ và
+  /// rơi lỗ. `fade` 0,45 là đường dự đoán lúc chưa đánh.
+  /// `bend` uốn vệt bi cái cho chỗ gãy rơi vào bi ma đã phóng thay vì ghost thật nằm dưới bi mục tiêu: trước chạm
+  /// dịch tăng dần tới đủ, sau chạm nhả dần trong 15 inch và về 0 ở điểm dừng.
+  static func trails(_ ctx: inout GraphicsContext, _ replay: ShotReplay, _ t: CGFloat, _ geometry: PoolTableGeometry, fade: CGFloat = 1,
+                     bend: (from: CGPoint, to: CGPoint)? = nil) {
+    func warp(_ tr: ShotReplay.Track) -> [CGPoint] {
+      let p = tr.pts
+      guard let b = bend, p.count > 1 else { return p }
+      let gap = { (i: Int) in hypot(p[i].x - b.from.x, p[i].y - b.from.y) }
+      let k = p.indices.min { gap($0) < gap($1) } ?? 0
+      var s: [CGFloat] = [0]
+      for i in 1..<p.count { s.append(s[i - 1] + hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y)) }
+      let L = min(15, s[p.count - 1] - s[k]), dx = b.to.x - b.from.x, dy = b.to.y - b.from.y
+      return p.indices.map { i in
+        let w = i <= k ? (s[k] > 0 ? s[i] / s[k] : 1) : (L > 0 ? max(0, 1 - (s[i] - s[k]) / L) : 0)
+        return CGPoint(x: p[i].x + dx * w, y: p[i].y + dy * w)
+      }
     }
-    for tr in [replay.ob] + replay.others.values {
-      let i = tr.index(t)
-      if t > tr.ts[0] { stroke(Array(tr.pts[0...i]) + [tr.at(t)], .white.opacity(0.22), 0.14) }
+    func draw(_ tr: ShotReplay.Track, cue: Bool, main: Bool = false) {
+      let ci = tr.index(t), pts = cue ? warp(tr) : tr.pts
+      var from = 0
+      while from < ci {
+        let ph = tr.phases[from]
+        var to = from
+        while to < ci && tr.phases[to] == ph { to += 1 }
+        if ph == .slide || ph == .roll {
+          // Đoạn cuối nối tới vị trí hiện tại cho vệt liền với bi.
+          var path = Path()
+          path.addLines((Array(pts[from...to]) + (to == ci ? [t >= tr.end ? pts[pts.count - 1] : tr.at(t)] : [])).map { geometry.point(inchesX: $0.x, inchesY: $0.y) })
+          // Bi mục tiêu: nét trắng đứt mảnh như drill-editor-v7, khác hẳn nét liền của bi cái khi hai đường chồng nhau.
+          let color = cue ? ph.color.opacity(0.85 * fade) : main ? Color.white.opacity(0.8 * fade) : Color(hex: 0x97A0A8).opacity(0.7 * 0.6 * fade)
+          ctx.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: cue ? 2 : 1.5, lineCap: .round, lineJoin: .round, dash: main ? [6, 4] : []))
+        }
+        from = to
+      }
     }
-
-    let cue = replay.cue, ci = cue.index(t)
-    var from = 0
-    while from < ci {
-      let ph = cue.phases[from]
-      var to = from
-      while to < ci && cue.phases[to] == ph { to += 1 }
-      // Đoạn cuối nối tới vị trí hiện tại cho vệt liền với bi.
-      let pts = Array(cue.pts[from...to]) + (to == ci ? [cue.at(t)] : [])
-      if ph == .slide || ph == .roll { stroke(pts, ph.color.opacity(0.8), 0.16) }
-      from = to
+    for tr in replay.others.values { draw(tr, cue: false) }
+    if !replay.solo {
+      draw(replay.ob, cue: false, main: true)
+      // Vào lỗ thì chấm trắng ở miệng lỗ, mắt có chỗ dừng.
+      if replay.ob.sink, t >= replay.ob.end, let e = replay.ob.pts.last {
+        let q = geometry.point(inchesX: e.x, inchesY: e.y)
+        ctx.fill(Path(ellipseIn: CGRect(x: q.x - 4, y: q.y - 4, width: 8, height: 8)), with: .color(.white.opacity(0.9 * fade)))
+      }
     }
+    draw(replay.cue, cue: true)
   }
 
   /// Màn trập nửa khung (1/120 s thật): quay quá 0,07 rad trong lúc mở thì chia mẫu để nhoè, tối đa 12.

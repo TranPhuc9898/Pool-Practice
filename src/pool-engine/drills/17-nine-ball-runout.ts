@@ -1,0 +1,41 @@
+import type { PoolDrill } from '../types';
+
+/** Layout mở, không cụm, để tập chạy bàn có kế hoạch. Tự soạn, không lấy từ nguồn. */
+export const nineBallRunout = {
+  id: '17',
+  number: 17,
+  title: '9-Ball Runout',
+  subtitle: 'Open table, ball in hand. Plan three balls ahead.',
+  category: 'patternPlay',
+  skill: 'runout',
+  skillLabel: 'Runout',
+  difficulty: 5,
+  objective: 'Run 1 through 9 in rotation. Before each shot, say where the cue ball stops.',
+  cueBall: { x: 0.45, y: 0.85 },
+  objectBalls: [
+    { number: 1, x: 0.25, y: 0.7 },
+    { number: 2, x: 0.78, y: 0.62 },
+    { number: 3, x: 0.7, y: 0.3 },
+    { number: 4, x: 0.22, y: 0.38 },
+    { number: 5, x: 0.45, y: 0.55 },
+    { number: 6, x: 0.85, y: 0.12 },
+    { number: 7, x: 0.15, y: 0.12 },
+    { number: 8, x: 0.4, y: 0.22 },
+    { number: 9, x: 0.6, y: 0.85 },
+  ],
+  targetPocket: 'sideLeft',
+  cueBallTargetZones: [{ kind: 'circle', center: { x: 0.62, y: 0.74 }, radius: 0.09, label: '2' }],
+  guideLines: [
+    { kind: 'objectBallPath', ball: 1, pocket: 'sideLeft' },
+    { kind: 'ghostBall', ball: 1, pocket: 'sideLeft' },
+    { kind: 'cueBallPath', ball: 1, pocket: 'sideLeft' },
+    { kind: 'objectBallPath', ball: 2, pocket: 'sideRight' },
+  ],
+  recommendedContactPoint: { x: 0, y: -0.2 },
+  recommendedSpin: 'draw',
+  recommendedSpeed: 'medium',
+  allowedRails: 2,
+  attemptCount: 5,
+  passCondition: { kind: 'pocketed', required: 2 },
+  tips: ['Find the problem ball first, then plan back to it.', 'Missed position: reset and try another route.'],
+} satisfies PoolDrill;
