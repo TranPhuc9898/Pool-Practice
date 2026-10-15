@@ -221,11 +221,23 @@ extension PoolEditorModel {
       r.solo = balls[1] == nil
       return play(r)
     }
+    if let r = soloReplay(jump: reduceMotion) { return play(r) }
     guard let ball = aimBall, let pocket = aimPocket, let ms = shotSetup,
           ShotPhysics.shotOf(ball: ball, pocket: pocket, balls: balls)?.level != .bad
     else { return }
     if lesson != nil, guessing { guessed = guessKey }
     play(ShotReplay(ms, ball: ball, tipX: tipX, tipY: tipY, theta: theta, speed: speed, jump: reduceMotion))
+  }
+
+  /// Cú chỉ có bi cái (Stroke của Daily Workout): không `aimBall`, `aimPocket` là điểm trên băng. Đánh thẳng về điểm đó,
+  /// bi cái dội băng rồi đi hết đường như cảnh mẫu không bi mục tiêu. nil nếu bàn còn bi khác hay đầu cơ quá mức.
+  func soloReplay(jump: Bool) -> ShotReplay? {
+    guard demo == nil, aimBall == nil, balls.count == 1, let c = balls[0], let pocket = aimPocket,
+          let P = ShotPhysics.target(pocket), hypot(tipX, tipY) <= ShotPhysics.tipMax + 0.001 else { return nil }
+    let ms = ShotPhysics.Setup(c: c, o: CGPoint(x: -1000, y: -1000), pocket: pocket, others: [], ball: 1)
+    var r = ShotReplay(ms, ball: 1, tipX: tipX, tipY: tipY, theta: theta, speed: speed, aim: atan2(P.y - c.y, P.x - c.x), jump: jump)
+    r.solo = true
+    return r
   }
 
   func play(_ r: ShotReplay) {

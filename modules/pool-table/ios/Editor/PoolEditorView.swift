@@ -186,6 +186,10 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
           PoolTargetLayer(drillId: drill.id, zones: drill.cueBallTargetZones, geometry: geometry)
         }
         // Đã chọn vùng thì vệt mô phỏng thay cho tangent và đường bi cái vẽ tay của drill.
+        // Cú chỉ có bi cái: drill không có guide, dùng đường dự đoán của bàn soạn.
+        if !racking, drill.objectBalls.isEmpty {
+          PoolEditorGuides(model: model, geometry: geometry)
+        }
         if !racking {
         PoolGuideLayer(
           drill: drill,

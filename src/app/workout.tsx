@@ -1,28 +1,47 @@
 import { router, Stack } from "expo-router";
-import { View } from "react-native";
+import { useState } from "react";
+import { useWindowDimensions, View } from "react-native";
 
 import {
   GoldAction,
   GraphiteAction,
   Scoreboard,
+  ShotCard,
 } from "@/components/drill/drill-ui";
+import {
+  spinLabel,
+  speedMs,
+  stageHeightFor,
+  stageState,
+} from "@/components/drill/stage";
 import {
   AppText,
   makeStyles,
   PressableScale,
   Screen,
   Section,
+  useGutter,
 } from "@/design-system";
 import { recordShot, useDaily } from "@/pool-engine/daily";
-import { progressOf, WORKOUT, WORKOUT_TOTAL } from "@/pool-engine/workout";
+import {
+  markDrill,
+  progressOf,
+  WORKOUT,
+  WORKOUT_TOTAL,
+} from "@/pool-engine/workout";
+
+import { PoolEditorView } from "../../modules/pool-table";
 
 /**
- * Daily workout: một màn cho cả 100 cú. Vị trí khối và mốc suy ra từ số cú đã ghi hôm nay,
+ * Daily workout: một màn cho cả bài. Vị trí khối và mốc suy ra từ số cú đã ghi hôm nay,
  * nên đánh đủ mốc là màn tự sang mốc kế, không cần state riêng.
  */
 export default function WorkoutScreen() {
   const s = useStyles();
   const today = useDaily();
+  const gutter = useGutter();
+  const { width: windowWidth } = useWindowDimensions();
+  const [playRev, setPlayRev] = useState(0);
   const day = progressOf(today.length);
   const at = day.next;
 
@@ -55,6 +74,7 @@ export default function WorkoutScreen() {
             {marks.map(({ mark, shots }) => (
               <PressableScale
                 key={mark.label}
+                disabled={block.id === "stroke"}
                 haptic="selection"
                 accessibilityRole="button"
                 accessibilityHint={`Opens the ${block.title} drill`}
@@ -85,6 +105,9 @@ export default function WorkoutScreen() {
   // Các cú của mốc đang đánh nằm ở cuối mảng hôm nay.
   const shots = today.slice(today.length - at.shot);
   const passed = shots.filter((r) => r === "pass").length;
+  // Bàn và cú gợi ý của mốc đang đánh, cùng khối bàn với màn drill.
+  const drill = markDrill(block, mark);
+  const stageWidth = windowWidth - 2 * gutter;
 
   return (
     <Screen gap="xl">
@@ -96,9 +119,36 @@ export default function WorkoutScreen() {
         </AppText>
         <AppText variant="heroTitle">{`${block.title} · ${mark.label}`}</AppText>
         <AppText variant="callout" color="textSecondary">
-          {block.goal}
+          {drill.objective}
         </AppText>
       </View>
+
+      <PoolEditorView
+        style={{ width: stageWidth, height: stageHeightFor(stageWidth) }}
+        stageOnly
+        state={stageState(drill, mark.diamonds ?? 0)}
+        drill={drill}
+        showGhostBall
+        showTangentLine
+        showCuePath
+        showTarget
+        playRev={playRev}
+      />
+      <ShotCard
+        title={`Shot · ${spinLabel[drill.recommendedSpin]}`}
+        shot={{
+          tipX: drill.recommendedContactPoint.x,
+          tipY: drill.recommendedContactPoint.y,
+          speed: speedMs[drill.recommendedSpeed],
+        }}
+        pass={`${passed} of ${mark.shots}`}
+      />
+      <GraphiteAction
+        sheen
+        title="Play shot"
+        icon="play.fill"
+        onPress={() => setPlayRev((n) => n + 1)}
+      />
 
       <Scoreboard
         attempts={shots}

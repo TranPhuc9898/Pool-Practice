@@ -1,3 +1,7 @@
+import { atDistance, drillByNumber } from './drills';
+import { downAndBack } from './drills/down-and-back';
+import type { PoolDrill } from './types';
+
 /** Khoá ngày theo giờ máy, `YYYY-MM-DD`. Cú sau 0h rơi sang ngày mới. */
 export const dayKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -7,15 +11,27 @@ export type WorkoutMark = { label: string; shots: number; diamonds?: number };
 /** `drill`: số bài trong thư viện dạy kỹ thuật của khối, để màn xem lại mở sang. */
 export type WorkoutBlock = { id: 'stroke' | 'stop' | 'follow' | 'draw'; title: string; goal: string; drill: number; marks: readonly WorkoutMark[] };
 
+/** Stroke: bi cái đi dọc bàn rồi về; `diamonds` là khoảng cách bi cái → băng cuối, khớp `downAndBack`. */
+const lengths = [
+  { label: 'Short', shots: 10, diamonds: 2 },
+  { label: 'Long', shots: 10, diamonds: 4 },
+  { label: 'Very long', shots: 10, diamonds: 6 },
+];
 const diamonds = [1, 2, 3].map((d) => ({ label: `${d} diamond${d > 1 ? 's' : ''}`, shots: 10, diamonds: d }));
 
-/** Bài cố định 100 cú. Thứ tự ở đây chính là thứ tự cú trong mảng ngày của store `daily`. */
+/** Bài cố định 120 cú. Thứ tự ở đây chính là thứ tự cú trong mảng ngày của store `daily`. */
 export const WORKOUT: readonly WorkoutBlock[] = [
-  { id: 'stroke', title: 'Stroke', goal: 'Cue ball returns to the tip', drill: 1, marks: [{ label: 'Down and back', shots: 10 }] },
+  { id: 'stroke', title: 'Stroke', goal: 'Cue ball returns to the tip', drill: 1, marks: lengths },
   { id: 'stop', title: 'Stop', goal: 'Cue ball stops in the zone', drill: 2, marks: diamonds },
   { id: 'follow', title: 'Follow', goal: 'Cue ball rolls into the zone', drill: 3, marks: diamonds },
   { id: 'draw', title: 'Draw', goal: 'Cue ball draws back into the zone', drill: 5, marks: diamonds },
 ];
+
+/** Thế bi của một mốc: Stroke dùng `downAndBack`, các khối khác dùng drill thư viện ở đúng mức. */
+export function markDrill(block: WorkoutBlock, mark: WorkoutMark): PoolDrill {
+  const base = block.id === 'stroke' ? downAndBack : (drillByNumber(block.drill) ?? downAndBack);
+  return mark.diamonds ? atDistance(base, mark.diamonds) : base;
+}
 
 const blockSize = (b: WorkoutBlock) => b.marks.reduce((n, m) => n + m.shots, 0);
 export const WORKOUT_TOTAL = WORKOUT.reduce((n, b) => n + blockSize(b), 0);

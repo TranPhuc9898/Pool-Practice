@@ -60,6 +60,17 @@ struct PoolEditorGuides: View {
     }
     // Cảnh mẫu: không đường dự đoán, không nét gold.
     guard model.demo == nil else { return }
+    // Cú chỉ có bi cái: đường dự đoán của chính cú đó, cộng vạch gold ở điểm ngắm trên băng.
+    if !top, model.picking == nil, model.replay == nil, let r = model.soloReplay(jump: true) {
+      if model.showPaths { PoolShotReplayLayer.trails(&ctx, r, r.end, geometry, fade: 0.45) }
+      if let pocket = model.aimPocket, let n = ShotPhysics.railNose(pocket) {
+        let along = n.x == 0 || n.x == ShotPhysics.width ? CGPoint(x: 0, y: 1.4) : CGPoint(x: 1.4, y: 0)
+        var tick = Path()
+        tick.addLines([CGPoint(x: n.x - along.x, y: n.y - along.y), CGPoint(x: n.x + along.x, y: n.y + along.y)].map { geometry.point(inchesX: $0.x, inchesY: $0.y) })
+        ctx.stroke(tick, with: .color(PoolAimPalette.gold), lineWidth: 2)
+      }
+      return
+    }
     guard model.picking == nil, model.replay == nil, let ball = model.aimBall, let pocket = model.aimPocket,
           let c = model.balls[0], let o = model.balls[ball], let P = ShotPhysics.target(pocket)
     else { return }
