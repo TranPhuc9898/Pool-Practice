@@ -24,8 +24,8 @@ export const followControl = {
   tips: ['Aim one tip above center.', 'Let the cue follow through; do not jab.'],
   difficultyModifiers: { cueDistanceDiamonds: [1, 1.5, 2, 2.5] },
   distances: [
-    { diamonds: 1, cueBall: { x: 0.671, y: 0.494 }, recommendedContactPoint: { x: 0, y: 0.63 }, recommendedSpeed: 'soft' },
-    { diamonds: 2, cueBall: { x: 0.592, y: 0.612 }, recommendedContactPoint: { x: 0, y: 0.68 }, recommendedSpeed: 'soft' },
-    { diamonds: 3, cueBall: { x: 0.513, y: 0.731 }, recommendedContactPoint: { x: 0, y: 0.74 }, recommendedSpeed: 'soft' },
+    { diamonds: 1, cueBall: { x: 0.671, y: 0.494 }, recommendedContactPoint: { x: 0, y: 0.6 }, recommendedSpeed: 'soft' },
+    { diamonds: 2, cueBall: { x: 0.592, y: 0.612 }, recommendedContactPoint: { x: 0, y: 0.6 }, recommendedSpeed: 'soft' },
+    { diamonds: 3, cueBall: { x: 0.513, y: 0.731 }, recommendedContactPoint: { x: 0, y: 0.6 }, recommendedSpeed: 'soft' },
   ],
 } satisfies PoolDrill;

@@ -11,7 +11,8 @@ enum DrillTargetSolver {
     let inZone: Bool
   }
 
-  struct Zone { let c: CGPoint; let r: CGFloat }
+  /// `spin` lấy từ vòng của drill trỏ vào vùng này; rỗng là không ràng buộc.
+  struct Zone { let c: CGPoint; let r: CGFloat; var spin = "" }
 
   static let tipXs: [CGFloat] = (-5...5).map { CGFloat($0) / 10 }
   static let tipYs: [CGFloat] = (-5...5).map { CGFloat($0) / 10 }
@@ -23,7 +24,8 @@ enum DrillTargetSolver {
   /// Thế drill cố định nên kết quả theo id dùng lại được cả phiên. Chỉ đọc ghi trên main.
   static var cache: [String: [Shot?]] = [:]
 
-  private typealias Run = (a: CGFloat, b: CGFloat, v: CGFloat, stop: CGPoint)
+  /// `f` là w/v của bi cái lúc chạm: 1 lăn, 0 stun, âm là draw.
+  private typealias Run = (a: CGFloat, b: CGFloat, v: CGFloat, f: CGFloat, stop: CGPoint)
 
   static func setup(_ d: DrillRecord) -> ShotPhysics.Setup? {
     guard let o = d.objectBalls.first, ShotPhysics.target(d.targetPocket) != nil else { return nil }
@@ -33,9 +35,10 @@ enum DrillTargetSolver {
   }
 
   static func zones(_ d: DrillRecord) -> [Zone] {
-    d.cueBallTargetZones.map { z in
+    d.cueBallTargetZones.enumerated().map { i, z in
       let r = z.kind == "ellipse" ? min(z.radiusX, z.radiusY) : z.radius
-      return Zone(c: CGPoint(x: z.center.x * ShotPhysics.width, y: z.center.y * ShotPhysics.length), r: r * ShotPhysics.width)
+      return Zone(c: CGPoint(x: z.center.x * ShotPhysics.width, y: z.center.y * ShotPhysics.length), r: r * ShotPhysics.width,
+                  spin: d.rounds.first { $0.zone == i }?.spin ?? "")
     }
   }
 
@@ -46,7 +49,7 @@ enum DrillTargetSolver {
         for v in vs {
           let r = ShotPhysics.runWith(ms, tipX: a, tipY: b, speed: v)
           guard r.short == nil, r.scratch == nil, r.moved.isEmpty else { continue }
-          out.append((a, b, v, r.stop))
+          out.append((a, b, v, r.f, r.stop))
         }
       }
     }
@@ -63,7 +66,9 @@ enum DrillTargetSolver {
       lock.lock(); all += r; lock.unlock()
     }
     func best(_ rs: [Run], _ z: Zone) -> (run: Run, miss: CGFloat)? {
-      let scored = rs.map { (run: $0, miss: hypot($0.stop.x - z.c.x, $0.stop.y - z.c.y)) }
+      // Vùng có kiểu spin thì chỉ xét cú đúng kiểu đó; không cú nào đúng kiểu thì mới lấy cú gần nhất bất kể spin.
+      let typed = rs.filter { fits($0, z.spin) }
+      let scored = (typed.isEmpty ? rs : typed).map { (run: $0, miss: hypot($0.stop.x - z.c.x, $0.stop.y - z.c.y)) }
       let inside = scored.filter { $0.miss <= z.r }
       return inside.isEmpty ? scored.min { $0.miss < $1.miss } : inside.min { cost($0.run, $0.miss / z.r) < cost($1.run, $1.miss / z.r) }
     }
@@ -79,6 +84,17 @@ enum DrillTargetSolver {
       lock.lock(); out[k] = shot; lock.unlock()
     }
     return out
+  }
+
+  /// Draw và stun xét theo f lúc chạm, vì bi cái trượt hết hay chưa tuỳ cả lực lẫn quãng. Follow thêm điều kiện
+  /// đầu cơ trên tâm: đánh tâm đi xa cũng lăn tới f = 1, nhưng bài follow phải dạy đánh trên.
+  private static func fits(_ r: Run, _ spin: String) -> Bool {
+    switch spin {
+    case "draw": r.f <= -0.3
+    case "stun": abs(r.f) <= 0.2
+    case "follow": r.b >= 0.2 && r.f >= 0.5
+    default: true
+    }
   }
 
   /// Phê ngang đắt nhất, rồi lực, rồi độ lệch tâm. Đơn vị tuỳ ý, chỉ để so.
@@ -110,7 +126,9 @@ struct PoolDrillPickLayer: View {
   }
 }
 
-/// Vùng chạm 44pt trên mỗi vùng đích. Nằm ngoài lớp bàn vì màn drill tắt chạm trên bàn.
+/// Vùng chạm 44pt quanh mỗi vùng đích. Nằm ngoài lớp bàn vì màn drill tắt chạm trên bàn.
+/// Vùng đích sát nhau (Follow Distance cách nhau chưa tới 20pt) thì các ô chồng lên nhau: gộp thành một lớp chạm,
+/// chạm đâu chọn vùng có tâm gần nhất, thay vì để ô vẽ sau nuốt chạm của ô trước.
 struct PoolDrillTargetPicker: View {
   let zones: [TargetZoneRecord]
   let geometry: PoolTableGeometry
@@ -118,14 +136,24 @@ struct PoolDrillTargetPicker: View {
   let onPick: (Int) -> Void
 
   var body: some View {
-    ZStack(alignment: .topLeading) {
+    let pts = zones.map { geometry.point(x: $0.center.x, y: $0.center.y) }
+    var hit = Path()
+    for p in pts { hit.addEllipse(in: CGRect(x: p.x - 22, y: p.y - 22, width: 44, height: 44)) }
+    return ZStack(alignment: .topLeading) {
+      Color.clear
+        .contentShape(hit)
+        .gesture(SpatialTapGesture().onEnded { v in
+          let d = { (p: CGPoint) in hypot(p.x - v.location.x, p.y - v.location.y) }
+          if let i = pts.indices.min(by: { d(pts[$0]) < d(pts[$1]) }) { onPick(i) }
+        })
+        .accessibilityHidden(true)
       ForEach(zones.indices, id: \.self) { i in
         Color.clear
           .frame(width: 44, height: 44)
-          .contentShape(Rectangle())
-          .position(geometry.point(x: zones[i].center.x, y: zones[i].center.y))
-          .onTapGesture { onPick(i) }
+          .position(pts[i])
+          .allowsHitTesting(false)
           .accessibilityElement()
+          .accessibilityAction { onPick(i) }
           .accessibilityLabel("Target \(zones[i].label ?? String(i + 1))")
           .accessibilityHint("Shows spin, speed and cue ball path")
           .accessibilityAddTraits(picked == i ? [.isButton, .isSelected] : .isButton)

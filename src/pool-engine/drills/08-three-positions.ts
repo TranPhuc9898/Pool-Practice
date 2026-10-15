@@ -10,13 +10,13 @@ export const threePositions = {
   skillLabel: 'Stop / Draw / Follow',
   difficulty: 4,
   objective: 'Same cut each round. Land in A with draw, B with stun, C with follow.',
-  cueBall: { x: 0.376, y: 0.578 },
-  objectBalls: [{ number: 1, x: 0.3, y: 0.22 }],
+  cueBall: { x: 0.354, y: 0.459 },
+  objectBalls: [{ number: 1, x: 0.3, y: 0.26 }],
   targetPocket: 'footLeft',
   cueBallTargetZones: [
-    { kind: 'circle', center: { x: 0.58, y: 0.248 }, radius: 0.07, label: 'A' },
-    { kind: 'circle', center: { x: 0.574, y: 0.154 }, radius: 0.07, label: 'B' },
-    { kind: 'circle', center: { x: 0.372, y: 0.114 }, radius: 0.07, label: 'C' },
+    { kind: 'circle', center: { x: 0.737, y: 0.257 }, radius: 0.07, label: 'A' },
+    { kind: 'circle', center: { x: 0.817, y: 0.07 }, radius: 0.07, label: 'B' },
+    { kind: 'circle', center: { x: 0.523, y: 0.109 }, radius: 0.07, label: 'C' },
   ],
   guideLines: [
     { kind: 'objectBallPath', ball: 1, pocket: 'footLeft' },

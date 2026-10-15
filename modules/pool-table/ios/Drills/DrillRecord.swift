@@ -35,6 +35,12 @@ struct GuideLineRecord: Record {
   @Field var point: PointRecord = PointRecord()
 }
 
+/// Vòng của drill nhiều vùng: vùng `zone` phải tới bằng kiểu `spin` (`draw` · `stun` · `follow` · `center`).
+struct RoundRecord: Record {
+  @Field var zone: Int = 0
+  @Field var spin: String = ""
+}
+
 struct DrillRecord: Record {
   @Field var id: String = ""
   /// "runout" thì Play shot chạy cả bàn theo planner thay vì một cú.
@@ -44,4 +50,5 @@ struct DrillRecord: Record {
   @Field var targetPocket: String = ""
   @Field var cueBallTargetZones: [TargetZoneRecord] = []
   @Field var guideLines: [GuideLineRecord] = []
+  @Field var rounds: [RoundRecord] = []
 }
