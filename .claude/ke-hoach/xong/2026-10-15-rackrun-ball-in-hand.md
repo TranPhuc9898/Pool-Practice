@@ -19,6 +19,7 @@
   ✓ 2026-10-15 · run.sh: `18 shot1 ok moved 0` · `19 shot1 ok moved 0` · `20 shot1 ok moved 0`; cú mẫu drill 20 không chạm bi 9, không sửa file drill
 - [x] 6. Kiểm app với `PoolEditorRack.swift` đã sửa ở bước 1–5, build lại → xong khi: burst Play drill 20 tấm cuối chỉ còn bi cái. Burst Play drill 17 vẫn thấy từ 2 cú nối nhau trở lên.
   ✓ 2026-10-15 · expo run:ios EXIT 0 (0 error). Burst drill 20: 70 tấm, từ tấm ~37 chỉ còn bi cái. Burst drill 17: 9 cú nối nhau, bi cái đi tiếp từ chỗ dừng, dọn hết bàn
+  ✓ 2026-10-15 · build lại sau sideMaxAngle: expo run:ios EXIT 0 (0 error, 3 warning). Burst drill 20: 70 tấm, từ tấm ~46 chỉ còn bi cái. Burst drill 17: 40 tấm, bi 1→9 nối nhau, tấm cuối chỉ còn bi cái
 - [x] 7. `npm run lint` và `npm run typecheck` → xong khi: cả hai exit 0.
   ✓ 2026-10-15 · npm run lint EXIT 0 · npm run typecheck EXIT 0
 

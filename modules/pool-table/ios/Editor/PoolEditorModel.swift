@@ -50,9 +50,10 @@ final class PoolEditorModel: ObservableObject {
   @Published var replay: ShotReplay?
   /// Tắt thì bàn chỉ còn đường ngắm từ bi cái tới tâm ghost.
   @Published var showPaths = true
-  /// Bi vẽ to gấp 2,5 cỡ thật, như ô "Phóng bi trên bàn ×2,5" của web: bàn dọc trên điện thoại chỉ ~3 pt một inch,
-  /// bi 2,25" thành 7 pt thì không đọc được số. Vật lý, kéo thả và ghost vẫn tính theo 2,25".
-  static let ballZoom: CGFloat = 2.5
+  /// Bi vẽ to gấp 1,8 cỡ thật: bàn dọc trên điện thoại chỉ ~3 pt một inch, bi 2,25" thành 7 pt thì không đọc được số.
+  /// Không lấy 2,5 như web: bi vẽ 5,6" thì đường bi cách bi khác 3–4 inch, bàn thật còn hở, trên màn như xuyên qua bi.
+  /// Vật lý, kéo thả và ghost vẫn tính theo 2,25".
+  static let ballZoom: CGFloat = 1.8
   /// Hình đang (hoặc vừa) nở ra. Giữ lại lúc thu về để biết thu về ô nào.
   @Published var fig: EditorViewMode = .top
   /// Hình đang phủ bàn. Chạy thử luôn trên Bàn nên Đánh là thu hình về.
