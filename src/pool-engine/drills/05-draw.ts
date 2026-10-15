@@ -15,11 +15,16 @@ export const drawControl = {
   targetPocket: 'footRight',
   cueBallTargetZones: [{ kind: 'circle', center: { x: 0.436, y: 0.423 }, radius: 0.08 }],
   guideLines: [{ kind: 'objectBallPath', ball: 1, pocket: 'footRight' }],
-  recommendedContactPoint: { x: 0, y: -0.5 },
+  recommendedContactPoint: { x: 0, y: -0.4 },
   recommendedSpin: 'draw',
-  recommendedSpeed: 'medium',
+  recommendedSpeed: 'firm',
   allowedRails: 0,
   attemptCount: 10,
   passCondition: { kind: 'inZone', required: 6 },
   tips: ['Aim below center, keep the cue level.', 'Smooth acceleration beats power.'],
+  distances: [
+    { diamonds: 1, cueBall: { x: 0.462, y: 0.404 }, recommendedContactPoint: { x: 0, y: -0.27 }, recommendedSpeed: 'firm' },
+    { diamonds: 2, cueBall: { x: 0.323, y: 0.508 }, recommendedContactPoint: { x: 0, y: -0.37 }, recommendedSpeed: 'firm' },
+    { diamonds: 3, cueBall: { x: 0.185, y: 0.612 }, recommendedContactPoint: { x: 0, y: -0.48 }, recommendedSpeed: 'firm' },
+  ],
 } satisfies PoolDrill;

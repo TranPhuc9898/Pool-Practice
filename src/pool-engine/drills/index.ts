@@ -42,3 +42,16 @@ export const DRILLS: readonly PoolDrill[] = [
 export function drillByNumber(n: number): PoolDrill | undefined {
   return DRILLS.find((d) => d.number === n);
 }
+
+/** Drill ở một mức khoảng cách; mức không có trong data thì trả drill gốc. */
+export function atDistance(d: PoolDrill, diamonds: number): PoolDrill {
+  const level = d.distances?.find((l) => l.diamonds === diamonds);
+  return level
+    ? {
+        ...d,
+        cueBall: level.cueBall,
+        recommendedContactPoint: level.recommendedContactPoint,
+        recommendedSpeed: level.recommendedSpeed,
+      }
+    : d;
+}

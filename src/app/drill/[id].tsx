@@ -27,7 +27,7 @@ import {
   SecondaryButton,
   useGutter,
 } from "@/design-system";
-import { DRILLS, drillByNumber } from "@/pool-engine/drills";
+import { atDistance, DRILLS, drillByNumber } from "@/pool-engine/drills";
 import {
   drillStatus,
   passes,
@@ -66,9 +66,9 @@ const speedMs: Record<PoolDrill["recommendedSpeed"], number> = {
   firm: 2.6,
 };
 
-/** `rev` theo số drill: Prev/Next đổi rev là Swift nạp lại thế bi. */
-const stageState = (d: PoolDrill): EditorState => ({
-  rev: d.number,
+/** `rev` theo số drill và mức khoảng cách: Prev/Next hay đổi mức là Swift nạp lại thế bi. */
+const stageState = (d: PoolDrill, diamonds: number): EditorState => ({
+  rev: d.number * 10 + diamonds,
   balls: [{ number: 0, ...d.cueBall }, ...d.objectBalls],
   aimBall: d.objectBalls[0]?.number ?? -1,
   aimPocket: d.targetPocket,
@@ -92,8 +92,10 @@ const pad = (n: number) => String(n).padStart(2, "0");
 export default function DrillScreen() {
   // `debug=1` bật lưới hình học, `w=<pt>` ép bề rộng container để kiểm tỉ lệ, `guide=0` tắt guide,
   // `dev=1` (chỉ bản dev) kéo bi + Copy JSON để soạn toạ độ drill. `debug`, `guide=0`, `dev` dùng bàn ngang cũ.
-  const { id, debug, w, guide, dev } = useLocalSearchParams<{
+  // `d=<1|2|3>` mở drill ở mức khoảng cách trong `distances`, từ Daily Workout.
+  const { id, debug, w, guide, dev, d } = useLocalSearchParams<{
     id: string;
+    d?: string;
     debug?: string;
     w?: string;
     guide?: string;
@@ -134,7 +136,9 @@ export default function DrillScreen() {
   );
 
   const width = w ? Number(w) : undefined;
-  const drill = drillByNumber(Number(id)) ?? DRILLS[0];
+  const base = drillByNumber(Number(id)) ?? DRILLS[0];
+  const level = base.distances?.find((l) => l.diamonds === Number(d));
+  const drill = level ? atDistance(base, level.diamonds) : base;
   const progress = useDrillProgress(drill.id);
   const area = areaOf(drill);
   const program = drillsIn(area.id);
@@ -212,7 +216,7 @@ export default function DrillScreen() {
       : `${total} shots`;
 
   // Prev/Next đổi param tại chỗ: bàn native giữ nguyên, chỉ data drill đổi.
-  const go = (n: number) => router.setParams({ id: String(n) });
+  const go = (n: number) => router.setParams({ id: String(n), d: undefined });
 
   const stageWidth = (width ?? windowWidth) - 2 * gutter;
   const stageHeight =
@@ -244,7 +248,7 @@ export default function DrillScreen() {
     <PoolEditorView
       style={landscape ? s.flex : { width: stageWidth, height: stageHeight }}
       stageOnly
-      state={stageState(drill)}
+      state={stageState(drill, level?.diamonds ?? 0)}
       drill={drill}
       {...guides}
       playRev={playRev}
@@ -258,7 +262,9 @@ export default function DrillScreen() {
     <>
       <View style={s.heading}>
         <AppText variant="eyebrow" color="textTertiary" style={s.eyebrow}>
-          {area.title} · {pad(program.indexOf(drill) + 1)}/{pad(program.length)}
+          {area.title} · {pad(program.indexOf(base) + 1)}/{pad(program.length)}
+          {level &&
+            ` · ${level.diamonds} diamond${level.diamonds > 1 ? "s" : ""}`}
         </AppText>
         <AppText variant="heroTitle" accessibilityRole="header" style={s.title}>
           {drill.title}

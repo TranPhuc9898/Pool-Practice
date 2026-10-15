@@ -60,6 +60,17 @@ export type DrillRound = { title: string; zone: number; spin: Spin };
 
 export type DrillStep = { label: string; caption: string };
 
+/**
+ * Một mức khoảng cách bi cái → bi mục tiêu, tính theo diamond (12,5"). Bi cái lùi trên đường
+ * cũ, vùng đích giữ nguyên, nên cú gợi ý phải tính lại bằng engine cho từng mức.
+ */
+export type DrillDistance = {
+  diamonds: number;
+  cueBall: NormalizedPoint;
+  recommendedContactPoint: ContactPoint;
+  recommendedSpeed: Speed;
+};
+
 /** Chỗ để tăng độ khó về sau, chưa có thuật toán thích nghi. */
 export type DifficultyModifiers = {
   zoneScale?: number[];
@@ -91,4 +102,5 @@ export type PoolDrill = {
   rounds?: DrillRound[];
   steps?: DrillStep[];
   difficultyModifiers?: DifficultyModifiers;
+  distances?: DrillDistance[];
 };

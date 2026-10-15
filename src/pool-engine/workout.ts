@@ -2,17 +2,19 @@
 export const dayKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-export type WorkoutMark = { label: string; shots: number };
-export type WorkoutBlock = { id: 'stroke' | 'stop' | 'follow' | 'draw'; title: string; goal: string; marks: readonly WorkoutMark[] };
+/** `diamonds`: khoảng cách bi cái → bi mục tiêu của mốc, khớp `distances` trong drill. */
+export type WorkoutMark = { label: string; shots: number; diamonds?: number };
+/** `drill`: số bài trong thư viện dạy kỹ thuật của khối, để màn xem lại mở sang. */
+export type WorkoutBlock = { id: 'stroke' | 'stop' | 'follow' | 'draw'; title: string; goal: string; drill: number; marks: readonly WorkoutMark[] };
 
-const diamonds = [1, 2, 3].map((d) => ({ label: `${d} diamond${d > 1 ? 's' : ''}`, shots: 10 }));
+const diamonds = [1, 2, 3].map((d) => ({ label: `${d} diamond${d > 1 ? 's' : ''}`, shots: 10, diamonds: d }));
 
 /** Bài cố định 100 cú. Thứ tự ở đây chính là thứ tự cú trong mảng ngày của store `daily`. */
 export const WORKOUT: readonly WorkoutBlock[] = [
-  { id: 'stroke', title: 'Stroke', goal: 'Cue ball returns to the tip', marks: [{ label: 'Down and back', shots: 10 }] },
-  { id: 'stop', title: 'Stop', goal: 'Cue ball stops in the zone', marks: diamonds },
-  { id: 'follow', title: 'Follow', goal: 'Cue ball rolls into the zone', marks: diamonds },
-  { id: 'draw', title: 'Draw', goal: 'Cue ball draws back into the zone', marks: diamonds },
+  { id: 'stroke', title: 'Stroke', goal: 'Cue ball returns to the tip', drill: 1, marks: [{ label: 'Down and back', shots: 10 }] },
+  { id: 'stop', title: 'Stop', goal: 'Cue ball stops in the zone', drill: 2, marks: diamonds },
+  { id: 'follow', title: 'Follow', goal: 'Cue ball rolls into the zone', drill: 3, marks: diamonds },
+  { id: 'draw', title: 'Draw', goal: 'Cue ball draws back into the zone', drill: 5, marks: diamonds },
 ];
 
 const blockSize = (b: WorkoutBlock) => b.marks.reduce((n, m) => n + m.shots, 0);

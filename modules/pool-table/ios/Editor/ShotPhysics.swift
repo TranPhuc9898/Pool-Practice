@@ -27,6 +27,9 @@ enum ShotPhysics {
   static let pocketCatch: CGFloat = 2.4
   /// Bán kính rơi lỗ của bi đang chạy, theo `POCKETS` của docs/research/bi-cai-xoay.html: góc 0,062 m, giữa 0,056 m.
   static func catchRadius(_ pocket: String) -> CGFloat { pocket.hasPrefix("side") ? 2.2 : 2.44 }
+  /// Lỗ giữa chỉ ăn bi tới gần vuông góc với băng dài; bi chạy dọc băng đập mũi băng bật ra. Vòng `catchRadius` không
+  /// có mũi băng nên phải chặn ở luật cú. 60° là ước lượng [suy luận], chưa đối chiếu TP 3.5 của Dr. Dave.
+  static let sideMaxAngle: CGFloat = 60
   /// Dr. Dave: miscue khoảng 0.5R–0.6R tuỳ phấn và đầu cơ. Kéo được tới 0.6R, quá 0.5R là cảnh báo.
   static let tipMax: CGFloat = 0.6
   static let miscueSafe: CGFloat = 0.5
@@ -193,6 +196,9 @@ enum ShotPhysics {
     let tol: CGFloat = 0.05
     if G.x < ballRadius - tol || G.x > width - ballRadius + tol || G.y < ballRadius - tol || G.y > length - ballRadius + tol {
       return bad("frozen to the rail, can't make this pocket")
+    }
+    if pocket.hasPrefix("side"), acos(min(abs(d.x), 1)) * 180 / .pi > sideMaxAngle {
+      return bad("too steep for the side pocket")
     }
     let c = balls[0]
     if let c {

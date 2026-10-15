@@ -6,7 +6,13 @@ import {
   GraphiteAction,
   Scoreboard,
 } from "@/components/drill/drill-ui";
-import { AppText, makeStyles, Screen } from "@/design-system";
+import {
+  AppText,
+  makeStyles,
+  PressableScale,
+  Screen,
+  Section,
+} from "@/design-system";
 import { recordShot, useDaily } from "@/pool-engine/daily";
 import { progressOf, WORKOUT, WORKOUT_TOTAL } from "@/pool-engine/workout";
 
@@ -21,6 +27,17 @@ export default function WorkoutScreen() {
   const at = day.next;
 
   if (!at) {
+    // Cú hôm nay xếp đúng thứ tự WORKOUT, nên cắt lần lượt theo số cú từng mốc.
+    const review = [];
+    let offset = 0;
+    for (const block of WORKOUT) {
+      const marks = [];
+      for (const mark of block.marks) {
+        marks.push({ mark, shots: today.slice(offset, offset + mark.shots) });
+        offset += mark.shots;
+      }
+      review.push({ block, marks });
+    }
     return (
       <Screen gap="xl">
         <Stack.Screen options={{ title: "Daily Workout" }} />
@@ -33,11 +50,32 @@ export default function WorkoutScreen() {
             {`${today.filter((r) => r === "pass").length} passed today. Come back tomorrow.`}
           </AppText>
         </View>
-        <GoldAction
-          title="Back to Home"
-          icon="house"
-          onPress={() => router.back()}
-        />
+        {review.map(({ block, marks }) => (
+          <Section key={block.id} title={block.title} caption={block.goal}>
+            {marks.map(({ mark, shots }) => (
+              <PressableScale
+                key={mark.label}
+                haptic="selection"
+                accessibilityRole="button"
+                accessibilityHint={`Opens the ${block.title} drill`}
+                onPress={() =>
+                  router.push(
+                    `/drill/${block.drill}${mark.diamonds ? `?d=${mark.diamonds}` : ""}`,
+                  )
+                }
+              >
+                <Scoreboard
+                  attempts={shots}
+                  total={mark.shots}
+                  passed={shots.filter((r) => r === "pass").length}
+                  required={mark.shots}
+                  isPassed={false}
+                  caption={mark.label}
+                />
+              </PressableScale>
+            ))}
+          </Section>
+        ))}
       </Screen>
     );
   }
