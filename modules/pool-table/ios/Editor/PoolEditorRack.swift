@@ -169,7 +169,8 @@ final class RackRun {
 extension PoolEditorModel {
   /// Play shot của drill chạy bàn: đánh bi số nhỏ nhất bằng cú `RackShotSolver`, bi cái dừng đâu đánh bi kế từ đó,
   /// tới khi hết bàn, trượt bi hay không còn cú thẳng nào.
-  func startRack(reduceMotion: Bool, zone: DrillTargetSolver.Zone? = nil, onStep: @escaping (RackRun.Step) -> Void) {
+  /// `inHand`: luật ball in hand (D27), mỗi cú `RackInHandSolver` tự đặt bi cái và chọn bi, lỗ tuỳ ý.
+  func startRack(reduceMotion: Bool, zone: DrillTargetSolver.Zone? = nil, inHand: Bool = false, onStep: @escaping (RackRun.Step) -> Void) {
     stopRack()
     let run = RackRun(start: .init(balls: balls, aimBall: aimBall, aimPocket: aimPocket, tipX: tipX, tipY: tipY, speed: speed), onStep: onStep)
     rack = run
@@ -178,12 +179,27 @@ extension PoolEditorModel {
       var cur = first
       // Cú đầu theo lỗ drill đặt sẵn (drill 17: bi 1 vào lỗ giữa trái), các cú sau solver tự chọn.
       var only = run.start.aimBall == first.keys.filter({ $0 != 0 }).min() ? run.start.aimPocket : nil
-      while !run.cancelled, let cue = cur[0] {
+      var opening = true
+      while !run.cancelled, cur[0] != nil {
         let obs = cur.filter { $0.key != 0 }
         guard !obs.isEmpty else { break }
         let t0 = Date()
-        guard let b = RackShotSolver.best(cur, only: only, zone: only == nil ? nil : zone), !run.cancelled else { break }
+        let b: (ball: Int, pocket: String, setup: ShotPhysics.Setup, tipX: CGFloat, tipY: CGFloat, speed: CGFloat)
+        if inHand {
+          // Cú 1 là cú mẫu của drill để khớp hình tĩnh, từ cú 2 mới ball in hand.
+          let s = run.start
+          let tpl = !opening ? nil : s.aimBall.flatMap { n in
+            s.aimPocket.flatMap { RackInHandSolver.template(cur, ball: n, pocket: $0, tipX: s.tipX, tipY: s.tipY, speed: s.speed) }
+          }
+          guard let p = tpl ?? RackInHandSolver.best(cur), !run.cancelled else { break }
+          cur[0] = p.cue
+          b = (p.ball, p.pocket, p.setup, p.tipX, p.tipY, p.speed)
+        } else {
+          guard let p = RackShotSolver.best(cur, only: only, zone: only == nil ? nil : zone), !run.cancelled else { break }
+          b = (p.ball, p.pocket, p.setup, p.tipX, p.tipY, p.speed)
+        }
         only = nil
+        opening = false
         let ms = b.setup, tipX = b.tipX, tipY = b.tipY, speed = b.speed
         let took = Date().timeIntervalSince(t0) * 1000
         let replay = ShotReplay(ms, ball: b.ball, tipX: tipX, tipY: tipY, speed: speed, jump: reduceMotion)
@@ -229,6 +245,8 @@ extension PoolEditorModel {
     }
     let step = run.steps[run.next]
     run.next += 1
+    // Ball in hand: bi cái nhấc tới chỗ solver đặt trước khi đánh.
+    balls[0] = step.setup.c
     aimBall = step.ball; aimPocket = step.pocket
     tipX = step.tipX; tipY = step.tipY; speed = step.speed
     run.onStep(step)

@@ -98,7 +98,7 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
     .onChange(of: props.fixture) { _ in applyPresetFixture() }
     .onChange(of: props.suggestRev) { _ in model.suggest { commit() } }
     .onChange(of: props.playRev) { _ in
-      if props.drill.skill == "runout" { return playRack() }
+      if props.drill.skill == "runout" || props.drill.skill == "railCut" { return playRack() }
       model.replay = nil
       model.toggleReplay(reduceMotion: reduceMotion)
     }
@@ -318,7 +318,7 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
     let busy = model.rack.map { !$0.over } ?? false
     model.stopRack()
     guard !busy else { return props.onTargetPick(["label": ""]) }
-    model.startRack(reduceMotion: reduceMotion, zone: DrillTargetSolver.zones(props.drill).first) { step in
+    model.startRack(reduceMotion: reduceMotion, zone: DrillTargetSolver.zones(props.drill).first, inHand: props.drill.skill == "railCut") { step in
       props.onTargetPick([
         "label": "Ball \(step.ball)", "found": true, "runout": true,
         "tipX": Double(step.tipX), "tipY": Double(step.tipY), "speed": Double(step.speed),
