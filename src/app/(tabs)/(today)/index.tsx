@@ -21,7 +21,14 @@ import {
   useLastDrillId,
 } from "@/pool-engine/progress";
 import { useDaily, useDailyDays } from "@/pool-engine/daily";
-import { progressOf, streak, WORKOUT, WORKOUT_TOTAL } from "@/pool-engine/workout";
+import {
+  LADDER,
+  ladderOf,
+  progressOf,
+  streak,
+  WORKOUT,
+  WORKOUT_TOTAL,
+} from "@/pool-engine/workout";
 import type { PoolDrill } from "@/pool-engine/types";
 
 /** Ô tập nhanh: kỹ năng bi cái lõi. Bài đang nằm trong hero thì bỏ qua, lấy ô dự phòng. */
@@ -69,6 +76,7 @@ export default function HomeScreen() {
   const block = at ? WORKOUT[at.block] : null;
   const mark = at && block ? block.marks[at.mark] : null;
   const passes = today.filter((r) => r === "pass").length;
+  const level = LADDER ? ` · Stop L${ladderOf(days, "stop").rung}` : "";
   const stat = (id: Parameters<typeof drillsIn>[0]) => {
     const list = drillsIn(id);
     return { list, total: list.length, done: list.filter(isPassed).length };
@@ -127,8 +135,8 @@ export default function HomeScreen() {
           of: WORKOUT_TOTAL,
           caption:
             run > 0
-              ? `${pad(passes)} passed · ${run}-day streak`
-              : `${pad(passes)} passed`,
+              ? `${pad(passes)} passed${level} · ${run}-day streak`
+              : `${pad(passes)} passed${level}`,
         }}
         accessibilityLabel={
           `Daily workout, ${day.done} of ${WORKOUT_TOTAL} shots. ` +

@@ -19,11 +19,19 @@ import {
   makeStyles,
   PressableScale,
   Screen,
+  SecondaryButton,
   Section,
   useGutter,
 } from "@/design-system";
-import { recordShot, useDaily } from "@/pool-engine/daily";
 import {
+  recordShot,
+  undoShot,
+  useDaily,
+  useDailyDays,
+} from "@/pool-engine/daily";
+import {
+  LADDER_RUNGS,
+  ladderOf,
   markDrill,
   progressOf,
   WORKOUT,
@@ -39,6 +47,7 @@ import { PoolEditorView } from "../../modules/pool-table";
 export default function WorkoutScreen() {
   const s = useStyles();
   const today = useDaily();
+  const days = useDailyDays();
   const gutter = useGutter();
   const { width: windowWidth } = useWindowDimensions();
   const [playRev, setPlayRev] = useState(0);
@@ -96,6 +105,7 @@ export default function WorkoutScreen() {
             ))}
           </Section>
         ))}
+        <UndoShot />
       </Screen>
     );
   }
@@ -105,8 +115,11 @@ export default function WorkoutScreen() {
   // Các cú của mốc đang đánh nằm ở cuối mảng hôm nay.
   const shots = today.slice(today.length - at.shot);
   const passed = shots.filter((r) => r === "pass").length;
+  // Khối ladder: khoảng cách theo level, tính trên cả các cú vừa đánh nên vào/trượt là đổi ngay cú sau.
+  const ladder = block.ladder ? ladderOf(days, block.id) : null;
+  const diamonds = ladder?.rung ?? mark.diamonds;
   // Bàn và cú gợi ý của mốc đang đánh, cùng khối bàn với màn drill.
-  const drill = markDrill(block, mark);
+  const drill = markDrill(block, mark, diamonds);
   const stageWidth = windowWidth - 2 * gutter;
 
   return (
@@ -117,16 +130,23 @@ export default function WorkoutScreen() {
         <AppText variant="eyebrow" color="textTertiary">
           {`Block ${at.block + 1} of ${WORKOUT.length} · ${day.done}/${WORKOUT_TOTAL} shots`}
         </AppText>
-        <AppText variant="heroTitle">{`${block.title} · ${mark.label}`}</AppText>
+        <AppText variant="heroTitle">{`${block.title} · ${ladder?.label ?? mark.label}`}</AppText>
         <AppText variant="callout" color="textSecondary">
           {drill.objective}
         </AppText>
+        {ladder && (
+          <AppText variant="callout" color="textSecondary">
+            {ladder.rung < LADDER_RUNGS.max
+              ? `Level ${ladder.rung} · ${2 - ladder.streak} more in to move back`
+              : `Level ${ladder.rung} · top distance`}
+          </AppText>
+        )}
       </View>
 
       <PoolEditorView
         style={{ width: stageWidth, height: stageHeightFor(stageWidth) }}
         stageOnly
-        state={stageState(drill, mark.diamonds ?? 0)}
+        state={stageState(drill, diamonds ?? 0)}
         drill={drill}
         showGhostBall
         showTangentLine
@@ -156,7 +176,7 @@ export default function WorkoutScreen() {
         passed={passed}
         required={mark.shots}
         isPassed={false}
-        caption={`Shot ${at.shot + 1} of ${mark.shots}`}
+        caption={`${ladder ? `${mark.label} · ` : ""}Shot ${at.shot + 1} of ${mark.shots}`}
       />
 
       <View style={s.row}>
@@ -174,7 +194,21 @@ export default function WorkoutScreen() {
           onPress={() => recordShot("fail")}
         />
       </View>
+      {today.length > 0 && <UndoShot />}
     </Screen>
+  );
+}
+
+/** Bấm nhầm Pass/Miss: mốc và level suy ra từ số cú, nên một cú nhầm làm lệch mọi cú sau. */
+function UndoShot() {
+  return (
+    <SecondaryButton
+      title="Undo last shot"
+      icon="arrow.uturn.backward"
+      size="medium"
+      fullWidth
+      onPress={undoShot}
+    />
   );
 }
 

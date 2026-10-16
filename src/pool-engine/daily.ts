@@ -58,3 +58,10 @@ export function recordShot(result: AttemptResult) {
   const key = dayKey(new Date());
   write({ ...days, [key]: [...(days[key] ?? NONE), result] });
 }
+
+/** Bấm nhầm Pass/Miss: bỏ cú cuối hôm nay. Mốc và level suy ra từ mảng nên lùi theo luôn. */
+export function undoShot() {
+  const key = dayKey(new Date());
+  const today = days[key] ?? NONE;
+  if (today.length) write({ ...days, [key]: today.slice(0, -1) });
+}
