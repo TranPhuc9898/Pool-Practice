@@ -30,7 +30,6 @@ import {
 import { useSessionHistory } from "@/pool-engine/attempt-log";
 import { atDistance, DRILLS, drillByNumber } from "@/pool-engine/drills";
 import {
-  drillStatus,
   passes,
   recordAttempt,
   resetDrill,
@@ -201,7 +200,6 @@ export default function DrillScreen() {
               ? `cue ball stops ${Math.round(target.miss ?? 0)}" from center.`
               : `out of reach from this spot. Closest shot stops ${Math.round(target.miss ?? 0)}" off.`
           }`;
-  const status = drillStatus(drill, progress);
   const done = progress.attempts.length;
   const total = drill.attemptCount;
   const required = drill.passCondition.required;
@@ -296,48 +294,21 @@ export default function DrillScreen() {
         </AppText>
       </View>
 
-      {showInfo ? (
-        <View style={[s.info, homeSurfaces.quickTile]}>
-          {drill.allowedRails > 0 && (
-            <AppText variant="label" color="textTertiary">
-              {drill.allowedRails} rail allowed
-            </AppText>
-          )}
-          {drill.tips.map((tip) => (
-            <AppText key={tip} variant="callout" style={s.body}>
-              {tip}
-            </AppText>
-          ))}
-          {drill.mistakes && (
-            <>
-              <AppText variant="label" color="textTertiary">
-                Common mistakes
-              </AppText>
-              {drill.mistakes.map((m) => (
-                <AppText key={m} variant="callout" style={s.body}>
-                  {m}
-                </AppText>
-              ))}
-            </>
-          )}
-        </View>
-      ) : (
-        <View style={s.copy}>
-          <AppText variant="tileTitle" style={s.title}>
-            {drill.objective}
+      <View style={s.copy}>
+        <AppText variant="tileTitle" style={s.title}>
+          {drill.objective}
+        </AppText>
+        <AppText variant="callout" style={s.body}>
+          {drill.subtitle}
+        </AppText>
+        {drill.steps && (
+          <AppText variant="monoSmall" color="textTertiary">
+            {drill.steps
+              .map((step) => `${step.label} ${step.caption}`)
+              .join("  ·  ")}
           </AppText>
-          <AppText variant="callout" style={s.body}>
-            {drill.subtitle}
-          </AppText>
-          {drill.steps && (
-            <AppText variant="monoSmall" color="textTertiary">
-              {drill.steps
-                .map((step) => `${step.label} ${step.caption}`)
-                .join("  ·  ")}
-            </AppText>
-          )}
-        </View>
-      )}
+        )}
+      </View>
 
       <ShotCard
         title={
@@ -386,7 +357,8 @@ export default function DrillScreen() {
         total={total}
         passed={passes(progress)}
         required={required}
-        isPassed={status === "passed"}
+        // Theo lượt đang hiện, không theo `best`: lượt cuối trượt mà vẫn ghi Passed là nói ngược dòng Last bên dưới.
+        isPassed={passes(progress) >= required}
         caption={caption}
       />
       {lastLine && (
@@ -438,6 +410,34 @@ export default function DrillScreen() {
           fullWidth
           onPress={() => undoAttempt(drill)}
         />
+      )}
+
+      {/* Mẹo nằm dưới cùng để không đẩy Pass/Miss xuống khi bật info. */}
+      {showInfo && (
+        <View style={[s.info, homeSurfaces.quickTile]}>
+          {drill.allowedRails > 0 && (
+            <AppText variant="label" color="textTertiary">
+              {drill.allowedRails} rail allowed
+            </AppText>
+          )}
+          {drill.tips.map((tip) => (
+            <AppText key={tip} variant="callout" style={s.body}>
+              {tip}
+            </AppText>
+          ))}
+          {drill.mistakes && (
+            <>
+              <AppText variant="label" color="textTertiary">
+                Common mistakes
+              </AppText>
+              {drill.mistakes.map((m) => (
+                <AppText key={m} variant="callout" style={s.body}>
+                  {m}
+                </AppText>
+              ))}
+            </>
+          )}
+        </View>
       )}
 
       <FooterNav
