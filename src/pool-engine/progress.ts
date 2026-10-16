@@ -7,8 +7,17 @@ import { uuid7 } from './uuid7';
 
 /** Tiến độ lưu một khoá JSON trong SQLite kv-store, đọc đồng bộ lúc khởi động. */
 export type AttemptResult = 'pass' | 'fail';
-/** `sessionId` sinh lúc Start, gắn vào mọi cú của lượt đó trong attempt log. Optional nên dữ liệu v1 vẫn đọc được. */
-export type DrillProgress = { started: boolean; attempts: readonly AttemptResult[]; best: number; sessionId?: string };
+/**
+ * `sessionId` sinh lúc Start, gắn vào mọi cú của lượt đó trong attempt log. `bestBefore` là `best` lúc Start,
+ * để Undo trả lại được. Cả hai optional nên dữ liệu v1 vẫn đọc được.
+ */
+export type DrillProgress = {
+  started: boolean;
+  attempts: readonly AttemptResult[];
+  best: number;
+  sessionId?: string;
+  bestBefore?: number;
+};
 export type DrillStatus = 'notStarted' | 'inProgress' | 'passed' | 'notPassed';
 
 const EMPTY: DrillProgress = { started: false, attempts: [], best: 0 };
@@ -76,7 +85,7 @@ export const passes = (p: DrillProgress) => p.attempts.filter((a) => a === 'pass
 export function startDrill(id: string) {
   const p = snapshot.get(id) ?? EMPTY;
   lastDrillId = id;
-  write(id, { ...p, started: true, attempts: [], sessionId: uuid7() });
+  write(id, { ...p, started: true, attempts: [], sessionId: uuid7(), bestBefore: p.best });
 }
 
 export function recordAttempt(drill: PoolDrill, result: AttemptResult) {
@@ -85,8 +94,21 @@ export function recordAttempt(drill: PoolDrill, result: AttemptResult) {
   const attempts = [...p.attempts, result];
   const done = attempts.length === drill.attemptCount;
   const score = attempts.filter((a) => a === 'pass').length;
-  write(drill.id, { started: !done, attempts, best: Math.max(p.best, score), sessionId: p.sessionId });
+  write(drill.id, { ...p, started: !done, attempts, best: Math.max(p.best, score) });
   logAttempt(drill.id, result, p.sessionId);
+}
+
+/** Huỷ cú vừa ghi, kể cả cú cuối của lượt: lượt mở lại, log thêm dòng `void` chứ không xoá. */
+export function undoAttempt(drill: PoolDrill) {
+  const p = snapshot.get(drill.id) ?? EMPTY;
+  if (p.attempts.length === 0 || !p.sessionId) return;
+  if (!p.started && p.attempts.length < drill.attemptCount) return;
+  const attempts = p.attempts.slice(0, -1);
+  const score = attempts.filter((a) => a === 'pass').length;
+  // Lượt bắt đầu trước khi có `bestBefore` thì không biết best cũ, giữ nguyên.
+  const best = p.bestBefore === undefined ? p.best : Math.max(p.bestBefore, score);
+  write(drill.id, { ...p, started: true, attempts, best });
+  logAttempt(drill.id, 'void', p.sessionId);
 }
 
 export function resetDrill(id: string) {

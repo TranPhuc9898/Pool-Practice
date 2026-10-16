@@ -27,6 +27,7 @@ import {
   SecondaryButton,
   useGutter,
 } from "@/design-system";
+import { useSessionHistory } from "@/pool-engine/attempt-log";
 import { atDistance, DRILLS, drillByNumber } from "@/pool-engine/drills";
 import {
   drillStatus,
@@ -34,6 +35,7 @@ import {
   recordAttempt,
   resetDrill,
   startDrill,
+  undoAttempt,
   useDrillProgress,
 } from "@/pool-engine/progress";
 import type { PoolDrill } from "@/pool-engine/types";
@@ -209,6 +211,29 @@ export default function DrillScreen() {
     rounds?.[
       Math.min(Math.floor(done / (total / rounds.length)), rounds.length - 1)
     ];
+  // Chỉ lượt đủ số cú mới so được với nhau; lượt bỏ dở hay đang chạy không tính.
+  const history = useSessionHistory(drill.id).filter(
+    (h) => h.attempts.length >= total,
+  );
+  const pct = (n: number) => Math.round((100 * n) / total);
+  const last = history[0];
+  const prev = history[1];
+  const lastLine =
+    last &&
+    [
+      `Last ${last.passes}/${total}`,
+      `${pct(last.passes)}%`,
+      last.passes >= required ? "Passed" : "Not passed",
+      prev &&
+        `${last.passes >= prev.passes ? "+" : ""}${pct(last.passes) - pct(prev.passes)} pts vs previous`,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  const day = (at: number) =>
+    new Date(at).toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+    });
   const caption = progress.started
     ? `${round ? `${round.title} · ` : ""}Shot ${Math.min(done + 1, total)} of ${total}`
     : finished
@@ -283,6 +308,18 @@ export default function DrillScreen() {
               {tip}
             </AppText>
           ))}
+          {drill.mistakes && (
+            <>
+              <AppText variant="label" color="textTertiary">
+                Common mistakes
+              </AppText>
+              {drill.mistakes.map((m) => (
+                <AppText key={m} variant="callout" style={s.body}>
+                  {m}
+                </AppText>
+              ))}
+            </>
+          )}
         </View>
       ) : (
         <View style={s.copy}>
@@ -352,6 +389,21 @@ export default function DrillScreen() {
         isPassed={status === "passed"}
         caption={caption}
       />
+      {lastLine && (
+        <View style={s.copy}>
+          <AppText variant="callout" style={s.body}>
+            {lastLine}
+          </AppText>
+          {history.length > 1 && (
+            <AppText variant="monoSmall" color="textTertiary">
+              {history
+                .slice(0, 5)
+                .map((h) => `${day(h.at)} ${h.passes}/${total}`)
+                .join("  ·  ")}
+            </AppText>
+          )}
+        </View>
+      )}
 
       {progress.started ? (
         <View style={s.row}>
@@ -375,6 +427,16 @@ export default function DrillScreen() {
           icon="play.fill"
           haptic="medium"
           onPress={() => startDrill(drill.id)}
+        />
+      )}
+      {/* Bấm nhầm Pass/Miss: huỷ cú vừa ghi, kể cả cú cuối vừa khép lượt. */}
+      {(progress.started || finished) && done > 0 && (
+        <SecondaryButton
+          title="Undo last shot"
+          icon="arrow.uturn.backward"
+          size="medium"
+          fullWidth
+          onPress={() => undoAttempt(drill)}
         />
       )}
 

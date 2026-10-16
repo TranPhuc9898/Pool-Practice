@@ -99,6 +99,8 @@ export type PoolDrill = {
   attemptCount: number;
   passCondition: PassCondition;
   tips: string[];
+  /** Lỗi hay gặp, mỗi dòng: triệu chứng trên bàn rồi nguyên nhân. Hiện trong khối info. */
+  mistakes?: string[];
   rounds?: DrillRound[];
   steps?: DrillStep[];
   difficultyModifiers?: DifficultyModifiers;

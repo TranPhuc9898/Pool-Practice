@@ -22,6 +22,12 @@ export const stopShot = {
   attemptCount: 10,
   passCondition: { kind: 'inZone', required: 7 },
   tips: ['Hit just below center.', 'The cue ball must still be sliding when it reaches the 1-ball.'],
+  mistakes: [
+    'Cue ball rolls forward: hit too high or too soft, so the backspin wore off before contact.',
+    'Cue ball draws back: too far below center or too much speed for this distance.',
+    'Cue ball drifts sideways: tip off the vertical centerline, or the shot is not dead straight.',
+    'Jumping up on the stroke: stay down until the 1-ball drops.',
+  ],
   difficultyModifiers: { zoneScale: [1, 0.8, 0.6, 0.4] },
   distances: [
     { diamonds: 1, cueBall: { x: 0.362, y: 0.362 }, recommendedContactPoint: { x: 0, y: -0.12 }, recommendedSpeed: 'firm' },
