@@ -139,8 +139,19 @@ export default function DrillScreen() {
   const width = w ? Number(w) : undefined;
   const base = drillByNumber(Number(id)) ?? DRILLS[0];
   const level = base.distances?.find((l) => l.diamonds === Number(d));
-  const drill = level ? atDistance(base, level.diamonds) : base;
-  const progress = useDrillProgress(drill.id);
+  const leveled = level ? atDistance(base, level.diamonds) : base;
+  const progress = useDrillProgress(leveled.id);
+  const done = progress.attempts.length;
+  const total = leveled.attemptCount;
+  const rounds = leveled.rounds;
+  const roundIndex = rounds
+    ? Math.min(Math.floor(done / (total / rounds.length)), rounds.length - 1)
+    : 0;
+  const round = rounds?.[roundIndex];
+  // Thang góc cắt: mỗi round đặt bi cái một chỗ, bàn và guide đọc theo chỗ đó.
+  const drill = round?.cueBall
+    ? { ...leveled, cueBall: round.cueBall }
+    : leveled;
   const area = areaOf(drill);
   const program = drillsIn(area.id);
 
@@ -200,15 +211,8 @@ export default function DrillScreen() {
               ? `cue ball stops ${Math.round(target.miss ?? 0)}" from center.`
               : `out of reach from this spot. Closest shot stops ${Math.round(target.miss ?? 0)}" off.`
           }`;
-  const done = progress.attempts.length;
-  const total = drill.attemptCount;
   const required = drill.passCondition.required;
   const finished = !progress.started && done === total;
-  const rounds = drill.rounds;
-  const round =
-    rounds?.[
-      Math.min(Math.floor(done / (total / rounds.length)), rounds.length - 1)
-    ];
   // Chỉ lượt đủ số cú mới so được với nhau; lượt bỏ dở hay đang chạy không tính.
   const history = useSessionHistory(drill.id).filter(
     (h) => h.attempts.length >= total,
@@ -241,6 +245,12 @@ export default function DrillScreen() {
   // Prev/Next đổi param tại chỗ: bàn native giữ nguyên, chỉ data drill đổi.
   const go = (n: number) => router.setParams({ id: String(n), d: undefined });
 
+  // Native chỉ nạp lại bàn khi `rev` đổi, nên round dời bi cái phải có `rev` riêng.
+  const baseStage = stageState(drill, level?.diamonds ?? 0);
+  const stage = round?.cueBall
+    ? { ...baseStage, rev: baseStage.rev * 10 + roundIndex }
+    : baseStage;
+
   const stageWidth = (width ?? windowWidth) - 2 * gutter;
   const stageHeight =
     (stageWidth - STAGE_GAP) * STAGE_TABLE_SHARE * TABLE_ASPECT;
@@ -271,7 +281,7 @@ export default function DrillScreen() {
     <PoolEditorView
       style={landscape ? s.flex : { width: stageWidth, height: stageHeight }}
       stageOnly
-      state={stageState(drill, level?.diamonds ?? 0)}
+      state={stage}
       drill={drill}
       {...guides}
       playRev={playRev}

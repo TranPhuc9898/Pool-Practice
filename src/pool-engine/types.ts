@@ -43,7 +43,10 @@ export type DrillSkill =
   | 'lineUp'
   | 'correctSide'
   | 'noRail'
-  | 'runout';
+  | 'runout'
+  | 'railCut'
+  | 'spotShot'
+  | 'cutAngle';
 export type Difficulty = 1 | 2 | 3 | 4 | 5;
 export type Spin = 'center' | 'stun' | 'follow' | 'draw';
 export type Speed = 'soft' | 'medium' | 'firm';
@@ -55,8 +58,11 @@ export type PassCondition =
   | { kind: 'pocketed'; required: number }
   | { kind: 'inZone'; required: number };
 
-/** Một lượt trong drill nhiều zone: ladder, A/B/C. */
-export type DrillRound = { title: string; zone: number; spin: Spin };
+/**
+ * Một lượt trong drill nhiều zone (ladder, A/B/C) hoặc nhiều chỗ bi cái (thang góc cắt).
+ * Round suy ra từ thứ tự cú, nên drill đã có attempt thì không đổi số round.
+ */
+export type DrillRound = { title: string; zone?: number; spin: Spin; cueBall?: NormalizedPoint };
 
 export type DrillStep = { label: string; caption: string };
 

@@ -17,6 +17,11 @@ import { lDrill } from './14-l-drill';
 import { threeBall } from './15-three-ball';
 import { noRailT } from './16-no-rail-t';
 import { nineBallRunout } from './17-nine-ball-runout';
+import { railCutBachelors } from './18-rail-cut-bachelors';
+import { railCutMasters } from './19-rail-cut-masters';
+import { railCutDoctorate } from './20-rail-cut-doctorate';
+import { spotShot } from './21-spot-shot';
+import { cutAngleLadder } from './22-cut-angle-ladder';
 
 /** Thứ tự là lộ trình: đánh trúng → kiểm soát bi cái → đi bài. */
 export const DRILLS: readonly PoolDrill[] = [
@@ -37,6 +42,11 @@ export const DRILLS: readonly PoolDrill[] = [
   threeBall,
   noRailT,
   nineBallRunout,
+  railCutBachelors,
+  railCutMasters,
+  railCutDoctorate,
+  spotShot,
+  cutAngleLadder,
 ];
 
 export function drillByNumber(n: number): PoolDrill | undefined {

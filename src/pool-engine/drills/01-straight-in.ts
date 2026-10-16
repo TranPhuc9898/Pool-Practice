@@ -22,4 +22,8 @@ export const straightIn = {
   attemptCount: 10,
   passCondition: { kind: 'pocketed', required: 7 },
   tips: ['Keep the stroke straight through the ball.', 'No spin needed.', 'Focus on center-ball contact.'],
+  mistakes: [
+    'Missing left or right: check the line from the 1-ball to the pocket opening first, then your stroke direction.',
+    '1-ball drops but the cue ball scratches: that is speed and cue ball control, not aim. Ease off the speed.',
+  ],
 } satisfies PoolDrill;
