@@ -18,6 +18,13 @@ import {
   Scoreboard,
   ShotCard,
 } from "@/components/drill/drill-ui";
+import {
+  spinLabel,
+  stageHeightFor,
+  stageState,
+  speedMs,
+  TABLE_ASPECT,
+} from "@/components/drill/stage";
 import { areaOf, drillsIn } from "@/components/home/training-areas";
 import {
   AppText,
@@ -29,6 +36,8 @@ import {
 } from "@/design-system";
 import { useSessionHistory } from "@/pool-engine/attempt-log";
 import { atDistance, DRILLS, drillByNumber } from "@/pool-engine/drills";
+import { downAndBack } from "@/pool-engine/drills/down-and-back";
+import type { PoolDrill } from "@/pool-engine/types";
 import {
   passes,
   recordAttempt,
@@ -37,47 +46,13 @@ import {
   undoAttempt,
   useDrillProgress,
 } from "@/pool-engine/progress";
-import type { PoolDrill } from "@/pool-engine/types";
 
 import {
   PoolEditorView,
   PoolTableView,
   type BallMoveEvent,
-  type EditorState,
   type TargetPick,
 } from "../../../modules/pool-table";
-
-const spinLabel: Record<PoolDrill["recommendedSpin"], string> = {
-  center: "Center",
-  stun: "Stun",
-  follow: "Follow",
-  draw: "Draw",
-};
-
-/** Tổng cả băng: 61" × 111". Khung bàn giữ đúng tỉ lệ này thì native không chừa dải trống. */
-const TABLE_ASPECT = 111 / 61;
-/** Bàn dọc chiếm nửa bề ngang khối, nửa kia là hai ô Ngắm / Dày mỏng; 12 là khe giữa, khớp Swift. */
-const STAGE_TABLE_SHARE = 0.5;
-const STAGE_GAP = 12;
-
-/** m/s, cùng thang thanh Lực của Soạn bài: Chậm < 0,89 ≤ Vừa < 1,9 ≤ Nhanh. */
-const speedMs: Record<PoolDrill["recommendedSpeed"], number> = {
-  soft: 0.8,
-  medium: 1.8,
-  firm: 2.6,
-};
-
-/** `rev` theo số drill và mức khoảng cách: Prev/Next hay đổi mức là Swift nạp lại thế bi. */
-const stageState = (d: PoolDrill, diamonds: number): EditorState => ({
-  rev: d.number * 10 + diamonds,
-  balls: [{ number: 0, ...d.cueBall }, ...d.objectBalls],
-  aimBall: d.objectBalls[0]?.number ?? -1,
-  aimPocket: d.targetPocket,
-  tipX: d.recommendedContactPoint.x,
-  tipY: d.recommendedContactPoint.y,
-  speed: speedMs[d.recommendedSpeed],
-  theta: 0,
-});
 
 type GuideKey =
   "showGhostBall" | "showTangentLine" | "showCuePath" | "showTarget";
@@ -137,7 +112,11 @@ export default function DrillScreen() {
   );
 
   const width = w ? Number(w) : undefined;
-  const base = drillByNumber(Number(id)) ?? DRILLS[0];
+  // Stroke của Daily Workout không nằm trong thư viện, mở bằng id `stroke`.
+  const base: PoolDrill =
+    id === downAndBack.id
+      ? downAndBack
+      : (drillByNumber(Number(id)) ?? DRILLS[0]);
   const level = base.distances?.find((l) => l.diamonds === Number(d));
   const leveled = level ? atDistance(base, level.diamonds) : base;
   const progress = useDrillProgress(leveled.id);
@@ -252,8 +231,7 @@ export default function DrillScreen() {
     : baseStage;
 
   const stageWidth = (width ?? windowWidth) - 2 * gutter;
-  const stageHeight =
-    (stageWidth - STAGE_GAP) * STAGE_TABLE_SHARE * TABLE_ASPECT;
+  const stageHeight = stageHeightFor(stageWidth);
 
   const table = legacyTable ? (
     <View
@@ -295,7 +273,9 @@ export default function DrillScreen() {
     <>
       <View style={s.heading}>
         <AppText variant="eyebrow" color="textTertiary" style={s.eyebrow}>
-          {area.title} · {pad(program.indexOf(base) + 1)}/{pad(program.length)}
+          {area.title}
+          {program.includes(base) &&
+            ` · ${pad(program.indexOf(base) + 1)}/${pad(program.length)}`}
           {level &&
             ` · ${level.diamonds} diamond${level.diamonds > 1 ? "s" : ""}`}
         </AppText>

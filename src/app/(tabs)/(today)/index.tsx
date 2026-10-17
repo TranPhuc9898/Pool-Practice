@@ -116,7 +116,7 @@ export default function HomeScreen() {
         subtitle={
           block && mark
             ? `${mark.label} · ${block.goal}`
-            : "100 shots in. Come back tomorrow."
+            : `${WORKOUT_TOTAL} shots in. Come back tomorrow.`
         }
         eyebrow="Daily · Fundamentals"
         cta={

@@ -83,13 +83,12 @@ export default function WorkoutScreen() {
             {marks.map(({ mark, shots }) => (
               <PressableScale
                 key={mark.label}
-                disabled={block.id === "stroke"}
                 haptic="selection"
                 accessibilityRole="button"
                 accessibilityHint={`Opens the ${block.title} drill`}
                 onPress={() =>
                   router.push(
-                    `/drill/${block.drill}${mark.diamonds ? `?d=${mark.diamonds}` : ""}`,
+                    `/drill/${block.id === "stroke" ? "stroke" : block.drill}${mark.diamonds ? `?d=${mark.diamonds}` : ""}`,
                   )
                 }
               >
