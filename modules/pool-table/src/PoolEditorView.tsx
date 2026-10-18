@@ -39,6 +39,8 @@ export type TargetPick = {
   inZone?: boolean;
   /** Drill chạy bàn: cú đang đánh trong chuỗi, `label` là bi mục tiêu, không có vùng đích. */
   runout?: boolean;
+  /** Thứ tự cú trong chuỗi, từ 0. Drill có `shots` thì khớp chỉ số trong `shots`. */
+  shot?: number;
 };
 
 /** Ba góc nhìn của cùng một cú, khớp `EditorViewMode` bên Swift. */
@@ -65,6 +67,9 @@ export type PoolEditorViewProps = ViewProps & {
   showTarget?: boolean;
   /** Màn drill: tăng mỗi lần bấm Play shot; Swift chạy cú đang hiện khi số đổi. */
   playRev?: number;
+  /** Drill có `shots`: cú đang xem, từ 0. Tăng `shotRev` mỗi lần bấm cú trước/cú sau; Swift dựng bàn về thế trước cú đó. */
+  shotIndex?: number;
+  shotRev?: number;
   onTargetPick?: (event: { nativeEvent: TargetPick }) => void;
 };
 

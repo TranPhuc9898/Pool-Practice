@@ -32,6 +32,7 @@ const PLAY_WIDTH = 50;
 /**
  * `rev` theo số drill và mức khoảng cách: Prev/Next hay đổi mức là Swift nạp lại thế bi.
  * Bài chỉ có bi cái (Stroke): ngắm thẳng lên băng cuối, đích băng `railFoot@<inch>` ngay trước bi cái.
+ * Bài có `shots`: tip và lực đúng cú 1 trong data, khớp cú native chơi khi bấm Play.
  */
 export const stageState = (d: PoolDrill, diamonds: number): EditorState => ({
   rev: d.number * 10 + diamonds,
@@ -40,8 +41,8 @@ export const stageState = (d: PoolDrill, diamonds: number): EditorState => ({
   aimPocket: d.objectBalls.length
     ? d.targetPocket
     : `railFoot@${(d.cueBall.x * PLAY_WIDTH).toFixed(1)}`,
-  tipX: d.recommendedContactPoint.x,
-  tipY: d.recommendedContactPoint.y,
-  speed: speedMs[d.recommendedSpeed],
+  tipX: d.shots ? 0 : d.recommendedContactPoint.x,
+  tipY: d.shots?.[0].tipY ?? d.recommendedContactPoint.y,
+  speed: d.shots?.[0].speed ?? speedMs[d.recommendedSpeed],
   theta: 0,
 });

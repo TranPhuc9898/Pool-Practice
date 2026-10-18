@@ -130,6 +130,8 @@ extension PoolEditorModel {
 /// màn chính diễn lần lượt. Dò cú sau trong lúc cú trước đang chạy, nên chỉ cú đầu phải chờ.
 final class RackRun {
   struct Step {
+    /// Thứ tự cú trong chuỗi, từ 0. Drill có `shots` thì khớp chỉ số trong `shots`.
+    let shot: Int
     let ball: Int
     let pocket: String
     let tipX, tipY, speed: CGFloat
@@ -170,7 +172,11 @@ extension PoolEditorModel {
   /// Play shot của drill chạy bàn: đánh bi số nhỏ nhất bằng cú `RackShotSolver`, bi cái dừng đâu đánh bi kế từ đó,
   /// tới khi hết bàn, trượt bi hay không còn cú thẳng nào.
   /// `inHand`: luật ball in hand (D27), mỗi cú `RackInHandSolver` tự đặt bi cái và chọn bi, lỗ tuỳ ý.
-  func startRack(reduceMotion: Bool, zone: DrillTargetSolver.Zone? = nil, inHand: Bool = false, onStep: @escaping (RackRun.Step) -> Void) {
+  /// `shots`: drill chạy bài cố định, chơi đúng các cú này rồi dừng. Bi cái chỉ đặt ở cú 1, cú sau đánh từ chỗ dừng thật,
+  /// hướng cơ giải lại như harness `scripts/position-harness/`.
+  /// `from`: chơi từ cú này của `shots`, bàn phải đang ở thế trước cú đó (`FixedShot.before`).
+  func startRack(reduceMotion: Bool, zone: DrillTargetSolver.Zone? = nil, inHand: Bool = false, shots: [ShotRecord] = [],
+                 from: Int = 0, onStep: @escaping (RackRun.Step) -> Void) {
     stopRack()
     let run = RackRun(start: .init(balls: balls, aimBall: aimBall, aimPocket: aimPocket, tipX: tipX, tipY: tipY, speed: speed), onStep: onStep)
     rack = run
@@ -180,12 +186,17 @@ extension PoolEditorModel {
       // Cú đầu theo lỗ drill đặt sẵn (drill 17: bi 1 vào lỗ giữa trái), các cú sau solver tự chọn.
       var only = run.start.aimBall == first.keys.filter({ $0 != 0 }).min() ? run.start.aimPocket : nil
       var opening = true
-      while !run.cancelled, cur[0] != nil {
+      var k = from
+      while !run.cancelled, let c = cur[0], shots.isEmpty || k < shots.count {
         let obs = cur.filter { $0.key != 0 }
         guard !obs.isEmpty else { break }
         let t0 = Date()
         let b: (ball: Int, pocket: String, setup: ShotPhysics.Setup, tipX: CGFloat, tipY: CGFloat, speed: CGFloat)
-        if inHand {
+        if !shots.isEmpty {
+          let s = shots[k]
+          guard let ms = FixedShot.setup(s, on: cur) else { break }
+          b = (s.ball, s.pocket, ms, 0, CGFloat(s.tipY), CGFloat(s.speed))
+        } else if inHand {
           // Cú 1 là cú mẫu của drill để khớp hình tĩnh, từ cú 2 mới ball in hand.
           let s = run.start
           let tpl = !opening ? nil : s.aimBall.flatMap { n in
@@ -195,7 +206,8 @@ extension PoolEditorModel {
           cur[0] = p.cue
           b = (p.ball, p.pocket, p.setup, p.tipX, p.tipY, p.speed)
         } else {
-          guard let p = RackShotSolver.best(cur, only: only, zone: only == nil ? nil : zone), !run.cancelled else { break }
+          let pick = only.map { RackShotSolver.opening(cur, only: $0, zone: zone) } ?? RackShotSolver.best(cur)
+          guard let p = pick, !run.cancelled else { break }
           b = (p.ball, p.pocket, p.setup, p.tipX, p.tipY, p.speed)
         }
         only = nil
@@ -203,13 +215,12 @@ extension PoolEditorModel {
         let ms = b.setup, tipX = b.tipX, tipY = b.tipY, speed = b.speed
         let took = Date().timeIntervalSince(t0) * 1000
         let replay = ShotReplay(ms, ball: b.ball, tipX: tipX, tipY: tipY, speed: speed, jump: reduceMotion)
-        var after = cur
-        after[0] = replay.cue.sink ? nil : replay.cue.pts.last
-        after[b.ball] = replay.ob.sink ? nil : replay.ob.pts.last
-        for (n, t) in replay.others { after[n] = t.sink ? nil : t.pts.last }
+        let after = FixedShot.after(replay, on: cur)
         let ok = replay.ob.sink && !replay.cue.sink
-        NSLog("[rack] %d→%@ a %.2f b %.2f v %.1f, %.0f ms, %@", b.ball, b.pocket, tipX, tipY, speed, took, ok ? "in" : "miss")
-        let step = RackRun.Step(ball: b.ball, pocket: b.pocket, tipX: tipX, tipY: tipY, speed: speed, replay: replay, setup: ms, after: after, ok: ok)
+        let stop = after[0] ?? CGPoint(x: -1, y: -1)
+        NSLog("[rack] %d→%@ a %.2f b %.2f v %.1f, %.0f ms, %@, cue (%.1f,%.1f)", b.ball, b.pocket, tipX, tipY, speed, took,
+              ok ? "in" : "miss", stop.x, stop.y)
+        let step = RackRun.Step(shot: k, ball: b.ball, pocket: b.pocket, tipX: tipX, tipY: tipY, speed: speed, replay: replay, setup: ms, after: after, ok: ok)
         DispatchQueue.main.async {
           guard let self, self.rack === run else { return }
           run.steps.append(step)
@@ -217,6 +228,7 @@ extension PoolEditorModel {
         }
         guard ok else { break }
         cur = after
+        k += 1
       }
       DispatchQueue.main.async {
         guard let self, self.rack === run else { return }
@@ -224,6 +236,13 @@ extension PoolEditorModel {
         self.advanceRack()
       }
     }
+  }
+
+  /// Dò sẵn cú mở bàn đúng như `startRack` sẽ dò ở cú đầu.
+  func prefetchOpening(zone: DrillTargetSolver.Zone?) {
+    let b = balls
+    guard aimBall == b.keys.filter({ $0 != 0 }).min(), let pocket = aimPocket else { return }
+    DispatchQueue.global(qos: .utility).async { _ = RackShotSolver.opening(b, only: pocket, zone: zone) }
   }
 
   /// Dừng chuỗi và trả bàn về thế bi lúc bấm Play.
@@ -278,6 +297,65 @@ extension PoolEditorModel {
     } else {
       EditorHaptics.fire(.warning, "No clean shot on \(ShotPhysics.name(left[0]))")
     }
+  }
+}
+
+/// Cú cố định của drill có `shots`: hướng cơ giải từ chỗ bi cái đang đứng, tipX 0. Chạy bàn và nút cú trước/cú sau
+/// dùng chung, để thế bàn dựng lại trước cú i khớp đúng chỗ bi dừng lúc chạy.
+enum FixedShot {
+  static func setup(_ s: ShotRecord, on cur: [Int: CGPoint]) -> ShotPhysics.Setup? {
+    guard let c = cur[0], let o = cur[s.ball] else { return nil }
+    let others = cur.filter { $0.key != 0 && $0.key != s.ball }.map { ShotPhysics.Obstacle(n: $0.key, p: $0.value) }.sorted { $0.n < $1.n }
+    return ShotPhysics.Setup(c: c, o: o, pocket: s.pocket, others: others, ball: s.ball)
+  }
+
+  /// Thế bi sau cú, bi đã rơi lỗ không còn.
+  static func after(_ r: ShotReplay, on cur: [Int: CGPoint]) -> [Int: CGPoint] {
+    var after = cur
+    after[0] = r.cue.sink ? nil : r.cue.pts.last
+    after[r.ball] = r.ob.sink ? nil : r.ob.pts.last
+    for (n, t) in r.others { after[n] = t.sink ? nil : t.pts.last }
+    return after
+  }
+
+  /// Thế bi trước cú `i`: chơi lần lượt các cú trước nó từ thế đầu. Có cú trượt hay bi cái rơi thì nil.
+  static func before(_ i: Int, shots: [ShotRecord], from start: [Int: CGPoint]) -> [Int: CGPoint]? {
+    var cur = start
+    for s in shots.prefix(i) {
+      guard let ms = setup(s, on: cur) else { return nil }
+      let r = ShotReplay(ms, ball: s.ball, tipX: 0, tipY: CGFloat(s.tipY), speed: CGFloat(s.speed), jump: true)
+      guard r.ob.sink, !r.cue.sink else { return nil }
+      cur = after(r, on: cur)
+    }
+    return cur
+  }
+
+  /// Drill vẽ cho cú `i` trên thế bi `balls` (inch): bi cú đó đứng đầu để guide tự thêm ghost và đường bi cái,
+  /// đường bi mục tiêu của cú kế, và zone của các cú từ `i` trở đi. Id mới để guide và zone vẽ lại.
+  static func drill(_ d: DrillRecord, shot i: Int, balls: [Int: CGPoint]) -> DrillRecord {
+    let s = d.shots[i]
+    let W = Double(PoolEditorModel.width), L = Double(PoolEditorModel.length)
+    let point = { (p: CGPoint) -> PointRecord in
+      var r = PointRecord(); r.x = Double(p.x) / W; r.y = Double(p.y) / L; return r
+    }
+    let guide = { (kind: String, s: ShotRecord) -> GuideLineRecord in
+      var g = GuideLineRecord(); g.kind = kind; g.ball = s.ball; g.pocket = s.pocket; return g
+    }
+    // Record của Expo giữ trường bằng class, chép struct là dùng chung: dựng mới hết, không sửa bản của props.
+    var out = DrillRecord()
+    out.id = "\(d.id)#\(i)"
+    out.skill = d.skill
+    out.shots = d.shots
+    if let c = balls[0] { out.cueBall = point(c) }
+    out.objectBalls = balls.keys.filter { $0 != 0 }.sorted { ($0 == s.ball ? 0 : 1, $0) < ($1 == s.ball ? 0 : 1, $1) }.map { n in
+      let p = point(balls[n]!)
+      var b = BallRecord(); b.number = n; b.x = p.x; b.y = p.y; return b
+    }
+    out.targetPocket = s.pocket
+    out.guideLines = [guide("objectBallPath", s), guide("ghostBall", s), guide("cueBallPath", s)]
+      + (i + 1 < d.shots.count ? [guide("objectBallPath", d.shots[i + 1])] : [])
+    out.cueBallTargetZones = d.shots[i...].compactMap { d.cueBallTargetZones.indices.contains($0.zone) ? d.cueBallTargetZones[$0.zone] : nil }
+    return out
   }
 }
 
@@ -383,6 +461,22 @@ enum RackShotSolver {
       if !inside.isEmpty { all = inside }
     }
     return all.prefix(4).max { score($0) < score($1) }
+  }
+
+  /// Cú mở bàn theo zone dò lưới mịn mất 1,8 s (drill 15) tới 4 s (drill 17), bàn đứng im suốt lúc đó. Màn drill
+  /// gọi sẵn lúc mở (`prefetchOpening`), Play cùng thế bàn thì lấy lại kết quả. Giữ khoá suốt lúc dò: Play bấm khi
+  /// prefetch chưa xong thì chờ nó, không dò song song tranh CPU (đo: 7,6 s thay vì 4 s).
+  private static var openings: [String: Pick?] = [:]
+  private static let openingsLock = NSLock()
+  static func opening(_ balls: [Int: CGPoint], only: String, zone: DrillTargetSolver.Zone?) -> Pick? {
+    let key = balls.sorted { $0.key < $1.key }.map { String(format: "%d %.2f %.2f", $0.key, $0.value.x, $0.value.y) }
+      .joined(separator: ";") + only + (zone.map { String(format: "%.2f %.2f %.2f", $0.c.x, $0.c.y, $0.r) } ?? "")
+    openingsLock.lock()
+    defer { openingsLock.unlock() }
+    if let hit = openings[key] { return hit }
+    let p = best(balls, only: only, zone: zone)
+    openings[key] = p
+    return p
   }
 
   private static func score(_ p: Pick) -> Double {

@@ -46,6 +46,7 @@ import {
   undoAttempt,
   useDrillProgress,
 } from "@/pool-engine/progress";
+import { recordRun, useLastRun, type ShotResult } from "@/pool-engine/shot-log";
 
 import {
   PoolEditorView,
@@ -94,6 +95,14 @@ export default function DrillScreen() {
   });
   const [pick, setPick] = useState<{ drillId: string; shot: TargetPick }>();
   const [playRev, setPlayRev] = useState(0);
+  // Drill có `shots`: cú đang xem và số lần bấm cú trước/cú sau, để native dựng lại bàn kể cả khi chỉ số không đổi.
+  const [shotAt, setShotAt] = useState<{
+    drillId: string;
+    i: number;
+    rev: number;
+  }>();
+  // Drill có `shots`: kết quả các cú của run đang đánh, chỉ trong bộ nhớ tới khi run khép.
+  const [run, setRun] = useState<{ drillId: string; results: ShotResult[] }>();
   const [moves, setMoves] = useState<{
     drillId: string;
     balls: Record<number, BallMoveEvent>;
@@ -166,20 +175,52 @@ export default function DrillScreen() {
     pick?.drillId === drill.id && pick.shot.label ? pick.shot : undefined;
   const zoneCount = drill.cueBallTargetZones.length;
   // Drill nhiều đích: cú gợi ý chung không đúng cho đích nào, phải chọn đích mới có cú.
-  const multi = zoneCount > 1 && !legacyTable;
-  const shot = target?.found
-    ? {
-        tipX: target.tipX ?? 0,
-        tipY: target.tipY ?? 0,
-        speed: target.speed ?? 0,
-      }
-    : multi
-      ? undefined
-      : {
-          tipX: drill.recommendedContactPoint.x,
-          tipY: drill.recommendedContactPoint.y,
-          speed: speedMs[drill.recommendedSpeed],
-        };
+  // Drill có `shots` thì mỗi zone đã gắn sẵn một cú, không phải chọn.
+  const multi = zoneCount > 1 && !legacyTable && !drill.shots;
+  // Đang chạy thì card theo cú native báo, rảnh thì theo cú đang xem.
+  const shotIndex = shotAt?.drillId === drill.id ? shotAt.i : 0;
+  const shown = target?.shot ?? shotIndex;
+  const planned = drill.shots?.[shown];
+  const plannedSpin =
+    planned &&
+    spinLabel[
+      planned.tipY > 0.05 ? "follow" : planned.tipY < -0.05 ? "draw" : "center"
+    ];
+  const showShot = (i: number) => {
+    setPick(undefined);
+    setShotAt((v) => ({ drillId: drill.id, i, rev: (v?.rev ?? 0) + 1 }));
+  };
+  const stepShot = (by: number) => showShot(shown + by);
+  const runResults = run?.drillId === drill.id ? run.results : [];
+  const runShot = drill.shots?.[runResults.length];
+  // Trượt hoặc xong cú cuối thì khép run vào progress; còn không thì card sang cú kế.
+  const logShot = (r: ShotResult) => {
+    const results = [...runResults, r];
+    if (!r.pot || results.length === drill.shots?.length) {
+      recordRun(drill, results);
+      setRun(undefined);
+      showShot(0);
+    } else {
+      setRun({ drillId: drill.id, results });
+      showShot(results.length);
+    }
+  };
+  const lastRun = useLastRun(drill);
+  const shot = planned
+    ? { tipX: 0, tipY: planned.tipY, speed: planned.speed }
+    : target?.found
+      ? {
+          tipX: target.tipX ?? 0,
+          tipY: target.tipY ?? 0,
+          speed: target.speed ?? 0,
+        }
+      : multi
+        ? undefined
+        : {
+            tipX: drill.recommendedContactPoint.x,
+            tipY: drill.recommendedContactPoint.y,
+            speed: speedMs[drill.recommendedSpeed],
+          };
   const targetNote =
     !target || target.runout
       ? undefined
@@ -215,14 +256,19 @@ export default function DrillScreen() {
       day: "numeric",
       month: "short",
     });
+  const unit = drill.shots ? "Run" : "Shot";
   const caption = progress.started
-    ? `${round ? `${round.title} · ` : ""}Shot ${Math.min(done + 1, total)} of ${total}`
+    ? `${round ? `${round.title} · ` : ""}${unit} ${Math.min(done + 1, total)} of ${total}`
     : finished
       ? "Last session"
-      : `${total} shots`;
+      : `${total} ${unit.toLowerCase()}s`;
 
   // Prev/Next đổi param tại chỗ: bàn native giữ nguyên, chỉ data drill đổi.
-  const go = (n: number) => router.setParams({ id: String(n), d: undefined });
+  const go = (n: number) => {
+    setShotAt(undefined);
+    setRun(undefined);
+    router.setParams({ id: String(n), d: undefined });
+  };
 
   // Native chỉ nạp lại bàn khi `rev` đổi, nên round dời bi cái phải có `rev` riêng.
   const baseStage = stageState(drill, level?.diamonds ?? 0);
@@ -263,6 +309,8 @@ export default function DrillScreen() {
       drill={drill}
       {...guides}
       playRev={playRev}
+      shotIndex={shotIndex}
+      shotRev={shotAt?.rev ?? 0}
       onTargetPick={({ nativeEvent: shot }) =>
         setPick({ drillId: drill.id, shot })
       }
@@ -302,15 +350,31 @@ export default function DrillScreen() {
 
       <ShotCard
         title={
-          target?.found
-            ? `Shot → ${target.label}`
-            : multi
-              ? "Shot"
-              : `Shot · ${spinLabel[drill.recommendedSpin]}`
+          planned && drill.shots
+            ? `Shot ${shown + 1}/${drill.shots.length} · ${plannedSpin}`
+            : target?.found
+              ? `Shot → ${target.label}`
+              : multi
+                ? "Shot"
+                : `Shot · ${spinLabel[drill.recommendedSpin]}`
         }
         shot={shot}
         pass={`${required} of ${total}`}
       />
+      {/* K/45: số mẫu đạt khi lực lệch ±10% và đầu cơ lệch ±0.1, harness `scripts/position-harness/`. */}
+      {planned && (
+        <View style={s.copy}>
+          <AppText variant="callout" style={s.body}>
+            {planned.why}
+          </AppText>
+          <AppText variant="monoSmall" color="textTertiary">
+            {planned.zone === undefined
+              ? `${planned.rate}/45 potted`
+              : `${planned.rate}/45 in zone ${drill.cueBallTargetZones[planned.zone]?.label ?? planned.zone + 1}`}
+            {" · pace ±10%, tip ±0.1"}
+          </AppText>
+        </View>
+      )}
       {/* Chạy đúng cú ô Shot đang hiện. Drill nhiều đích chưa chọn đích thì chưa có cú để chạy. */}
       {shot && !legacyTable && (
         <GraphiteAction
@@ -319,6 +383,29 @@ export default function DrillScreen() {
           icon="play.fill"
           onPress={() => setPlayRev((n) => n + 1)}
         />
+      )}
+      {drill.shots && !legacyTable && (
+        <View style={s.row}>
+          <View style={s.flex}>
+            <SecondaryButton
+              title="Previous shot"
+              icon="chevron.left"
+              size="medium"
+              disabled={shown === 0}
+              onPress={() => stepShot(-1)}
+            />
+          </View>
+          <View style={s.flex}>
+            <SecondaryButton
+              title="Next shot"
+              icon="chevron.right"
+              iconPosition="trailing"
+              size="medium"
+              disabled={shown >= drill.shots.length - 1}
+              onPress={() => stepShot(1)}
+            />
+          </View>
+        </View>
       )}
       {targetNote && (
         <AppText variant="monoSmall" color="textTertiary">
@@ -351,6 +438,11 @@ export default function DrillScreen() {
         isPassed={passes(progress) >= required}
         caption={caption}
       />
+      {lastRun && (
+        <AppText variant="callout" style={s.body}>
+          {`Last run · Pot ${lastRun.pots}/${lastRun.shots} · Position ${lastRun.positions}/${lastRun.zones} · ${lastRun.runout ? "Runout" : "No runout"}`}
+        </AppText>
+      )}
       {lastLine && (
         <View style={s.copy}>
           <AppText variant="callout" style={s.body}>
@@ -367,7 +459,47 @@ export default function DrillScreen() {
         </View>
       )}
 
-      {progress.started ? (
+      {progress.started && runShot?.zone !== undefined ? (
+        // Cú có zone ghi thêm bi cái có dừng trong zone không.
+        <>
+          <GoldAction
+            title="Pot + zone"
+            icon="scope"
+            haptic="light"
+            onPress={() => logShot({ pot: true, position: true })}
+          />
+          <View style={s.row}>
+            <GraphiteAction
+              title="Pot"
+              icon="checkmark"
+              style={s.flex}
+              onPress={() => logShot({ pot: true, position: false })}
+            />
+            <GraphiteAction
+              title="Miss"
+              icon="xmark"
+              style={s.flex}
+              onPress={() => logShot({ pot: false, position: false })}
+            />
+          </View>
+        </>
+      ) : progress.started && runShot ? (
+        <View style={s.row}>
+          <GoldAction
+            title="Pot"
+            icon="checkmark"
+            haptic="light"
+            style={s.flex}
+            onPress={() => logShot({ pot: true })}
+          />
+          <GraphiteAction
+            title="Miss"
+            icon="xmark"
+            style={s.flex}
+            onPress={() => logShot({ pot: false })}
+          />
+        </View>
+      ) : progress.started ? (
         <View style={s.row}>
           <GoldAction
             title="Pass"
@@ -388,17 +520,24 @@ export default function DrillScreen() {
           title={finished ? "Go again" : "Start drill"}
           icon="play.fill"
           haptic="medium"
-          onPress={() => startDrill(drill.id)}
+          onPress={() => {
+            setRun(undefined);
+            startDrill(drill.id);
+          }}
         />
       )}
-      {/* Bấm nhầm Pass/Miss: huỷ cú vừa ghi, kể cả cú cuối vừa khép lượt. */}
-      {(progress.started || finished) && done > 0 && (
+      {/* Bấm nhầm Pass/Miss: huỷ cú vừa ghi, kể cả cú cuối vừa khép lượt. Giữa run thì huỷ cú trong run. */}
+      {(progress.started || finished) && (done > 0 || runResults.length > 0) && (
         <SecondaryButton
           title="Undo last shot"
           icon="arrow.uturn.backward"
           size="medium"
           fullWidth
-          onPress={() => undoAttempt(drill)}
+          onPress={() => {
+            if (runResults.length === 0) return undoAttempt(drill);
+            setRun({ drillId: drill.id, results: runResults.slice(0, -1) });
+            showShot(runResults.length - 1);
+          }}
         />
       )}
 
@@ -434,7 +573,10 @@ export default function DrillScreen() {
         canPrev={drill.number > 1}
         canNext={drill.number < DRILLS.length}
         onPrev={() => go(drill.number - 1)}
-        onReset={() => resetDrill(drill.id)}
+        onReset={() => {
+          setRun(undefined);
+          resetDrill(drill.id);
+        }}
         onNext={() => go(drill.number + 1)}
       />
     </>

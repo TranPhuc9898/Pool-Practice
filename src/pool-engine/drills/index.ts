@@ -22,6 +22,7 @@ import { railCutMasters } from './19-rail-cut-masters';
 import { railCutDoctorate } from './20-rail-cut-doctorate';
 import { spotShot } from './21-spot-shot';
 import { cutAngleLadder } from './22-cut-angle-ladder';
+import { threeBallPosition } from './23-three-ball-position';
 
 /** Thứ tự là lộ trình: đánh trúng → kiểm soát bi cái → đi bài. */
 export const DRILLS: readonly PoolDrill[] = [
@@ -47,6 +48,7 @@ export const DRILLS: readonly PoolDrill[] = [
   railCutDoctorate,
   spotShot,
   cutAngleLadder,
+  threeBallPosition,
 ];
 
 export function drillByNumber(n: number): PoolDrill | undefined {

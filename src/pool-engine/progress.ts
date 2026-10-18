@@ -88,14 +88,15 @@ export function startDrill(id: string) {
   write(id, { ...p, started: true, attempts: [], sessionId: uuid7(), bestBefore: p.best });
 }
 
-export function recordAttempt(drill: PoolDrill, result: AttemptResult) {
+/** `id`: id dòng attempt log, khi `shot_results` cần trỏ vào run này. */
+export function recordAttempt(drill: PoolDrill, result: AttemptResult, id?: string) {
   const p = snapshot.get(drill.id) ?? EMPTY;
   if (!p.started || p.attempts.length >= drill.attemptCount) return;
   const attempts = [...p.attempts, result];
   const done = attempts.length === drill.attemptCount;
   const score = attempts.filter((a) => a === 'pass').length;
   write(drill.id, { ...p, started: !done, attempts, best: Math.max(p.best, score) });
-  logAttempt(drill.id, result, p.sessionId);
+  logAttempt(drill.id, result, p.sessionId, id);
 }
 
 /** Huỷ cú vừa ghi, kể cả cú cuối của lượt: lượt mở lại, log thêm dòng `void` chứ không xoá. */

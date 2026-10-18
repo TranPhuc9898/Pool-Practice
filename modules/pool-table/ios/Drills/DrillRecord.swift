@@ -41,6 +41,16 @@ struct RoundRecord: Record {
   @Field var spin: String = ""
 }
 
+/// Cú của drill chạy bài cố định: tipX 0, `tipY` và `speed` (m/s) chép từ harness, hướng cơ giải từ chỗ bi cái dừng thật.
+/// `zone` là chỉ số trong `cueBallTargetZones`, -1 là cú cuối không có zone.
+struct ShotRecord: Record {
+  @Field var ball: Int = 0
+  @Field var pocket: String = ""
+  @Field var tipY: Double = 0
+  @Field var speed: Double = 0
+  @Field var zone: Int = -1
+}
+
 struct DrillRecord: Record {
   @Field var id: String = ""
   /// "runout" thì Play shot chạy cả bàn theo planner thay vì một cú.
@@ -51,4 +61,6 @@ struct DrillRecord: Record {
   @Field var cueBallTargetZones: [TargetZoneRecord] = []
   @Field var guideLines: [GuideLineRecord] = []
   @Field var rounds: [RoundRecord] = []
+  /// Có thì Play shot chơi đúng các cú này thay vì planner.
+  @Field var shots: [ShotRecord] = []
 }

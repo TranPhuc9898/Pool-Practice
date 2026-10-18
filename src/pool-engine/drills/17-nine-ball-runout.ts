@@ -24,7 +24,7 @@ export const nineBallRunout = {
     { number: 9, x: 0.6, y: 0.85 },
   ],
   targetPocket: 'sideLeft',
-  cueBallTargetZones: [{ kind: 'circle', center: { x: 0.62, y: 0.74 }, radius: 0.09, label: '2' }],
+  cueBallTargetZones: [{ kind: 'circle', center: { x: 0.2, y: 0.71 }, radius: 0.09, label: '2' }],
   guideLines: [
     { kind: 'objectBallPath', ball: 1, pocket: 'sideLeft' },
     { kind: 'ghostBall', ball: 1, pocket: 'sideLeft' },

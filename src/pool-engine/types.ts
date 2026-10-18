@@ -67,6 +67,24 @@ export type DrillRound = { title: string; zone?: number; spin: Spin; cueBall?: N
 export type DrillStep = { label: string; caption: string };
 
 /**
+ * Một cú của drill chạy bài cố định. Tip, lực, zone và `rate` chép từ `scripts/position-harness/`, app không tính lại.
+ * Chỉ cú 1 đặt bi cái; cú sau đánh từ chỗ bi cái dừng thật sau cú trước, hướng cơ giải lại từ đó, tipX luôn 0.
+ */
+export type DrillShot = {
+  ball: ObjectBallNumber;
+  pocket: PocketId;
+  tipY: number;
+  /** m/s. */
+  speed: number;
+  /** Chỉ số trong `cueBallTargetZones` bi cái phải dừng sau cú này. Cú cuối không có. */
+  zone?: number;
+  /** Vì sao chọn cú và zone này, một câu. */
+  why: string;
+  /** Số mẫu trên 45 mẫu lệch tay của harness còn vào lỗ, dừng trong zone và đánh được bi kế. */
+  rate: number;
+};
+
+/**
  * Một mức khoảng cách bi cái → bi mục tiêu, tính theo diamond (12,5"). Bi cái lùi trên đường
  * cũ, vùng đích giữ nguyên, nên cú gợi ý phải tính lại bằng engine cho từng mức.
  */
@@ -109,6 +127,7 @@ export type PoolDrill = {
   mistakes?: string[];
   rounds?: DrillRound[];
   steps?: DrillStep[];
+  shots?: DrillShot[];
   difficultyModifiers?: DifficultyModifiers;
   distances?: DrillDistance[];
 };
