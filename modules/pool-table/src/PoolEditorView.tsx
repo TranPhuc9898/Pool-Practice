@@ -41,6 +41,10 @@ export type TargetPick = {
   runout?: boolean;
   /** Thứ tự cú trong chuỗi, từ 0. Drill có `shots` thì khớp chỉ số trong `shots`. */
   shot?: number;
+  /** Chuỗi chạy bàn vừa chốt, `shot` là cú cuối đã diễn. Không phải vùng đích, không đổi card. */
+  ended?: boolean;
+  /** Cú cuối vào sạch. */
+  ok?: boolean;
 };
 
 /** Ba góc nhìn của cùng một cú, khớp `EditorViewMode` bên Swift. */

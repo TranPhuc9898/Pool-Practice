@@ -148,6 +148,10 @@ final class RackRun {
 
   let start: Start
   let onStep: (Step) -> Void
+  /// Gọi một lần lúc chuỗi chốt, kèm cú cuối đã diễn (nil nếu không cú nào).
+  let onEnd: (Step?) -> Void
+  /// Drill có `shots`: mỗi lần Play chỉ đánh một cú.
+  let fixed: Bool
   var steps: [Step] = []
   /// Cú kế tiếp sẽ diễn.
   var next = 0
@@ -162,9 +166,11 @@ final class RackRun {
     set { lock.lock(); stop = newValue; lock.unlock() }
   }
 
-  init(start: Start, onStep: @escaping (Step) -> Void) {
+  init(start: Start, fixed: Bool, onStep: @escaping (Step) -> Void, onEnd: @escaping (Step?) -> Void) {
     self.start = start
+    self.fixed = fixed
     self.onStep = onStep
+    self.onEnd = onEnd
   }
 }
 
@@ -172,13 +178,14 @@ extension PoolEditorModel {
   /// Play shot của drill chạy bàn: đánh bi số nhỏ nhất bằng cú `RackShotSolver`, bi cái dừng đâu đánh bi kế từ đó,
   /// tới khi hết bàn, trượt bi hay không còn cú thẳng nào.
   /// `inHand`: luật ball in hand (D27), mỗi cú `RackInHandSolver` tự đặt bi cái và chọn bi, lỗ tuỳ ý.
-  /// `shots`: drill chạy bài cố định, chơi đúng các cú này rồi dừng. Bi cái chỉ đặt ở cú 1, cú sau đánh từ chỗ dừng thật,
-  /// hướng cơ giải lại như harness `scripts/position-harness/`.
-  /// `from`: chơi từ cú này của `shots`, bàn phải đang ở thế trước cú đó (`FixedShot.before`).
+  /// `shots`: drill chạy bài cố định, mỗi lần chỉ đánh cú `from` rồi dừng để người tập bấm Play cú kế. Bi cái chỉ đặt
+  /// ở cú 1, cú sau đánh từ chỗ dừng thật, hướng cơ giải lại như harness `scripts/position-harness/`.
+  /// `from`: cú cần đánh, bàn phải đang ở thế trước cú đó (`FixedShot.before`).
   func startRack(reduceMotion: Bool, zone: DrillTargetSolver.Zone? = nil, inHand: Bool = false, shots: [ShotRecord] = [],
-                 from: Int = 0, onStep: @escaping (RackRun.Step) -> Void) {
+                 from: Int = 0, onStep: @escaping (RackRun.Step) -> Void, onEnd: @escaping (RackRun.Step?) -> Void = { _ in }) {
     stopRack()
-    let run = RackRun(start: .init(balls: balls, aimBall: aimBall, aimPocket: aimPocket, tipX: tipX, tipY: tipY, speed: speed), onStep: onStep)
+    let run = RackRun(start: .init(balls: balls, aimBall: aimBall, aimPocket: aimPocket, tipX: tipX, tipY: tipY, speed: speed),
+                      fixed: !shots.isEmpty, onStep: onStep, onEnd: onEnd)
     rack = run
     let first = balls
     DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -187,7 +194,7 @@ extension PoolEditorModel {
       var only = run.start.aimBall == first.keys.filter({ $0 != 0 }).min() ? run.start.aimPocket : nil
       var opening = true
       var k = from
-      while !run.cancelled, let c = cur[0], shots.isEmpty || k < shots.count {
+      while !run.cancelled, let c = cur[0], shots.isEmpty || k < min(shots.count, from + 1) {
         let obs = cur.filter { $0.key != 0 }
         guard !obs.isEmpty else { break }
         let t0 = Date()
@@ -290,13 +297,18 @@ extension PoolEditorModel {
     guard !run.over else { return }
     run.over = true
     let left = balls.keys.filter { $0 != 0 }.sorted()
+    let last = run.steps.last
     if left.isEmpty {
-      EditorHaptics.fire(.selection, "Rack cleared in \(run.steps.count) shots")
-    } else if let last = run.steps.last, !last.ok {
+      EditorHaptics.fire(.selection, run.fixed ? "Rack cleared" : "Rack cleared in \(run.steps.count) shots")
+    } else if let last, !last.ok {
       EditorHaptics.fire(.warning, balls[0] == nil ? "Cue ball scratched" : "Missed \(ShotPhysics.name(last.ball))")
+    } else if run.fixed, let last {
+      // Một cú của drill có `shots` vào sạch: bàn đứng chờ cú kế, không phải hết cú.
+      EditorHaptics.fire(.selection, "Pocketed \(ShotPhysics.name(last.ball))")
     } else {
       EditorHaptics.fire(.warning, "No clean shot on \(ShotPhysics.name(left[0]))")
     }
+    run.onEnd(last)
   }
 }
 

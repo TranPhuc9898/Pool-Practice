@@ -340,7 +340,8 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
 
   /// Drill chạy bàn: bấm lúc đang chạy là dừng và trả bàn về đầu, bấm lúc rảnh hay đã xong là chạy lại từ đầu.
   /// Bấm lúc cú đầu còn đang dò thì bỏ qua: bàn chưa động nên bấm lần hai trông như "chưa ăn", không phải "dừng".
-  /// Mỗi cú báo JS như một vùng đích để ô Shot hiện đúng cú đang đánh.
+  /// Mỗi cú báo JS như một vùng đích để ô Shot hiện đúng cú đang đánh. Drill có `shots` chỉ đánh cú đang xem,
+  /// xong thì báo `ended` để JS chuyển card và bàn sang cú kế.
   private func playRack() {
     if let r = model.rack, !r.over, r.steps.isEmpty { return }
     let busy = model.rack.map { !$0.over } ?? false
@@ -353,6 +354,8 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
         "label": "Ball \(step.ball)", "found": true, "runout": true, "shot": step.shot,
         "tipX": Double(step.tipX), "tipY": Double(step.tipY), "speed": Double(step.speed),
       ])
+    } onEnd: { last in
+      props.onTargetPick(["label": "", "ended": true, "ok": last?.ok ?? false, "shot": last?.shot ?? -1])
     }
   }
 

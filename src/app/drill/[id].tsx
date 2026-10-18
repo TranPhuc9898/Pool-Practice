@@ -311,9 +311,15 @@ export default function DrillScreen() {
       playRev={playRev}
       shotIndex={shotIndex}
       shotRev={shotAt?.rev ?? 0}
-      onTargetPick={({ nativeEvent: shot }) =>
-        setPick({ drillId: drill.id, shot })
-      }
+      onTargetPick={({ nativeEvent: shot }) => {
+        // Drill có `shots`: Play đánh một cú, vào sạch thì card và bàn sang cú kế, chờ bấm Play tiếp.
+        if (shot.ended) {
+          const next = (shot.shot ?? -1) + 1;
+          if (shot.ok && drill.shots && next > 0 && next < drill.shots.length) showShot(next);
+          return;
+        }
+        setPick({ drillId: drill.id, shot });
+      }}
     />
   );
 
