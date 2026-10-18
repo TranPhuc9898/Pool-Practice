@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
+import { numberIn } from '@/components/home/training-areas';
 import { AppChip, AppIcon, AppText, makeStyles, MaterialCard, type ChipTone } from '@/design-system';
 import { drillStatus, type DrillProgress, type DrillStatus } from '@/pool-engine/progress';
 import type { PoolDrill } from '@/pool-engine/types';
@@ -12,11 +13,12 @@ const statusMeta: Record<DrillStatus, { label: string; tone: ChipTone }> = {
   notPassed: { label: 'Not Passed', tone: 'error' },
 };
 
-/** Một dòng drill: số, tên, kỹ năng · level · điểm, chip trạng thái. Bấm mở `/drill/[id]`. */
+/** Một dòng drill: số trong nhóm, tên, kỹ năng · level · điểm, chip trạng thái. Bấm mở `/drill/[id]`. */
 export function DrillCard({ drill, progress }: { drill: PoolDrill; progress?: DrillProgress }) {
   const s = useStyles();
   const key = progress ? drillStatus(drill, progress) : 'notStarted';
   const status = statusMeta[key];
+  const n = numberIn(drill);
   const best = progress?.best
     ? `Best ${progress.best}/${drill.attemptCount}`
     : `Pass ${drill.passCondition.required}/${drill.attemptCount}`;
@@ -26,10 +28,10 @@ export function DrillCard({ drill, progress }: { drill: PoolDrill; progress?: Dr
       padding="md"
       state={key === 'inProgress' ? 'active' : 'normal'}
       onPress={() => router.push(`/drill/${drill.number}`)}
-      accessibilityLabel={`Drill ${drill.id}, ${drill.title}, ${drill.skillLabel}, ${status.label}`}>
+      accessibilityLabel={`Drill ${n}, ${drill.title}, ${drill.skillLabel}, ${status.label}`}>
       <View style={s.row}>
         <AppText variant="mono" color="textTertiary" style={s.number}>
-          {drill.id}
+          {n}
         </AppText>
         <View style={s.flex}>
           <AppText variant="headline">{drill.title}</AppText>

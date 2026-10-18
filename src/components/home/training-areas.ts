@@ -59,7 +59,27 @@ const areaBySkill: Record<DrillSkill, TrainingAreaId> = {
 
 export const areaOf = (drill: PoolDrill) => TRAINING_AREAS.find((a) => a.id === areaBySkill[drill.skill])!;
 
-export const drillsIn = (area: TrainingAreaId) => DRILLS.filter((d) => areaBySkill[d.skill] === area);
+/** Thứ tự trong từng nhóm, dễ trước khó sau, bài cùng dòng (Rail Cut) đứng liền. Drill chưa có tên ở đây xếp cuối nhóm. */
+const ORDER: Record<TrainingAreaId, readonly string[]> = {
+  fundamentals: ['01', '22', '21', '18', '19', '20'],
+  cueBallControl: ['02', '03', '04', '05', '06'],
+  positionPlay: ['07', '08', '09', '11'],
+  patterns: ['12', '13', '23', '15', '14', '10', '16', '17'],
+};
+
+const rank = (area: TrainingAreaId, d: PoolDrill) => {
+  const i = ORDER[area].indexOf(d.id);
+  return i < 0 ? Infinity : i;
+};
+
+export const drillsIn = (area: TrainingAreaId) =>
+  DRILLS.filter((d) => areaBySkill[d.skill] === area).sort((a, b) => rank(area, a) - rank(area, b));
+
+/** Số 01…N của drill trong nhóm, khớp tab Drills và dòng nhóm trên màn drill. */
+export const numberIn = (drill: PoolDrill) => {
+  const i = drillsIn(areaBySkill[drill.skill]).findIndex((d) => d.id === drill.id);
+  return String(i + 1).padStart(2, '0');
+};
 
 const levelLabel: Record<Difficulty, string> = {
   1: 'Beginner',

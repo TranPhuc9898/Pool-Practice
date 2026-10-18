@@ -142,6 +142,8 @@ export default function DrillScreen() {
     : leveled;
   const area = areaOf(drill);
   const program = drillsIn(area.id);
+  // Prev/Next đi trong nhóm, khớp số 01…N trên tab Drills.
+  const slot = program.indexOf(base);
 
   // Bi đã kéo đè lên data gốc, để guide vẽ lại theo chỗ mới. Đổi drill thì bỏ. React Compiler tự memo.
   const balls = moves?.drillId === drill.id ? moves.balls : undefined;
@@ -576,14 +578,14 @@ export default function DrillScreen() {
       )}
 
       <FooterNav
-        canPrev={drill.number > 1}
-        canNext={drill.number < DRILLS.length}
-        onPrev={() => go(drill.number - 1)}
+        canPrev={slot > 0}
+        canNext={slot >= 0 && slot < program.length - 1}
+        onPrev={() => go(program[slot - 1].number)}
         onReset={() => {
           setRun(undefined);
           resetDrill(drill.id);
         }}
-        onNext={() => go(drill.number + 1)}
+        onNext={() => go(program[slot + 1].number)}
       />
     </>
   );

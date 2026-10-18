@@ -66,7 +66,7 @@ export const typography = {
   monoSmall: style('mono', 11, 14, 0.4, 1.6, { fontWeight: '500' }),
   /** Tên drill giữa card hero. Medium, không semibold: số to đã đủ nặng. */
   heroTitle: style('medium', 26, 31, -0.4, 1.4),
-  /** Tên ô bento và ô Quick Practice. */
+  /** Tên ô bento. */
   tileTitle: style('medium', 17, 21, -0.1, 1.6),
 } as const;
 

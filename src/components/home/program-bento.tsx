@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useWindowDimensions, View } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 
+import { numberIn } from '@/components/home/training-areas';
 import { AppIcon, AppText, DotMatrixDisplay, homeSurfaces, makeStyles, PressableScale, useTheme } from '@/design-system';
 import type { PoolDrill } from '@/pool-engine/types';
 
@@ -179,9 +180,9 @@ function UpNextTile({ drill, label }: { drill: PoolDrill; label: string }) {
     <PressableScale
       onPress={() => router.push(`/drill/${drill.number}`)}
       accessibilityRole="button"
-      accessibilityLabel={`${label}: drill ${drill.number}, ${drill.title}.`}
+      accessibilityLabel={`${label}: drill ${numberIn(drill)}, ${drill.title}.`}
       style={[s.tile, s.pill, s.wide, homeSurfaces.graphiteTile]}>
-      <DotMatrixDisplay text={String(drill.number).padStart(2, '0')} size="xs" />
+      <DotMatrixDisplay text={numberIn(drill)} size="xs" />
       <View style={s.ptext}>
         <AppText variant="caption" style={s.meta} numberOfLines={1}>
           {label}

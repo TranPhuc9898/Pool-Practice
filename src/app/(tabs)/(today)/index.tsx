@@ -3,15 +3,12 @@ import { View } from "react-native";
 
 import { HeroCard } from "@/components/home/hero-card";
 import { ProgramBento } from "@/components/home/program-bento";
-import { QuickPractice } from "@/components/home/quick-practice";
 import { areaOf, drillsIn } from "@/components/home/training-areas";
 import {
-  AppIcon,
   AppText,
   GhostButton,
   IconButton,
   makeStyles,
-  PressableScale,
   Screen,
 } from "@/design-system";
 import { DRILLS } from "@/pool-engine/drills";
@@ -31,18 +28,10 @@ import {
 } from "@/pool-engine/workout";
 import type { PoolDrill } from "@/pool-engine/types";
 
-/** Ô tập nhanh: kỹ năng bi cái lõi. Bài đang nằm trong hero thì bỏ qua, lấy ô dự phòng. */
-const QUICK: readonly (readonly [string, string])[] = [
-  ["02", "Stop"],
-  ["03", "Follow"],
-  ["05", "Draw"],
-  ["04", "Follow Distance"],
-];
-
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /**
- * Home: hero theo program đang tập, ba ô program, ba ô tập nhanh. Mọi số đọc từ progress đã lưu, không bịa.
+ * Home: hero theo program đang tập, ba ô program. Mọi số đọc từ progress đã lưu, không bịa.
  * Continue đọc `lastDrillId` đã lưu đĩa, nên mở lại app vẫn về đúng bài.
  */
 export default function HomeScreen() {
@@ -85,13 +74,6 @@ export default function HomeScreen() {
   const cbc = stat("cueBallControl");
   const pos = stat("positionPlay");
   const pat = stat("patterns");
-
-  const quick = QUICK.filter(([id]) => id !== current.id)
-    .slice(0, 3)
-    .flatMap(([id, name]) => {
-      const drill = DRILLS.find((d) => d.id === id);
-      return drill ? [{ drill, name, passed: isPassed(drill) }] : [];
-    });
 
   const date = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -168,33 +150,6 @@ export default function HomeScreen() {
         />
       </View>
 
-      <View style={s.block}>
-        <AppText
-          variant="eyebrow"
-          color="textTertiary"
-          accessibilityRole="header"
-        >
-          Quick practice
-        </AppText>
-        <QuickPractice items={quick} />
-        <PressableScale
-          onPress={() => router.navigate("/drills")}
-          accessibilityRole="button"
-          accessibilityLabel={`All drills, ${pad(DRILLS.length)}`}
-          style={s.all}
-        >
-          <AppText variant="callout" color="textSecondary">
-            All drills
-          </AppText>
-          <AppIcon
-            name="arrow.right"
-            size="small"
-            color="textSecondary"
-            weight="semibold"
-          />
-        </PressableScale>
-      </View>
-
       {__DEV__ && (
         <GhostButton
           title="Open Design System"
@@ -220,11 +175,4 @@ function HeaderActions() {
 
 const useStyles = makeStyles((t) => ({
   block: { gap: t.space.sm },
-  all: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    minHeight: t.layout.minTouchTarget,
-  },
 }));
