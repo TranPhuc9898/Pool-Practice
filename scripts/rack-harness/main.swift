@@ -31,14 +31,14 @@ for d in drills {
   var cur: [Int: CGPoint] = [0: inch(d.cue.x, d.cue.y)]
   for (n, x, y) in d.balls { cur[n] = inch(x, y) }
   let total = d.balls.count
-  var potted = 0, touched = 0, shot = 0
+  var potted = 0, touched = 0, shot = 0, skipped = 0
   while cur.keys.contains(where: { $0 != 0 }) {
     shot += 1
     let t0 = Date()
     // Cú 1 là cú mẫu của drill: bi đầu danh sách vào footLeft, tip (0,0), lực medium 1.8 m/s như stageState.
     let pick = shot == 1
       ? RackInHandSolver.template(cur, ball: d.balls[0].0, pocket: "footLeft", tipX: 0, tipY: 0, speed: 1.8)
-      : RackInHandSolver.best(cur)
+      : RackInHandSolver.inOrder(cur)
     guard let p = pick else {
       print("\(d.id) #\(shot) no shot")
       for n in cur.keys.filter({ $0 != 0 }).sorted() {
@@ -51,6 +51,8 @@ for d in drills {
       break
     }
     let ms = Date().timeIntervalSince(t0) * 1000
+    // Bi nhỏ nhất còn trên bàn mà không phải bi được đánh: người tập phải bỏ qua nó.
+    if let low = cur.keys.filter({ $0 != 0 }).min(), low != p.ball { skipped += 1 }
     let r = ShotPhysics.runWith(p.setup, tipX: p.tipX, tipY: p.tipY, speed: p.speed)
     let ok = r.ob.pocket != nil && r.scratch == nil
     // `r.moved` có cả bi đứng yên (Trace.moved chỉ là pts.count > 1), nên bi bị chạm là bi có va chạm hoặc rơi lỗ.
@@ -71,5 +73,5 @@ for d in drills {
     guard ok else { break }
     if cur[0] == nil { cur[0] = CGPoint(x: 25, y: 50) }
   }
-  print("\(d.id): \(potted)/\(total) moved \(touched)")
+  print("\(d.id): \(potted)/\(total) moved \(touched) skipped \(skipped)")
 }

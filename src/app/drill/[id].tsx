@@ -193,6 +193,12 @@ export default function DrillScreen() {
   // Drill nhiều đích: cú gợi ý chung không đúng cho đích nào, phải chọn đích mới có cú.
   // Drill có `shots` thì mỗi zone đã gắn sẵn một cú, không phải chọn.
   const multi = zoneCount > 1 && !legacyTable && !drill.shots;
+  // Số cú bấm Play từng cú được. Rail Cut đánh theo số bi, mỗi bi một cú, cú do native dò.
+  const steps =
+    drill.shots?.length ??
+    (drill.skill === "railCut" && !legacyTable
+      ? drill.objectBalls.length
+      : undefined);
   // Đang chạy thì card theo cú native báo, rảnh thì theo cú đang xem.
   const shotIndex = shotAt?.drillId === drill.id ? shotAt.i : 0;
   const shown = target?.shot ?? shotIndex;
@@ -329,10 +335,10 @@ export default function DrillScreen() {
       shotIndex={shotIndex}
       shotRev={shotAt?.rev ?? 0}
       onTargetPick={({ nativeEvent: shot }) => {
-        // Drill có `shots`: Play đánh một cú, vào sạch thì card và bàn sang cú kế, chờ bấm Play tiếp.
+        // Drill có `shots` và Rail Cut: Play đánh một cú, vào sạch thì card và bàn sang cú kế, chờ bấm Play tiếp.
         if (shot.ended) {
           const next = (shot.shot ?? -1) + 1;
-          if (shot.ok && drill.shots && next > 0 && next < drill.shots.length) showShot(next);
+          if (shot.ok && steps && next > 0 && next < steps) showShot(next);
           return;
         }
         setPick({ drillId: drill.id, shot });
@@ -375,11 +381,13 @@ export default function DrillScreen() {
         title={
           planned && drill.shots
             ? `Shot ${shown + 1}/${drill.shots.length} · ${plannedSpin}`
-            : target?.found
-              ? `Shot → ${target.label}`
-              : multi
-                ? "Shot"
-                : `Shot · ${spinLabel[drill.recommendedSpin]}`
+            : steps
+              ? `Shot ${shown + 1}/${steps} → ${target?.found ? target.label : `Ball ${drill.objectBalls[0]?.number}`}`
+              : target?.found
+                ? `Shot → ${target.label}`
+                : multi
+                  ? "Shot"
+                  : `Shot · ${spinLabel[drill.recommendedSpin]}`
         }
         shot={shot}
         pass={`${required} of ${total}`}
@@ -410,7 +418,7 @@ export default function DrillScreen() {
           onPress={() => setPlayRev((n) => n + 1)}
         />
       )}
-      {drill.shots && !legacyTable && (
+      {!!steps && !legacyTable && (
         <View style={s.row}>
           <View style={s.flex}>
             <SecondaryButton
@@ -427,7 +435,7 @@ export default function DrillScreen() {
               icon="chevron.right"
               iconPosition="trailing"
               size="medium"
-              disabled={shown >= drill.shots.length - 1}
+              disabled={shown >= steps - 1}
               onPress={() => stepShot(1)}
             />
           </View>

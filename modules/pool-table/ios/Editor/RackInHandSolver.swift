@@ -37,6 +37,17 @@ enum RackInHandSolver {
     return nil
   }
 
+  /// Đánh theo số bi như người tập: bi nhỏ nhất có cú sạch. Bi đang bị chắn thì nhường bi số kế, quay lại sau.
+  static func inOrder(_ balls: [Int: CGPoint]) -> Pick? {
+    let open = openPockets(balls)
+    for n in balls.keys.filter({ $0 != 0 }).sorted() {
+      for pocket in open[n] ?? [] {
+        if let p = place(n, pocket, balls) { return p }
+      }
+    }
+    return nil
+  }
+
   /// Cú mẫu của drill, đúng như hình tĩnh: bi cái tại chỗ, bi, lỗ, tip, lực của drill. Không lọc D27, để harness bắt
   /// được dữ liệu drill sai thay vì app lặng lẽ đánh cú khác.
   static func template(_ balls: [Int: CGPoint], ball: Int, pocket: String, tipX: CGFloat, tipY: CGFloat, speed: CGFloat) -> Pick? {

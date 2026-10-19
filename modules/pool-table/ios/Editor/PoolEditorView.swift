@@ -43,8 +43,11 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
   @State private var targetShots: [DrillTargetSolver.Shot?]?
   @State private var targetPick: Int?
   @State private var targetReplay: ShotReplay?
-  /// Drill có `shots`: cú bàn đang bày, 0 là thế gốc của drill.
+  /// Drill có `shots` và Rail Cut: cú bàn đang bày, 0 là thế gốc của drill.
   @State private var shownShot = 0
+  /// Rail Cut: lần bấm cú trước/cú sau đang dò nền. Kết quả của lần bấm cũ bị bỏ, Play chờ dò xong.
+  @State private var shotSeq = 0
+  @State private var shotPending = false
   static let root = "poolEditorRoot"
 
   var body: some View {
@@ -187,8 +190,7 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
         )
       let racking = model.rack != nil
       // Đang xem cú sau của drill có `shots`: guide và zone vẽ theo thế bàn trước cú đó.
-      let drill = !racking && shownShot > 0 && shownShot < props.drill.shots.count
-        ? FixedShot.drill(props.drill, shot: shownShot, balls: model.balls) : props.drill
+      let drill = racking ? props.drill : shownDrill()
       if drill.id.isEmpty {
         PoolEditorGuides(model: model, geometry: geometry)
       } else {
@@ -256,6 +258,15 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
     })
   }
 
+  /// Drill vẽ guide theo cú đang xem. Cú 0 là hình tĩnh của drill.
+  private func shownDrill() -> DrillRecord {
+    let d = props.drill
+    guard shownShot > 0 else { return d }
+    if shownShot < d.shots.count { return FixedShot.drill(d, shot: shownShot, balls: model.balls) }
+    guard d.skill == "railCut", let b = model.aimBall, let p = model.aimPocket else { return d }
+    return InHandShot.drill(d, shot: shownShot, ball: b, pocket: p, balls: model.balls)
+  }
+
   /// Đổi drill thì bỏ vùng đã chọn và dò lại cả lưới, chạy nền như Gợi ý.
   private func solveTargets() {
     model.stopRack()
@@ -263,6 +274,8 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
     targetReplay = nil
     targetShots = nil
     shownShot = 0
+    shotSeq += 1
+    shotPending = false
     let d = props.drill
     // Kiểm Expo Record có nạp mảng lồng `shots`: drill 23 phải ra 3.
     if !d.id.isEmpty { NSLog("[drill] %@ shots %d", d.id, d.shots.count) }
@@ -334,13 +347,14 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
   /// Mỗi cú báo JS như một vùng đích để ô Shot hiện đúng cú đang đánh. Drill có `shots` chỉ đánh cú đang xem,
   /// xong thì báo `ended` để JS chuyển card và bàn sang cú kế.
   private func playRack() {
+    if shotPending { return }
     if let r = model.rack, !r.over, r.steps.isEmpty { return }
     let busy = model.rack.map { !$0.over } ?? false
     model.stopRack()
     guard !busy else { return props.onTargetPick(["label": ""]) }
     let d = props.drill
     model.startRack(reduceMotion: reduceMotion, zone: DrillTargetSolver.zones(d).first, inHand: d.skill == "railCut", shots: d.shots,
-                    from: d.shots.isEmpty ? 0 : min(shownShot, d.shots.count - 1)) { step in
+                    from: !d.shots.isEmpty ? min(shownShot, d.shots.count - 1) : d.skill == "railCut" ? shownShot : 0) { step in
       props.onTargetPick([
         "label": "Ball \(step.ball)", "found": true, "runout": true, "shot": step.shot,
         "tipX": Double(step.tipX), "tipY": Double(step.tipY), "speed": Double(step.speed),
@@ -353,9 +367,10 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
   /// Drill có `shots`, bấm cú trước/cú sau: dừng chuỗi, chơi lại các cú trước từ thế gốc để bàn đứng đúng chỗ bi cái
   /// dừng thật, rồi đặt cú đó lên model cho hai ô Ngắm, Dày mỏng và Play shot.
   private func showShot() {
+    let d = props.drill
+    if d.skill == "railCut", d.shots.isEmpty { return showInHandShot() }
     model.stopRack()
     model.replay = nil
-    let d = props.drill
     guard !d.shots.isEmpty else { return }
     let i = min(max(props.shotIndex, 0), d.shots.count - 1)
     var start: [Int: CGPoint] = [:]
@@ -371,6 +386,44 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
     shownShot = i
     let c = cur[0] ?? .zero
     NSLog("[shot] %@ %d/%d %d→%@ cue (%.1f,%.1f)", d.id, i + 1, d.shots.count, s.ball, s.pocket, c.x, c.y)
+  }
+
+  /// Rail Cut, bấm cú trước/cú sau: dò nền thế bàn trước cú đó theo số bi, bi cái đặt sẵn. Bàn giữ nguyên tới khi
+  /// dò xong để không chớp về thế trước cú vừa đánh. Báo JS như một cú chạy bàn để card hiện đúng bi.
+  private func showInHandShot() {
+    let d = props.drill, s = props.state, i = max(props.shotIndex, 0)
+    var balls: [Int: CGPoint] = [:]
+    for b in s.balls { balls[b.number] = CGPoint(x: b.x * PoolEditorModel.width, y: b.y * PoolEditorModel.length) }
+    let start = RackRun.Start(balls: balls, aimBall: s.aimBall >= 0 ? s.aimBall : nil, aimPocket: s.aimPocket.isEmpty ? nil : s.aimPocket,
+                              tipX: CGFloat(s.tipX), tipY: CGFloat(s.tipY), speed: CGFloat(s.speed))
+    shotSeq += 1
+    let seq = shotSeq
+    shotPending = true
+    DispatchQueue.global(qos: .userInitiated).async {
+      let t0 = Date()
+      let e = InHandShot.before(i, id: d.id, start: start)
+      let ms = Date().timeIntervalSince(t0) * 1000
+      DispatchQueue.main.async {
+        guard seq == shotSeq, props.drill.id == d.id else { return }
+        shotPending = false
+        guard let e else { return NSLog("[shot] %@ %d: no shot, %.0f ms", d.id, i + 1, ms) }
+        let p = e.pick
+        model.stopRack()
+        model.replay = nil
+        model.balls = e.balls
+        model.aimBall = p.ball
+        model.aimPocket = p.pocket
+        model.tipX = p.tipX
+        model.tipY = p.tipY
+        model.speed = p.speed
+        shownShot = i
+        NSLog("[shot] %@ %d %d→%@ cue (%.1f,%.1f) %.0f ms", d.id, i + 1, p.ball, p.pocket, p.cue.x, p.cue.y, ms)
+        props.onTargetPick([
+          "label": "Ball \(p.ball)", "found": true, "runout": true, "shot": i,
+          "tipX": Double(p.tipX), "tipY": Double(p.tipY), "speed": Double(p.speed),
+        ])
+      }
+    }
   }
 
   /// Chỉ để kiểm: `?fixture=preset:Draw` bấm cú mẫu đó, lúc mở màn hay khi đổi URL đang mở. Dòng NSLog commit cho thấy pad và lực.
