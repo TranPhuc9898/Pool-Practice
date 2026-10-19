@@ -28,9 +28,6 @@ struct PoolTableView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
       let ball = geometry.ballDiameter
       ZStack(alignment: .topLeading) {
         PoolTableSurface(geometry: geometry, theme: theme).equatable()
-        if props.showTarget {
-          PoolTargetLayer(drillId: drill.id, zones: drill.cueBallTargetZones, geometry: geometry)
-        }
         if props.showGuide {
           PoolGuideLayer(
             drill: drill,

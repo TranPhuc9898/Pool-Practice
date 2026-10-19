@@ -30,7 +30,7 @@ export const breakSquat = {
     { number: 8, x: 0.5, y: 0.17206 },
   ],
   targetPocket: 'footLeft',
-  cueBallTargetZones: [{ kind: 'circle', center: { x: 0.5, y: 0.5 }, radius: 0.07, label: 'Center' }],
+  cueBallTargetZones: [],
   guideLines: [],
   recommendedContactPoint: { x: 0, y: 0 },
   recommendedSpin: 'center',

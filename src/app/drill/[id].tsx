@@ -56,13 +56,11 @@ import {
   type TargetPick,
 } from "../../../modules/pool-table";
 
-type GuideKey =
-  "showGhostBall" | "showTangentLine" | "showCuePath" | "showTarget";
+type GuideKey = "showGhostBall" | "showTangentLine" | "showCuePath";
 const GUIDES: { key: GuideKey; label: string }[] = [
   { key: "showGhostBall", label: "Ghost" },
   { key: "showTangentLine", label: "Tangent" },
   { key: "showCuePath", label: "Path" },
-  { key: "showTarget", label: "Target" },
 ];
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -92,7 +90,6 @@ export default function DrillScreen() {
     showGhostBall: true,
     showTangentLine: true,
     showCuePath: true,
-    showTarget: true,
   });
   const [pick, setPick] = useState<{ drillId: string; shot: TargetPick }>();
   const [playRev, setPlayRev] = useState(0);
@@ -187,8 +184,11 @@ export default function DrillScreen() {
       ),
     );
   // Vùng đích đang chọn trên bàn: Spin/Speed đổi theo cú tới vùng đó. Đổi drill thì bỏ.
+  // Drill break không có cú giải tới zone nên không nhận target.
   const target =
-    pick?.drillId === drill.id && pick.shot.label ? pick.shot : undefined;
+    pick?.drillId === drill.id && pick.shot.label && drill.skill !== "break"
+      ? pick.shot
+      : undefined;
   const zoneCount = drill.cueBallTargetZones.length;
   // Drill nhiều đích: cú gợi ý chung không đúng cho đích nào, phải chọn đích mới có cú.
   // Drill có `shots` thì mỗi zone đã gắn sẵn một cú, không phải chọn.

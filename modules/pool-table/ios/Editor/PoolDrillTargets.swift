@@ -103,16 +103,14 @@ enum DrillTargetSolver {
   }
 }
 
-/// Cú đã chọn: tô đậm vùng, vẽ vệt bi cái và bi mục tiêu như đường dự đoán của Soạn bài, vòng chỗ bi cái dừng.
+/// Cú đã chọn: vẽ vệt bi cái và bi mục tiêu như đường dự đoán của Soạn bài, vòng chỗ bi cái dừng.
 struct PoolDrillPickLayer: View {
   let replay: ShotReplay
-  let zone: TargetZoneRecord
   let geometry: PoolTableGeometry
   var trails = true
 
   var body: some View {
     Canvas { ctx, _ in
-      ctx.fill(PoolTargetPath.path(for: zone, geometry: geometry), with: .color(PoolTableTheme.tournament.signal.opacity(0.3)))
       guard trails else { return }
       PoolShotReplayLayer.trails(&ctx, replay, replay.end, geometry)
       if let e = replay.cue.pts.last {

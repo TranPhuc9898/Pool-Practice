@@ -192,17 +192,8 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
       if drill.id.isEmpty {
         PoolEditorGuides(model: model, geometry: geometry)
       } else {
-        // Đang chạy bàn: vùng đích và guide của drill chỉ đúng cho cú đầu, giấu đi cho khỏi lệch với bàn đang đổi.
-        // Drill có `shots` thì giữ đúng zone của cú đang chạy, để thấy bi cái dừng trong hay ngoài.
-        if props.showTarget && !racking {
-          PoolTargetLayer(drillId: drill.id, zones: drill.cueBallTargetZones, geometry: geometry)
-        }
-        if props.showTarget, racking, let r = model.rack, r.next > 0, r.next <= r.steps.count {
-          let i = r.steps[r.next - 1].shot
-          if i < drill.shots.count, drill.cueBallTargetZones.indices.contains(drill.shots[i].zone) {
-            PoolTargetLayer(drillId: drill.id, zones: [drill.cueBallTargetZones[drill.shots[i].zone]], geometry: geometry)
-          }
-        }
+        // Vùng đích không vẽ lên bàn: zone chỉ còn để giải cú và chấm, đích đọc từ objective.
+        // Đang chạy bàn: guide của drill chỉ đúng cho cú đầu, giấu đi cho khỏi lệch với bàn đang đổi.
         // Đã chọn vùng thì vệt mô phỏng thay cho tangent và đường bi cái vẽ tay của drill.
         // Cú chỉ có bi cái: drill không có guide, dùng đường dự đoán của bàn soạn.
         if !racking, drill.objectBalls.isEmpty {
@@ -226,7 +217,7 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
         }
         if !racking, let r = targetReplay, let i = targetPick, i < drill.cueBallTargetZones.count {
           // Đang chạy thì giấu vệt tĩnh, không lộ trước đường bi sắp chạy.
-          PoolDrillPickLayer(replay: r, zone: drill.cueBallTargetZones[i], geometry: geometry, trails: model.replay == nil)
+          PoolDrillPickLayer(replay: r, geometry: geometry, trails: model.replay == nil)
         }
       }
       ForEach(model.order, id: \.self) { n in
