@@ -28,6 +28,8 @@ import { drawTrisect } from './25-draw-trisect';
 import { englishCheck } from './26-english-check';
 import { bankGhostPocket } from './27-bank-ghost-pocket';
 import { longBank } from './28-long-bank';
+import { breakOneToSide } from './29-break-one-to-side';
+import { breakSquat } from './30-break-squat';
 
 /** Thứ tự là lộ trình: đánh trúng → kiểm soát bi cái → đi bài. */
 export const DRILLS: readonly PoolDrill[] = [
@@ -59,6 +61,8 @@ export const DRILLS: readonly PoolDrill[] = [
   englishCheck,
   bankGhostPocket,
   longBank,
+  breakOneToSide,
+  breakSquat,
 ];
 
 export function drillByNumber(n: number): PoolDrill | undefined {

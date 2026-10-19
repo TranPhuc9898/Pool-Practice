@@ -400,8 +400,9 @@ export default function DrillScreen() {
       )}
       {/* Chạy đúng cú ô Shot đang hiện. Drill nhiều đích chưa chọn đích thì chưa có cú để chạy.
           Round phê ngang không có Play: engine có squirt nhưng không có swerve, cú chạy ra sẽ sai.
-          Drill bank cũng không: băng engine chưa hiệu chỉnh, bank dài hơn 0.8 W quá một bi. */}
-      {shot && !legacyTable && !round?.contactPoint?.x && !bank && (
+          Drill bank cũng không: băng engine chưa hiệu chỉnh, bank dài hơn 0.8 W quá một bi.
+          Drill break cũng không: planner native chỉ giải cú pot, không đánh break. */}
+      {shot && !legacyTable && !round?.contactPoint?.x && !bank && drill.skill !== "break" && (
         <GraphiteAction
           sheen
           title="Play shot"
