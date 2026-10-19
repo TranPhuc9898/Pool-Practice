@@ -20,7 +20,7 @@ export const drawTrisect = {
   cueBall: { x: 0.5075, y: 0.75 },
   objectBalls: [{ number: 1, x: 0.5, y: 0.5 }],
   targetPocket: 'footRight',
-  cueBallTargetZones: [{ kind: 'circle', center: { x: 0.0921, y: 0.5325 }, radius: 0.07, label: 'Side' }],
+  cueBallTargetZones: [{ kind: 'circle', center: { x: 0.0921, y: 0.5325 }, radius: 0.07 }],
   guideLines: [
     { kind: 'objectBallPath', ball: 1, pocket: 'footRight' },
     { kind: 'ghostBall', ball: 1, pocket: 'footRight' },

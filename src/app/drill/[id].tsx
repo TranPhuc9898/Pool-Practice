@@ -396,8 +396,9 @@ export default function DrillScreen() {
           </AppText>
         </View>
       )}
-      {/* Chạy đúng cú ô Shot đang hiện. Drill nhiều đích chưa chọn đích thì chưa có cú để chạy. */}
-      {shot && !legacyTable && (
+      {/* Chạy đúng cú ô Shot đang hiện. Drill nhiều đích chưa chọn đích thì chưa có cú để chạy.
+          Round phê ngang không có Play: engine có squirt nhưng không có swerve, cú chạy ra sẽ sai. */}
+      {shot && !legacyTable && !round?.contactPoint?.x && (
         <GraphiteAction
           sheen
           title="Play shot"

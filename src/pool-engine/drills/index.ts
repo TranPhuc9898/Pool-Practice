@@ -25,6 +25,7 @@ import { cutAngleLadder } from './22-cut-angle-ladder';
 import { threeBallPosition } from './23-three-ball-position';
 import { naturalAngle } from './24-natural-angle';
 import { drawTrisect } from './25-draw-trisect';
+import { englishCheck } from './26-english-check';
 
 /** Thứ tự là lộ trình: đánh trúng → kiểm soát bi cái → đi bài. */
 export const DRILLS: readonly PoolDrill[] = [
@@ -53,6 +54,7 @@ export const DRILLS: readonly PoolDrill[] = [
   threeBallPosition,
   naturalAngle,
   drawTrisect,
+  englishCheck,
 ];
 
 export function drillByNumber(n: number): PoolDrill | undefined {
