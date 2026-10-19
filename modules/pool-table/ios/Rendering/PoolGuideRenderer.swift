@@ -16,7 +16,8 @@ enum PoolGuideMath {
     case "sideRight": return CGPoint(x: w, y: l / 2)
     case "headLeft": return CGPoint(x: 0, y: l)
     case "headRight": return CGPoint(x: w, y: l)
-    default: return nil
+    // Đích băng `railRight@<inch>` của drill bank: ghost và vạch bi cái nhắm vào điểm bank trên đường tâm bi.
+    default: return ShotPhysics.target(id)
     }
   }
 

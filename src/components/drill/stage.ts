@@ -30,6 +30,21 @@ export const speedMs: Record<PoolDrill["recommendedSpeed"], number> = {
 const PLAY_WIDTH = 50;
 
 /**
+ * Drill bank: điểm thứ hai của `objectBallBankPath` là chỗ bi 1 chạm băng, đổi sang đích băng của `ShotPhysics` để
+ * ghost, ô Ngắm và vạch bi cái nhắm vào điểm bank thay vì thẳng vào lỗ.
+ */
+export function bankTarget(d: PoolDrill): string | undefined {
+  const g = d.guideLines.find((l) => l.kind === "objectBallBankPath");
+  const b = g?.kind === "objectBallBankPath" ? g.points[1] : undefined;
+  if (!b) return undefined;
+  if (b.x >= 0.97) return `railRight@${(b.y * 100).toFixed(1)}`;
+  if (b.x <= 0.03) return `railLeft@${(b.y * 100).toFixed(1)}`;
+  if (b.y <= 0.03) return `railFoot@${(b.x * PLAY_WIDTH).toFixed(1)}`;
+  if (b.y >= 0.97) return `railHead@${(b.x * PLAY_WIDTH).toFixed(1)}`;
+  return undefined;
+}
+
+/**
  * `rev` theo số drill và mức khoảng cách: Prev/Next hay đổi mức là Swift nạp lại thế bi.
  * Bài chỉ có bi cái (Stroke): ngắm thẳng lên băng cuối, đích băng `railFoot@<inch>` ngay trước bi cái.
  * Bài có `shots`: tip và lực đúng cú 1 trong data, khớp cú native chơi khi bấm Play.
@@ -39,7 +54,7 @@ export const stageState = (d: PoolDrill, diamonds: number): EditorState => ({
   balls: [{ number: 0, ...d.cueBall }, ...d.objectBalls],
   aimBall: d.objectBalls[0]?.number ?? -1,
   aimPocket: d.objectBalls.length
-    ? d.targetPocket
+    ? bankTarget(d) ?? d.targetPocket
     : `railFoot@${(d.cueBall.x * PLAY_WIDTH).toFixed(1)}`,
   tipX: d.shots ? 0 : d.recommendedContactPoint.x,
   tipY: d.shots?.[0].tipY ?? d.recommendedContactPoint.y,

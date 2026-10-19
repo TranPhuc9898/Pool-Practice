@@ -162,7 +162,55 @@ func drill30() {
                norm(rd.cue), rd.tipY, rd.speed, norm(nom.stop), zs(rd.zone), n["ok"] ?? 0, potted, n["scratch"] ?? 0, n["out"] ?? 0))
 }
 
+// MARK: drill 27, 28
+/// Bank off băng phải (x = 50) sang lỗ góc footLeft. Lỗ ảo của Tuấn (#10) cách băng 0.8 W = 40", cùng hoành độ lỗ, đo từ
+/// mũi băng: P' = (90, 0). Điểm bank 0.8 W là chỗ đường O → P' cắt đường tâm bi lúc chạm băng (x = 48.875).
+/// Bi cái đặt thẳng sau bi 1 theo hướng điểm bank, cú gần thẳng như research 08 mục 2.5 khuyên. Engine: quét đích băng
+/// `railRight@y` từng 0.1", lấy cửa sổ y mà bi 1 vào footLeft, điểm bank engine là giữa cửa sổ. k engine suy từ đường
+/// O → điểm bank engine kéo tới y = 0.
+let bankRail: CGFloat = 50 - 1.125
+let ghostPocket = CGPoint(x: 50 + 0.8 * 50, y: 0)
+func bankY(_ o: CGPoint) -> CGFloat { o.y * (1 - (bankRail - o.x) / (ghostPocket.x - o.x)) }
+func behind(_ o: CGPoint, toward b: CGPoint, by d: CGFloat) -> CGPoint {
+  let l = dist(o, b)
+  return CGPoint(x: o.x - (b.x - o.x) / l * d, y: o.y - (b.y - o.y) / l * d)
+}
+/// Bi 1 còn trượt lúc chạm băng không: so vận tốc với spin ở mẫu cuối trước lần dội đầu.
+func slidingAtRail(_ t: SP.Trace) -> String {
+  guard let i = t.pts.indices.first(where: { t.pts[$0].x >= bankRail - 0.05 }), i > 0 else { return "?" }
+  let v = t.vs[i - 1], w = t.ws[i - 1], s = hypot(v.x, v.y)
+  return s > 0 && hypot(v.x - w.x, v.y - w.y) > 0.05 * s ? "trượt" : "lăn"
+}
+func bank(_ label: String, ob o: CGPoint, cueBack: CGFloat, speeds: [CGFloat]) {
+  let y8 = bankY(o), c = behind(o, toward: CGPoint(x: bankRail, y: y8), by: cueBack)
+  for v in speeds {
+    func run(_ y: CGFloat) -> SP.Run { SP.runWith(SP.Setup(c: c, o: o, pocket: "railRight@\(y)", others: []), tipX: 0, tipY: 0, speed: v) }
+    let ys = stride(from: y8 - 8, through: min(y8 + 30, 98), by: 0.1).filter { run($0).ob.pocket == "footLeft" }
+    let at8 = run(y8)
+    let line = String(format: "%@ ob %@ cue %@ v%.1f · 0.8 W bank y %.2f (%@, bi 1 %@) · ",
+                      label, norm(o), norm(c), v, y8, at8.ob.pocket ?? "trượt", slidingAtRail(at8.ob))
+    guard let lo = ys.first, let hi = ys.last else { print(line + "engine: không y nào vào footLeft"); continue }
+    let ye = (lo + hi) / 2
+    let k = (o.x + (bankRail - o.x) * o.y / (o.y - ye) - 50) / 50
+    print(line + String(format: "engine bank y %.2f (cửa sổ %.1f–%.1f) · lệch %+.2f\" · k engine %.2f", ye, lo, hi, ye - y8, k))
+  }
+}
+func drill27() {
+  for (label, o) in [("27 R1", CGPoint(x: 37.5, y: 25)), ("27 R2", CGPoint(x: 37.5, y: 37.5)),
+                     ("27 R3", CGPoint(x: 25, y: 25)), ("27 R4", CGPoint(x: 25, y: 37.5))] {
+    bank(label, ob: o, cueBack: 14, speeds: [1.8, 2.6])
+  }
+}
+/// Drill 28: cùng đường bank với 27 R1, bi 1 lùi xa băng ½, 1, 1½, 2½ diamond trên đường O → P'.
+func drill28() {
+  for (label, x) in [("28 R1", CGFloat(43.75)), ("28 R2", 37.5), ("28 R3", 31.25), ("28 R4", 18.75)] {
+    bank(label, ob: CGPoint(x: x, y: 25 * (90 - x) / 52.5), cueBack: 12, speeds: [0.8, 1.8, 2.6])
+  }
+}
+
 drill23()
 drill24()
 drill25()
 drill30()
+drill27()
+drill28()

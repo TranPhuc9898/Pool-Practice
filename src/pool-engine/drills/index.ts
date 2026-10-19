@@ -26,6 +26,8 @@ import { threeBallPosition } from './23-three-ball-position';
 import { naturalAngle } from './24-natural-angle';
 import { drawTrisect } from './25-draw-trisect';
 import { englishCheck } from './26-english-check';
+import { bankGhostPocket } from './27-bank-ghost-pocket';
+import { longBank } from './28-long-bank';
 
 /** Thứ tự là lộ trình: đánh trúng → kiểm soát bi cái → đi bài. */
 export const DRILLS: readonly PoolDrill[] = [
@@ -55,6 +57,8 @@ export const DRILLS: readonly PoolDrill[] = [
   naturalAngle,
   drawTrisect,
   englishCheck,
+  bankGhostPocket,
+  longBank,
 ];
 
 export function drillByNumber(n: number): PoolDrill | undefined {

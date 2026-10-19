@@ -19,6 +19,7 @@ import {
   ShotCard,
 } from "@/components/drill/drill-ui";
 import {
+  bankTarget,
   spinLabel,
   stageHeightFor,
   stageState,
@@ -287,6 +288,7 @@ export default function DrillScreen() {
 
   // Native chỉ nạp lại bàn khi `rev` đổi, nên round dời bi hay đổi guide phải có `rev` riêng.
   const baseStage = stageState(drill, level?.diamonds ?? 0);
+  const bank = bankTarget(drill);
   const stage = roundMovesTable
     ? { ...baseStage, rev: baseStage.rev * 10 + roundIndex, speed: round?.speed ?? baseStage.speed }
     : baseStage;
@@ -321,7 +323,7 @@ export default function DrillScreen() {
       style={landscape ? s.flex : { width: stageWidth, height: stageHeight }}
       stageOnly
       state={stage}
-      drill={drill}
+      drill={bank ? { ...drill, targetPocket: bank } : drill}
       {...guides}
       playRev={playRev}
       shotIndex={shotIndex}
@@ -397,8 +399,9 @@ export default function DrillScreen() {
         </View>
       )}
       {/* Chạy đúng cú ô Shot đang hiện. Drill nhiều đích chưa chọn đích thì chưa có cú để chạy.
-          Round phê ngang không có Play: engine có squirt nhưng không có swerve, cú chạy ra sẽ sai. */}
-      {shot && !legacyTable && !round?.contactPoint?.x && (
+          Round phê ngang không có Play: engine có squirt nhưng không có swerve, cú chạy ra sẽ sai.
+          Drill bank cũng không: băng engine chưa hiệu chỉnh, bank dài hơn 0.8 W quá một bi. */}
+      {shot && !legacyTable && !round?.contactPoint?.x && !bank && (
         <GraphiteAction
           sheen
           title="Play shot"

@@ -25,6 +25,7 @@ Ngoài phạm vi: giáo trình Academy đầy đủ, Rail & Kick, 10-ball, Rail 
 - Academy là lớp "Why" theo ngữ cảnh, mở từ drill hoặc cú trong Lab. Không có tab riêng.
 - Pattern Builder là phần mở rộng của Shot Editor, không làm tính năng độc lập.
 - Rail Calculator hoãn: không có công thức đúng cho mọi bàn, làm ra là cho cảm giác chính xác giả.
+- 2026-10-19: bank dạng drill tự báo (drill 27, 28, lỗ ảo 0.8 W là điểm khởi đầu để người chơi tự chỉnh) vào phạm vi. Rail Calculator vẫn hoãn, chờ hiệu chỉnh băng engine và phiếu đo bàn thật.
 - Ba tab: Home, Practice, Shot Lab. Progress nằm trong Home và từng drill. Có đủ 30 ngày dữ liệu thì mới tách thành tab.
 
 Đánh đổi: chưa có Academy đầy đủ, 10-ball, Rail & Kick. Đổi lại vòng lõi khép kín trong 6 bước.
