@@ -25,6 +25,8 @@ export type GuideLine =
   | { kind: 'tangentLine'; ball: ObjectBallNumber; pocket: PocketId }
   /** Đường bi cái sau va chạm, qua các điểm chạm băng nếu có. */
   | { kind: 'expectedCuePath'; points: NormalizedPoint[] }
+  /** Đường bi mục tiêu gãy ở băng: bi mục tiêu, điểm chạm băng, lỗ. */
+  | { kind: 'objectBallBankPath'; points: NormalizedPoint[] }
   | { kind: 'railContact'; point: NormalizedPoint };
 
 export type DrillCategory = 'shotMaking' | 'cueBallControl' | 'patternPlay';
@@ -46,7 +48,12 @@ export type DrillSkill =
   | 'runout'
   | 'railCut'
   | 'spotShot'
-  | 'cutAngle';
+  | 'cutAngle'
+  | 'naturalAngle'
+  | 'drawAngle'
+  | 'english'
+  | 'bank'
+  | 'break';
 export type Difficulty = 1 | 2 | 3 | 4 | 5;
 export type Spin = 'center' | 'stun' | 'follow' | 'draw';
 export type Speed = 'soft' | 'medium' | 'firm';
@@ -61,8 +68,19 @@ export type PassCondition =
 /**
  * Một lượt trong drill nhiều zone (ladder, A/B/C) hoặc nhiều chỗ bi cái (thang góc cắt).
  * Round suy ra từ thứ tự cú, nên drill đã có attempt thì không đổi số round.
+ * Trường tuỳ chọn có mặt thì đè trường cùng nghĩa của drill trong lượt đó.
  */
-export type DrillRound = { title: string; zone?: number; spin: Spin; cueBall?: NormalizedPoint };
+export type DrillRound = {
+  title: string;
+  zone?: number;
+  spin: Spin;
+  cueBall?: NormalizedPoint;
+  objectBalls?: PoolBallPlacement[];
+  guideLines?: GuideLine[];
+  contactPoint?: ContactPoint;
+  /** m/s, đè `recommendedSpeed` cho Play. Chép từ `scripts/position-harness/`. */
+  speed?: number;
+};
 
 export type DrillStep = { label: string; caption: string };
 

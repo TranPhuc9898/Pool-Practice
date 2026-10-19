@@ -133,6 +133,11 @@ enum PoolGuideBuilder {
           color: PoolGuidePalette.accent,
           style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [6, 4])
         ))
+      case "objectBallBankPath":
+        // Bi mục tiêu → điểm chạm băng → lỗ, cùng nét với `objectBallPath`.
+        let points = guide.points.map { M.inches(x: $0.x, y: $0.y) }
+        guard points.count >= 2 else { continue }
+        out.append(.init(path: line(points), color: PoolGuidePalette.path, style: solid))
       case "expectedCuePath":
         let points = guide.points.map { M.inches(x: $0.x, y: $0.y) }
         guard points.count >= 2 else { continue }

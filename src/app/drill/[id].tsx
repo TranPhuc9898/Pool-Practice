@@ -136,10 +136,23 @@ export default function DrillScreen() {
     ? Math.min(Math.floor(done / (total / rounds.length)), rounds.length - 1)
     : 0;
   const round = rounds?.[roundIndex];
-  // Thang góc cắt: mỗi round đặt bi cái một chỗ, bàn và guide đọc theo chỗ đó.
-  const drill = round?.cueBall
-    ? { ...leveled, cueBall: round.cueBall }
-    : leveled;
+  // Thang góc cắt, bank nhiều vị trí: round đè chỗ bi, guide, điểm đặt cơ; bàn và guide đọc theo round.
+  const roundMovesTable = !!(round?.cueBall || round?.objectBalls || round?.guideLines);
+  const drill =
+    round && (roundMovesTable || round.contactPoint)
+      ? {
+          ...leveled,
+          cueBall: round.cueBall ?? leveled.cueBall,
+          objectBalls: round.objectBalls ?? leveled.objectBalls,
+          guideLines: round.guideLines ?? leveled.guideLines,
+          recommendedContactPoint: round.contactPoint ?? leveled.recommendedContactPoint,
+          // Round dời bàn có zone riêng thì chỉ hiện zone đó, Play không phải chọn đích.
+          cueBallTargetZones:
+            roundMovesTable && round.zone !== undefined
+              ? leveled.cueBallTargetZones.slice(round.zone, round.zone + 1)
+              : leveled.cueBallTargetZones,
+        }
+      : leveled;
   const area = areaOf(drill);
   const program = drillsIn(area.id);
   // Prev/Next đi trong nhóm, khớp số 01…N trên tab Drills.
@@ -221,7 +234,7 @@ export default function DrillScreen() {
         : {
             tipX: drill.recommendedContactPoint.x,
             tipY: drill.recommendedContactPoint.y,
-            speed: speedMs[drill.recommendedSpeed],
+            speed: round?.speed ?? speedMs[drill.recommendedSpeed],
           };
   const targetNote =
     !target || target.runout
@@ -272,10 +285,10 @@ export default function DrillScreen() {
     router.setParams({ id: String(n), d: undefined });
   };
 
-  // Native chỉ nạp lại bàn khi `rev` đổi, nên round dời bi cái phải có `rev` riêng.
+  // Native chỉ nạp lại bàn khi `rev` đổi, nên round dời bi hay đổi guide phải có `rev` riêng.
   const baseStage = stageState(drill, level?.diamonds ?? 0);
-  const stage = round?.cueBall
-    ? { ...baseStage, rev: baseStage.rev * 10 + roundIndex }
+  const stage = roundMovesTable
+    ? { ...baseStage, rev: baseStage.rev * 10 + roundIndex, speed: round?.speed ?? baseStage.speed }
     : baseStage;
 
   const stageWidth = (width ?? windowWidth) - 2 * gutter;

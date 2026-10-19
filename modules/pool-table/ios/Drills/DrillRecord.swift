@@ -26,7 +26,7 @@ struct TargetZoneRecord: Record {
 }
 
 /// `objectBallPath` · `cueBallPath` · `ghostBall` · `tangentLine` dùng `ball` + `pocket`;
-/// `expectedCuePath` dùng `points`; `railContact` dùng `point`.
+/// `expectedCuePath` · `objectBallBankPath` dùng `points`; `railContact` dùng `point`.
 struct GuideLineRecord: Record {
   @Field var kind: String = ""
   @Field var ball: Int = 0

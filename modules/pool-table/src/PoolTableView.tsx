@@ -12,7 +12,7 @@ export type NativeTargetZone =
   | { kind: 'ellipse'; center: NativePoint; radiusX: number; radiusY: number; label?: string };
 export type NativeGuideLine =
   | { kind: 'objectBallPath' | 'cueBallPath' | 'ghostBall' | 'tangentLine'; ball: number; pocket: string }
-  | { kind: 'expectedCuePath'; points: NativePoint[] }
+  | { kind: 'expectedCuePath' | 'objectBallBankPath'; points: NativePoint[] }
   | { kind: 'railContact'; point: NativePoint };
 export type NativeDrill = {
   id: string;

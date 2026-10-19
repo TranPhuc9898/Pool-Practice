@@ -55,6 +55,11 @@ const areaBySkill: Record<DrillSkill, TrainingAreaId> = {
   railCut: 'fundamentals',
   spotShot: 'fundamentals',
   cutAngle: 'fundamentals',
+  naturalAngle: 'positionPlay',
+  drawAngle: 'cueBallControl',
+  english: 'fundamentals',
+  bank: 'fundamentals',
+  break: 'patterns',
 };
 
 export const areaOf = (drill: PoolDrill) => TRAINING_AREAS.find((a) => a.id === areaBySkill[drill.skill])!;
