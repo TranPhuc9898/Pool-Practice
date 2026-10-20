@@ -10,3 +10,12 @@ export type {
   PoolTableViewProps,
 } from './src/PoolTableView';
 export type { EditorCommit, EditorState, EditorViewMode, PoolEditorViewProps, TargetPick } from './src/PoolEditorView';
+export { PoseCoachView } from './src/PoseCoachView';
+export type {
+  PoseCoachViewProps,
+  PoseFault,
+  PoseState,
+  PoseStatus,
+  PoseStroke,
+  PoseVoiceMode,
+} from './src/PoseCoachView';

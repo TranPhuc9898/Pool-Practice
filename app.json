@@ -10,7 +10,8 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "infoPlist": {
-        "CADisableMinimumFrameDurationOnPhone": true
+        "CADisableMinimumFrameDurationOnPhone": true,
+        "NSCameraUsageDescription": "Stance Check uses the camera to watch your cue arm from the side and tell you how each stroke went. Video stays on your phone."
       },
       "bundleIdentifier": "com.anonymous.pool-training"
     },

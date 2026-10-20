@@ -150,6 +150,12 @@ export default function HomeScreen() {
         />
       </View>
 
+      <GhostButton
+        title="Stance check"
+        icon="figure.stand"
+        onPress={() => router.push("/stance")}
+      />
+
       {__DEV__ && (
         <GhostButton
           title="Open Design System"

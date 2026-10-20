@@ -7,5 +7,6 @@ public final class PoolTableModule: Module {
     View(PoolBallRackView.self)
     View(PoolAimView.self)
     View(PoolEditorView.self)
+    View(PoseCoachView.self)
   }
 }
