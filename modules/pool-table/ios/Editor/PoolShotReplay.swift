@@ -151,6 +151,8 @@ struct ShotReplay {
 
   /// Cảnh mẫu không có bi mục tiêu: `ob` vẫn dựng (bi đặt ngoài bàn) nhưng không vẽ.
   var solo = false
+  /// Cú drill không phải pot một bi (bank, safety, break…): đạt hay không do `DrillShotPlanner` xét, nil là bi vào lỗ.
+  var pass: Bool?
 
   /// `aim` (radian) cho sẵn là đánh đúng hướng đó như cảnh mẫu của web, nil là tự ngắm cho bi vào lỗ.
   init(_ ms: ShotPhysics.Setup, ball: Int, tipX: CGFloat, tipY: CGFloat, theta: CGFloat = 0, speed: CGFloat, aim: CGFloat? = nil, jump: Bool, rate: CGFloat = 1) {
@@ -293,6 +295,33 @@ extension PoolEditorModel {
     return ShotReplay(recorded: pts, dt: CGFloat(rec.dt), hit: rec.contact, ball: ball, o: o, pocket: pocket, jump: jump)
   }
 
+  /// Play của drill mà `DrillShotPlanner` lo: dò cú trên nền vì bank có thể mất nửa giây, xong thì chạy nếu bàn chưa đổi.
+  /// Bàn thiếu bi để dò thì `blocked`.
+  func playDrill(_ d: DrillRecord, jump: Bool, blocked: @escaping () -> Void) {
+    let inch = { (p: PointRecord) in CGPoint(x: CGFloat(p.x) * Self.width, y: CGFloat(p.y) * Self.length) }
+    var g = DrillShotPlanner.Guides()
+    for l in d.guideLines {
+      switch l.kind {
+      case "expectedCuePath": g.cuePath = l.points.map(inch)
+      case "objectBallBankPath": g.bankPath = l.points.map(inch)
+      case "objectBallPath" where !l.pocket.isEmpty && g.goal == nil: g.goal = (l.ball, l.pocket)
+      default: break
+      }
+    }
+    let balls = balls, aimBall = aimBall, aimPocket = aimPocket, tipX = tipX, tipY = tipY, speed = speed
+    DispatchQueue.global(qos: .userInitiated).async {
+      let s = DrillShotPlanner.plan(skill: d.skill, balls: balls, aimBall: aimBall, aimPocket: aimPocket, guides: g,
+                                    tipX: tipX, tipY: tipY, speed: speed)
+      DispatchQueue.main.async { [weak self] in
+        guard let self, self.balls == balls, self.replay == nil else { return }
+        guard let s else { self.onReplayEnd = nil; return blocked() }
+        var r = ShotReplay(s.setup, ball: s.setup.ball, tipX: s.tipX, tipY: s.tipY, theta: s.theta, speed: s.speed, aim: s.aim, jump: jump)
+        r.pass = s.pass
+        self.play(r)
+      }
+    }
+  }
+
   func play(_ r: ShotReplay) {
     // Chạy thử luôn trên Bàn: đang phóng hình hay đang mở thẻ thì thu về trước.
     if figShown { figShown = false }
@@ -314,7 +343,8 @@ extension PoolEditorModel {
     }
     // Play một cú vào sạch ở drill: báo JS ngay lúc bi dừng và giữ khung cuối tới khi bàn round kế về (`adopt`),
     // để bàn không lộ lại thế trước cú. Không có round kế thì sau 1 s bàn về như cũ.
-    let handoff = rack == nil && onReplayEnd != nil && r.ob.sink && !r.cue.sink
+    let made = r.pass ?? (r.ob.sink && !r.cue.sink)
+    let handoff = rack == nil && onReplayEnd != nil && made
     // Giữ vị trí cuối một nhịp cho mắt đọc, rồi bàn về như cũ.
     let hold = r.jump ? 1.2 : max(0, r.end - now) / r.rate + (handoff ? 0 : 0.6)
     DispatchQueue.main.asyncAfter(deadline: .now() + hold) { [weak self] in
@@ -333,7 +363,7 @@ extension PoolEditorModel {
       }
       let end = self?.onReplayEnd
       self?.onReplayEnd = nil
-      end?(r.ob.sink && !r.cue.sink, r.cue.sink ? nil : r.cue.pts.last)
+      end?(made, r.cue.sink ? nil : r.cue.pts.last)
       if let m = self, let e = m.score(), let s = m.streak {
         EditorHaptics.fire(e <= PoolEditorModel.guessGood ? .selection : .warning, "Guess off by \(Int(e)) in, streak \(s.now), best \(s.best)")
       }

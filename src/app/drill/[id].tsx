@@ -65,7 +65,7 @@ const GUIDES: { key: GuideKey; label: string }[] = [
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-/** Planner native chỉ giải cú pot một bi: các bài này không nhận target và không có Play. */
+/** Solver vùng đích chỉ giải cú pot một bi: các bài này không nhận target. Play của chúng do `DrillShotPlanner` lo. */
 const NO_PLAN: readonly PoolDrill["skill"][] = ["bank", "break", "combo", "safety", "kick", "jump", "masse", "test"];
 
 export default function DrillScreen() {
@@ -445,16 +445,11 @@ export default function DrillScreen() {
           </AppText>
         </View>
       )}
-      {/* Chạy đúng cú ô Shot đang hiện. Drill nhiều đích chưa chọn đích thì chưa có cú để chạy.
-          Drill English bỏ Play ở round phê ngang: engine có squirt nhưng không có swerve, mà bài đó dạy đúng độ lệch.
-          Drill khác vẫn có Play ở cú phê ngang, đường thật đã vẽ bằng guide để so.
-          Drill bank cũng không: băng engine chưa hiệu chỉnh, bank dài hơn 0.8 W quá một bi.
-          Drill trong `NO_PLAN` cũng không: planner native chỉ giải cú pot một bi. */}
+      {/* Mọi drill có Play, chạy đúng cú ô Shot đang hiện. Drill nhiều đích chưa chọn đích thì chưa có cú để chạy.
+          Bank, kick, combo, safety, break, nhảy, massé, test: native `DrillShotPlanner` dò cú theo guide của drill.
+          Phê ngang chạy engine có squirt, chưa có swerve. */}
       {shot &&
-        !legacyTable &&
-        !(round?.contactPoint?.x && drill.skill === "english") &&
-        !bank &&
-        !NO_PLAN.includes(drill.skill) && (
+        !legacyTable && (
         <GraphiteAction
           sheen
           title="Play shot"
