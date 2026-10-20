@@ -42,6 +42,9 @@ Chuẩn: `docs/chuan-drill.md`, mẫu gốc drill 31. Kiểm kê 81 drill ngày 
 
 ## Phát sinh
 
+- 2026-10-21 đối chiếu: bảng Bối cảnh lệch repo. Nhóm không Play thật là 32 drill (thêm 45), và từ commit 37341c2 cả 81 drill đã có Play qua `DrillShotPlanner` (engine dò cú), không qua đường vẽ tay. `NO_PLAN` còn ở `src/app/drill/[id].tsx:69` nhưng chỉ dùng chọn đích. Giả định của bước 4 và 7 đã đổi, bước 1 không ảnh hưởng.
+- 2026-10-21 bước 1 chạy lần đầu `sh scripts/drill-lint/run.sh`: tổng 245 vi phạm, 3 drill đạt (12, 23, 25). Trong 7 drill "đã chuẩn" có 5 drill vi phạm: 15 (subtitle mục 5), 18, 19, 20 (cú engine thiếu zone, subtitle mục 5), 31 (không cú nào có câu vì sao, `DrillRound` không có field `why`). Chưa tick bước 1, chờ anh quyết.
+
 ## Vỡ ở đâu
 
 - Round suy từ thứ tự cú trong attempt log (`types.ts`, chú thích `DrillRound`). Chuyển drill từ `rounds` sang `shots` hay đổi số round sẽ lệch lịch sử tập. Trước bước 5, kiểm drill nào đã có attempt, chọn cách giữ hay chấp nhận reset, hỏi anh.
