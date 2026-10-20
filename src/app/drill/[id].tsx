@@ -99,6 +99,11 @@ export default function DrillScreen() {
     i: number;
     rev: number;
   }>();
+  // Drill pattern mà mỗi round là một cú: round đang đứng, kèm chỗ bi cái engine dừng sau cú trước để bàn nối từ đó.
+  // Chưa đặt thì round theo số lượt, mở lại drill vẫn tiếp đúng bi.
+  const [roundAt, setRoundAt] = useState<{ drillId: string; i: number; cue?: { x: number; y: number } }>();
+  // Play một cú vừa trượt: báo ở dòng note, Play lại hay đổi round thì xoá.
+  const [missAt, setMissAt] = useState<{ drillId: string; i: number; note: string }>();
   // Drill có `shots`: kết quả các cú của run đang đánh, chỉ trong bộ nhớ tới khi run khép.
   const [run, setRun] = useState<{ drillId: string; results: ShotResult[] }>();
   const [moves, setMoves] = useState<{
@@ -130,9 +135,11 @@ export default function DrillScreen() {
   const done = progress.attempts.length;
   const total = leveled.attemptCount;
   const rounds = leveled.rounds;
-  const roundIndex = rounds
-    ? Math.min(Math.floor(done / (total / rounds.length)), rounds.length - 1)
-    : 0;
+  const roundIndex = !rounds
+    ? 0
+    : roundAt?.drillId === leveled.id
+      ? Math.min(roundAt.i, rounds.length - 1)
+      : Math.min(Math.floor(done / (total / rounds.length)), rounds.length - 1);
   const round = rounds?.[roundIndex];
   // Thang góc cắt, bank nhiều vị trí: round đè chỗ bi, guide, điểm đặt cơ; bàn và guide đọc theo round.
   const roundMovesTable = !!(round?.cueBall || round?.objectBalls || round?.guideLines);
@@ -140,15 +147,23 @@ export default function DrillScreen() {
     round && (roundMovesTable || round.contactPoint)
       ? {
           ...leveled,
-          cueBall: round.cueBall ?? leveled.cueBall,
+          cueBall:
+            (roundAt?.drillId === leveled.id && roundAt.i === roundIndex && roundAt.cue) ||
+            (round.cueBall ?? leveled.cueBall),
           objectBalls: round.objectBalls ?? leveled.objectBalls,
           guideLines: round.guideLines ?? leveled.guideLines,
+          // Round mỗi cú một lỗ (drill 31): Play ngắm đúng lỗ guide của round, không lấy lỗ chung của drill.
+          targetPocket:
+            round.guideLines?.flatMap((g) => (g.kind === "objectBallPath" ? [g.pocket] : []))[0] ??
+            leveled.targetPocket,
           recommendedContactPoint: round.contactPoint ?? leveled.recommendedContactPoint,
           // Round dời bàn có zone riêng thì chỉ hiện zone đó, Play không phải chọn đích.
           cueBallTargetZones:
             roundMovesTable && round.zone !== undefined
               ? leveled.cueBallTargetZones.slice(round.zone, round.zone + 1)
               : leveled.cueBallTargetZones,
+          // Drill 31: Play diễn lại đường bi cái của video thay cho engine.
+          replay: round.replay,
         }
       : leveled;
   const area = areaOf(drill);
@@ -207,6 +222,18 @@ export default function DrillScreen() {
     setShotAt((v) => ({ drillId: drill.id, i, rev: (v?.rev ?? 0) + 1 }));
   };
   const stepShot = (by: number) => showShot(shown + by);
+  const patternRounds = drill.skill === "pattern" ? rounds : undefined;
+  const goRound = (i: number, cue?: { x: number; y: number }) => {
+    setMissAt(undefined);
+    setRoundAt({ drillId: drill.id, i, cue });
+  };
+  // Cú trước/cú sau: drill `shots` đi trong `shots`, drill pattern đi trong round và dựng bàn từ `cueBall` của round.
+  const step = patternRounds
+    ? { at: roundIndex, last: patternRounds.length - 1, go: (by: number) => goRound(roundIndex + by) }
+    : drill.shots
+      ? { at: shown, last: drill.shots.length - 1, go: stepShot }
+      : undefined;
+  const missNote = missAt?.drillId === drill.id && missAt.i === roundIndex ? missAt.note : undefined;
   const runResults = run?.drillId === drill.id ? run.results : [];
   const runShot = drill.shots?.[runResults.length];
   // Trượt hoặc xong cú cuối thì khép run vào progress; còn không thì card sang cú kế.
@@ -290,7 +317,7 @@ export default function DrillScreen() {
   const baseStage = stageState(drill, level?.diamonds ?? 0);
   const bank = bankTarget(drill);
   const stage = roundMovesTable
-    ? { ...baseStage, rev: baseStage.rev * 10 + roundIndex, speed: round?.speed ?? baseStage.speed }
+    ? { ...baseStage, rev: baseStage.rev * 10 + roundIndex, speed: round?.playSpeed ?? round?.speed ?? baseStage.speed }
     : baseStage;
 
   const stageWidth = (width ?? windowWidth) - 2 * gutter;
@@ -329,10 +356,27 @@ export default function DrillScreen() {
       shotIndex={shotIndex}
       shotRev={shotAt?.rev ?? 0}
       onTargetPick={({ nativeEvent: shot }) => {
-        // Drill có `shots`: Play đánh một cú, vào sạch thì card và bàn sang cú kế, chờ bấm Play tiếp.
+        // Drill có `shots`, hay drill pattern mà mỗi round là một cú: Play đánh một cú, vào sạch thì card và bàn sang
+        // cú kế, bi cái đứng chỗ engine dừng, chờ bấm Play tiếp. Drill round khác là các thế bài riêng, giữ round theo số lượt.
         if (shot.ended) {
           const next = (shot.shot ?? -1) + 1;
           if (shot.ok && drill.shots && next > 0 && next < drill.shots.length) showShot(next);
+          if (shot.ok && patternRounds && roundIndex < patternRounds.length - 1)
+            goRound(
+              roundIndex + 1,
+              shot.cueX !== undefined && shot.cueY !== undefined ? { x: shot.cueX, y: shot.cueY } : undefined,
+            );
+          // Play một cú trượt: báo lý do, bàn giữ thế cũ để Play lại.
+          if (!shot.ok && shot.shot === -1) {
+            const ball = `Ball ${drill.objectBalls[0]?.number}`;
+            setMissAt({
+              drillId: drill.id,
+              i: roundIndex,
+              note: shot.blocked
+                ? `No clean shot on ${ball}.`
+                : `${shot.scratch ? "Cue ball scratched" : `Missed ${ball}`} · Play to retry.`,
+            });
+          }
           return;
         }
         setPick({ drillId: drill.id, shot });
@@ -399,26 +443,34 @@ export default function DrillScreen() {
         </View>
       )}
       {/* Chạy đúng cú ô Shot đang hiện. Drill nhiều đích chưa chọn đích thì chưa có cú để chạy.
-          Round phê ngang không có Play: engine có squirt nhưng không có swerve, cú chạy ra sẽ sai.
+          Drill English bỏ Play ở round phê ngang: engine có squirt nhưng không có swerve, mà bài đó dạy đúng độ lệch.
+          Drill khác vẫn có Play ở cú phê ngang, đường thật đã vẽ bằng guide để so.
           Drill bank cũng không: băng engine chưa hiệu chỉnh, bank dài hơn 0.8 W quá một bi.
           Drill break cũng không: planner native chỉ giải cú pot, không đánh break. */}
-      {shot && !legacyTable && !round?.contactPoint?.x && !bank && drill.skill !== "break" && (
+      {shot &&
+        !legacyTable &&
+        !(round?.contactPoint?.x && drill.skill === "english") &&
+        !bank &&
+        drill.skill !== "break" && (
         <GraphiteAction
           sheen
           title="Play shot"
           icon="play.fill"
-          onPress={() => setPlayRev((n) => n + 1)}
+          onPress={() => {
+            setMissAt(undefined);
+            setPlayRev((n) => n + 1);
+          }}
         />
       )}
-      {!!drill.shots && !legacyTable && (
+      {step && !legacyTable && (
         <View style={s.row}>
           <View style={s.flex}>
             <SecondaryButton
               title="Previous shot"
               icon="chevron.left"
               size="medium"
-              disabled={shown === 0}
-              onPress={() => stepShot(-1)}
+              disabled={step.at === 0}
+              onPress={() => step.go(-1)}
             />
           </View>
           <View style={s.flex}>
@@ -427,15 +479,15 @@ export default function DrillScreen() {
               icon="chevron.right"
               iconPosition="trailing"
               size="medium"
-              disabled={shown >= drill.shots.length - 1}
-              onPress={() => stepShot(1)}
+              disabled={step.at >= step.last}
+              onPress={() => step.go(1)}
             />
           </View>
         </View>
       )}
-      {targetNote && (
+      {(missNote ?? targetNote) && (
         <AppText variant="monoSmall" color="textTertiary">
-          {targetNote}
+          {missNote ?? targetNote}
         </AppText>
       )}
 
@@ -532,13 +584,19 @@ export default function DrillScreen() {
             icon="checkmark"
             haptic="light"
             style={s.flex}
-            onPress={() => recordAttempt(drill, "pass")}
+            onPress={() => {
+              recordAttempt(drill, "pass");
+              if (patternRounds) goRound(Math.min(roundIndex + 1, patternRounds.length - 1));
+            }}
           />
           <GraphiteAction
             title="Miss"
             icon="xmark"
             style={s.flex}
-            onPress={() => recordAttempt(drill, "fail")}
+            onPress={() => {
+              recordAttempt(drill, "fail");
+              if (patternRounds) goRound(Math.min(roundIndex + 1, patternRounds.length - 1));
+            }}
           />
         </View>
       ) : (
@@ -548,6 +606,8 @@ export default function DrillScreen() {
           haptic="medium"
           onPress={() => {
             setRun(undefined);
+            setRoundAt(undefined);
+            setMissAt(undefined);
             startDrill(drill.id);
           }}
         />
@@ -560,7 +620,10 @@ export default function DrillScreen() {
           size="medium"
           fullWidth
           onPress={() => {
-            if (runResults.length === 0) return undoAttempt(drill);
+            if (runResults.length === 0) {
+              if (patternRounds) goRound(Math.max(roundIndex - 1, 0));
+              return undoAttempt(drill);
+            }
             setRun({ drillId: drill.id, results: runResults.slice(0, -1) });
             showShot(runResults.length - 1);
           }}

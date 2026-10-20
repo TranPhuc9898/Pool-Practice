@@ -1,0 +1,19 @@
+{
+  "video": "eJldkCO6TeA",
+  "title": "Drill 107 - Poolbilliards.co, camera trên trần",
+  "diagram": 1,
+  "calib_t": 1.0,
+  "corners_note": "Camera nhìn thẳng xuống, L=0 ở mép trái ảnh, W=0 là băng trên. Góc lấy theo lưới kim cương kẻ trên nỉ (~202 px một ô); homography thật fit lại từ 12 bi",
+  "corners": {
+    "0,0": [168, 135],
+    "0,4": [168, 945],
+    "8,4": [1782, 945],
+    "8,0": [1782, 135]
+  },
+  "felt_hsv": [[0, 0, 55], [180, 60, 140]],
+  "white_hsv": [[0, 0, 170], [180, 100, 255]],
+  "spot_hsv": [[0, 0, 50], [180, 60, 150]],
+  "spot_note": "Nỉ xám, không phân biệt theo H; dùng xét chỗ đặt bi còn bi hay không",
+  "tip_roi": {"c": [65, 65], "r": 42},
+  "orange_hsv": [[0, 150, 150], [22, 255, 255]]
+}

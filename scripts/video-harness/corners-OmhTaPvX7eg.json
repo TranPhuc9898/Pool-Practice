@@ -1,0 +1,7 @@
+{
+  "video": "OmhTaPvX7eg",
+  "title": "Drill 107 - Wojtek Szewczyk",
+  "note": "Camera gắn đầu, mắt cá, góc nhìn đổi liên tục: không có homography, chỉ đọc được ô điểm chạm (run.sh tip)",
+  "tip_roi": {"c": [1750, 169], "r": 100},
+  "orange_hsv": [[0, 150, 150], [22, 255, 255]]
+}

@@ -80,7 +80,17 @@ export type DrillRound = {
   contactPoint?: ContactPoint;
   /** m/s, đè `recommendedSpeed` cho Play. Chép từ `scripts/position-harness/`. */
   speed?: number;
+  /** m/s chỉ cho Play, khi lực thật (`speed`, hiện trên card) chạy trên engine không ra đúng chỗ dừng. */
+  playSpeed?: number;
+  /** Có thì Play diễn lại đường bi cái này thay cho engine, khi bàn còn đúng thế của round. */
+  replay?: CueReplay;
 };
+
+/**
+ * Đường bi cái ghi từ video, một mẫu mỗi `dt` giây. `xy` phẳng x, y, x, y… chuẩn hoá như `NormalizedPoint`, mẫu đầu là
+ * `cueBall` của round. `contact` là chỉ số mẫu bi cái chạm bi mục tiêu, đặt đúng ghost ball.
+ */
+export type CueReplay = { dt: number; contact: number; xy: number[] };
 
 export type DrillStep = { label: string; caption: string };
 

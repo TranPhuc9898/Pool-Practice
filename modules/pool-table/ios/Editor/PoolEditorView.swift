@@ -108,7 +108,26 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
     .onChange(of: props.playRev) { _ in
       if props.drill.skill == "runout" || props.drill.skill == "railCut" { return playRack() }
       model.replay = nil
-      model.toggleReplay(reduceMotion: reduceMotion)
+      // Báo JS như rack báo `ended`, để drill mà round là chuỗi cú sang round kế khi vào sạch.
+      // Kèm chỗ bi cái dừng (chuẩn hoá như `EditorStateRecord`) để round kế dựng bàn từ đó.
+      let ball = model.aimBall.map(ShotPhysics.name) ?? "the ball"
+      model.onReplayEnd = { ok, cue in
+        EditorHaptics.fire(ok ? .selection : .warning, ok ? "Pocketed \(ball)" : cue == nil ? "Cue ball scratched" : "Missed \(ball)")
+        var e: [String: Any] = ["label": "", "ended": true, "ok": ok, "shot": -1, "scratch": !ok && cue == nil]
+        if let cue { e["cueX"] = Double(cue.x / PoolEditorModel.width); e["cueY"] = Double(cue.y / PoolEditorModel.length) }
+        props.onTargetPick(e)
+      }
+      if let rec = props.drill.replay, let r = model.videoReplay(rec, jump: reduceMotion) {
+        model.play(r)
+      } else {
+        model.toggleReplay(reduceMotion: reduceMotion)
+      }
+      // Guard của toggleReplay chặn cú bị bi khác che: báo luôn để JS hiện lý do thay vì im lặng.
+      if model.replay == nil {
+        model.onReplayEnd = nil
+        EditorHaptics.fire(.warning, "No clean shot on \(ball)")
+        props.onTargetPick(["label": "", "ended": true, "ok": false, "shot": -1, "blocked": true])
+      }
     }
     .onChange(of: props.shotRev) { _ in showShot() }
     .onChange(of: props.cardRev) { _ in

@@ -45,6 +45,13 @@ export type TargetPick = {
   ended?: boolean;
   /** Cú cuối vào sạch. */
   ok?: boolean;
+  /** Play một cú (không chạy bàn): chỗ bi cái dừng, cùng hệ toạ độ với `EditorState`. Không có khi bi cái rơi. */
+  cueX?: number;
+  cueY?: number;
+  /** Play một cú: bi cái rơi lỗ. */
+  scratch?: boolean;
+  /** Play một cú: bi khác che, cú không chạy. */
+  blocked?: boolean;
 };
 
 /** Ba góc nhìn của cùng một cú, khớp `EditorViewMode` bên Swift. */

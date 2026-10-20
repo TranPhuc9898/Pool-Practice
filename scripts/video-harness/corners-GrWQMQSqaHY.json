@@ -1,0 +1,19 @@
+{
+  "video": "GrWQMQSqaHY",
+  "title": "Drill 107 - Margaret Fefilova",
+  "diagram": 1,
+  "calib_t": 1.0,
+  "corners_note": "Miệng 4 lỗ góc trên khung giây 1, đọc tay trên ảnh lưới pixel; chỉ dùng để ghép bi với layout, homography thật fit lại từ 12 bi",
+  "corners": {
+    "0,0": [548, 825],
+    "0,4": [1495, 785],
+    "8,4": [1240, 350],
+    "8,0": [785, 367]
+  },
+  "felt_hsv": [[94, 190, 170], [104, 255, 255]],
+  "white_hsv": [[0, 0, 200], [180, 100, 255]],
+  "spot_hsv": [[94, 190, 120], [110, 255, 255]],
+  "spot_note": "Nỉ rộng hơn felt_hsv, gồm cả nỉ tối sát băng trái do bóng băng; chỉ dùng xét chỗ đặt bi còn bi hay không",
+  "tip_roi": {"c": [1730, 215], "r": 150},
+  "orange_hsv": [[0, 150, 150], [22, 255, 255]]
+}

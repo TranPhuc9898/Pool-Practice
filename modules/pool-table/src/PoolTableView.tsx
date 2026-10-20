@@ -21,6 +21,8 @@ export type NativeDrill = {
   targetPocket: string;
   cueBallTargetZones: readonly NativeTargetZone[];
   guideLines: readonly NativeGuideLine[];
+  /** Đường bi cái ghi sẵn, khớp `CueReplay` của `src/pool-engine/types.ts`. Có thì Play diễn lại nó thay cho engine. */
+  replay?: { dt: number; contact: number; xy: readonly number[] };
 };
 
 /** Toạ độ chuẩn hoá (3 số lẻ) của bi vừa thả; `ball` 0 là bi cái. */

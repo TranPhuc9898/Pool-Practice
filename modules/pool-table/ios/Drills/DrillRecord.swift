@@ -51,6 +51,13 @@ struct ShotRecord: Record {
   @Field var zone: Int = -1
 }
 
+/// Đường bi cái ghi từ video, một mẫu mỗi `dt` giây. `xy` phẳng x, y chuẩn hoá, `contact` là mẫu chạm bi mục tiêu.
+struct ReplayRecord: Record {
+  @Field var dt: Double = 0.06
+  @Field var contact: Int = 0
+  @Field var xy: [Double] = []
+}
+
 struct DrillRecord: Record {
   @Field var id: String = ""
   /// "runout" thì Play shot chạy cả bàn theo planner thay vì một cú.
@@ -63,4 +70,6 @@ struct DrillRecord: Record {
   @Field var rounds: [RoundRecord] = []
   /// Có thì Play shot chơi đúng các cú này thay vì planner.
   @Field var shots: [ShotRecord] = []
+  /// Có thì Play diễn lại đường này thay cho engine, khi bàn còn đúng thế của drill.
+  @Field var replay: ReplayRecord? = nil
 }

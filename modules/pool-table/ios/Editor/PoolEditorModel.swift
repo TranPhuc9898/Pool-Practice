@@ -64,6 +64,11 @@ final class PoolEditorModel: ObservableObject {
   @Published var suggesting = false
   /// Drill chạy bàn đang diễn hoặc vừa diễn xong, nil là không. Xem `startRack`.
   @Published var rack: RackRun?
+  /// Gọi một lần khi cú Play vừa tự đóng: true là bi mục tiêu vào và bi cái không rơi, kèm chỗ bi cái dừng (nil khi
+  /// rơi). Dừng giữa chừng thì không gọi.
+  var onReplayEnd: ((Bool, CGPoint?) -> Void)?
+  /// Cú Play vào sạch đang đứng ở khung cuối chờ JS gửi bàn round kế. `adopt` tắt nó cùng lúc thay bàn.
+  var handoff: UUID?
   /// Lời của lần Gợi ý gần nhất, chỉ hiện khi bàn và cú còn y nguyên.
   @Published var hint: Hint?
   private var rev = Int.min
@@ -277,6 +282,9 @@ final class PoolEditorModel: ObservableObject {
     var next: [Int: CGPoint] = [:]
     for b in s.balls { next[b.number] = CGPoint(x: b.x * Self.width, y: b.y * Self.length) }
     balls = next
+    // Bàn mới có bi cái đúng chỗ khung cuối đang vẽ: tắt replay không mờ dần thì mắt không thấy gì đổi.
+    if let h = handoff, replay?.id == h { replay = nil }
+    handoff = nil
     aimBall = s.aimBall >= 0 ? s.aimBall : nil
     aimPocket = s.aimPocket.isEmpty ? nil : s.aimPocket
     tipX = s.tipX

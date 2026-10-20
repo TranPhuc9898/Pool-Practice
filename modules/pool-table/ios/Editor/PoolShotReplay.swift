@@ -197,6 +197,45 @@ struct ShotReplay {
     others = Dictionary(uniqueKeysWithValues: r.moved.map { ($0.key, track($0.key, $0.value)) })
   }
 
+  /// Diễn lại đường bi cái ghi sẵn (inch, mỗi `dt` giây), không qua mô phỏng. Bi cái lăn đều theo từng đoạn, mẫu cuối
+  /// đứng yên. Bi mục tiêu đứng tới mẫu `hit` rồi đi thẳng vào `pocket`, tốc đầu bằng tốc bi cái lúc chạm nhân cos góc
+  /// cắt, hãm theo ma sát lăn nhưng không dưới 10 inch/s để chắc rơi.
+  init(recorded pts: [CGPoint], dt: CGFloat, hit: Int, ball: Int, o: CGPoint, pocket: CGPoint, jump: Bool) {
+    self.ball = ball
+    self.jump = jump
+    rate = 1
+    var cue = Track()
+    for i in pts.indices {
+      let a = pts[max(i - 1, 0)], b = pts[min(i + 1, pts.count - 1)]
+      let span = CGFloat(min(i + 1, pts.count - 1) - max(i - 1, 0)) * dt
+      let v = i == pts.count - 1 ? .zero : CGPoint(x: (b.x - a.x) / span, y: (b.y - a.y) / span)
+      cue.add(CGFloat(i) * dt, pts[i], v: v, w: v, wz: 0)
+    }
+    cue.orient(from: PoolBallSphere.restPose(0))
+    self.cue = cue
+    let t0 = CGFloat(hit) * dt
+    contact = t0
+
+    let d = hypot(pocket.x - o.x, pocket.y - o.y)
+    let u = CGPoint(x: (pocket.x - o.x) / max(d, 1e-6), y: (pocket.y - o.y) / max(d, 1e-6))
+    let p0 = pts[max(hit - 1, 0)], p1 = pts[hit]
+    let inV = CGPoint(x: (p1.x - p0.x) / dt, y: (p1.y - p0.y) / dt)
+    let vMin: CGFloat = 10
+    let v0 = max(abs(inV.x * u.x + inV.y * u.y), vMin)
+    let a = min(ShotPhysics.muRoll, (v0 * v0 - vMin * vMin) / (2 * max(d, 1e-6)))
+    var ob = Track(sink: true)
+    var t: CGFloat = 0
+    while true {
+      let s = min(v0 * t - a * t * t / 2, d), v = s < d ? v0 - a * t : 0
+      ob.add(t0 + t, CGPoint(x: o.x + u.x * s, y: o.y + u.y * s), v: CGPoint(x: u.x * v, y: u.y * v), w: CGPoint(x: u.x * v, y: u.y * v), wz: 0)
+      if s >= d { break }
+      t += 1 / 60
+    }
+    ob.orient(from: PoolBallSphere.restPose(ball))
+    self.ob = ob
+    others = [:]
+  }
+
   /// Bi đã đứng mà còn phê thì xoay tại chỗ tới khi hết, tối đa 3 giây mô phỏng để replay không kéo dài vô tận.
   private static func spinOut(_ track: inout Track) {
     guard let p = track.pts.last, let t = track.ts.last, let wz = track.wzs.last, abs(wz) > 0.3 else { return }
@@ -240,6 +279,20 @@ extension PoolEditorModel {
     return r
   }
 
+  /// Drill có đường bi cái ghi từ video: diễn lại nó khi bàn còn đúng thế video, tức bi cái đứng ở mẫu đầu và bi mục tiêu
+  /// cách mẫu chạm một bi, sai không quá nửa inch. Lệch thì nil để Play quay về engine.
+  func videoReplay(_ rec: ReplayRecord, jump: Bool) -> ShotReplay? {
+    let pts = stride(from: 0, to: rec.xy.count - 1, by: 2).map {
+      CGPoint(x: CGFloat(rec.xy[$0]) * Self.width, y: CGFloat(rec.xy[$0 + 1]) * Self.length)
+    }
+    guard pts.count > 1, pts.indices.contains(rec.contact), let c = balls[0], let ball = aimBall, let o = balls[ball],
+          let pocket = aimPocket.flatMap(ShotPhysics.target),
+          hypot(c.x - pts[0].x, c.y - pts[0].y) <= 0.5,
+          abs(hypot(o.x - pts[rec.contact].x, o.y - pts[rec.contact].y) - 2 * ShotPhysics.ballRadius) <= 0.5
+    else { return nil }
+    return ShotReplay(recorded: pts, dt: CGFloat(rec.dt), hit: rec.contact, ball: ball, o: o, pocket: pocket, jump: jump)
+  }
+
   func play(_ r: ShotReplay) {
     // Chạy thử luôn trên Bàn: đang phóng hình hay đang mở thẻ thì thu về trước.
     if figShown { figShown = false }
@@ -259,13 +312,28 @@ extension PoolEditorModel {
         EditorHaptics.fire(.light, "Cue ball hits \(ShotPhysics.name(r.ball))")
       }
     }
+    // Play một cú vào sạch ở drill: báo JS ngay lúc bi dừng và giữ khung cuối tới khi bàn round kế về (`adopt`),
+    // để bàn không lộ lại thế trước cú. Không có round kế thì sau 1 s bàn về như cũ.
+    let handoff = rack == nil && onReplayEnd != nil && r.ob.sink && !r.cue.sink
     // Giữ vị trí cuối một nhịp cho mắt đọc, rồi bàn về như cũ.
-    let hold = r.jump ? 1.2 : max(0, r.end - now) / r.rate + 0.6
+    let hold = r.jump ? 1.2 : max(0, r.end - now) / r.rate + (handoff ? 0 : 0.6)
     DispatchQueue.main.asyncAfter(deadline: .now() + hold) { [weak self] in
       guard alive() else { return }
       // Chuỗi chạy bàn: dời bi về chỗ dừng trước khi bản chạy tắt, để bi thật hiện đúng chỗ đó.
       self?.rackStepEnded()
-      withAnimation(.easeOut(duration: 0.2)) { self?.replay = nil }
+      if handoff {
+        self?.handoff = r.id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+          guard alive(), self?.handoff == r.id else { return }
+          self?.handoff = nil
+          withAnimation(.easeOut(duration: 0.2)) { self?.replay = nil }
+        }
+      } else {
+        withAnimation(.easeOut(duration: 0.2)) { self?.replay = nil }
+      }
+      let end = self?.onReplayEnd
+      self?.onReplayEnd = nil
+      end?(r.ob.sink && !r.cue.sink, r.cue.sink ? nil : r.cue.pts.last)
       if let m = self, let e = m.score(), let s = m.streak {
         EditorHaptics.fire(e <= PoolEditorModel.guessGood ? .selection : .warning, "Guess off by \(Int(e)) in, streak \(s.now), best \(s.best)")
       }

@@ -1,0 +1,32 @@
+{
+  "drill": 107,
+  "source": "https://www.poolbilliards.co/practice/demo/1338",
+  "submitted_by": "Wojtek Tajak",
+  "level": 5,
+  "skills": ["Position Play", "Shotmaking"],
+  "rules": [
+    "Object balls 1, 5, 9, 3, 7, and 11 are positioned half a ball off the long rails.",
+    "Start with cue ball in hand",
+    "Numerical order",
+    "No contact with other balls",
+    "Each ball made scores 1 point"
+  ],
+  "units": "kim cương: L 0→8 dọc từ đầu có hàng bi giữa, W 0→4 ngang từ băng trái khi đứng ở L=0 nhìn về L=8; 1 bi = 0.18",
+  "note": "Đổi từ diagramConfig trong source trang (pixel, 1 kim cương ≈ 109.6 px). Bi băng lấy W theo mô tả half a ball off (tâm cách mũi băng 0.18), source vẽ ra 0.20–0.21.",
+  "diagrams": [
+    {
+      "balls": {
+        "1": [6.5, 0.18], "5": [5.5, 0.18], "9": [4.5, 0.18],
+        "3": [6.5, 3.82], "7": [5.5, 3.82], "11": [4.5, 3.82],
+        "2": [2.0, 2], "4": [1.65, 2], "6": [1.3, 2], "8": [0.95, 2], "10": [0.6, 2], "12": [0.25, 2]
+      }
+    },
+    {
+      "balls": {
+        "1": [6.5, 3.82], "5": [5.5, 3.82], "9": [4.5, 3.82],
+        "3": [6.5, 0.18], "7": [5.5, 0.18], "11": [4.5, 0.18],
+        "2": [2.0, 2], "4": [1.65, 2], "6": [1.3, 2], "8": [0.95, 2], "10": [0.6, 2], "12": [0.25, 2]
+      }
+    }
+  ]
+}
