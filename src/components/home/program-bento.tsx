@@ -150,7 +150,7 @@ function AdvancedPill({ total, done }: ProgramStat) {
   const s = useStyles();
   return (
     <PressableScale
-      onPress={() => router.push('/area/positionPlay')}
+      onPress={() => router.push('/area/positionPlay?with=patterns')}
       accessibilityRole="button"
       accessibilityLabel={`Position Play and 9-Ball Patterns, ${done} of ${total} drills passed.`}
       style={[s.tile, s.pill, homeSurfaces.indigoPill]}>
