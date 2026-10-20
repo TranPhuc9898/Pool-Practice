@@ -424,25 +424,29 @@ export default function DrillScreen() {
             ? `Shot ${shown + 1}/${drill.shots.length} ${drill.skill === "railCut" ? `→ Ball ${planned.ball}` : `· ${plannedSpin}`}`
             : target?.found
               ? `Shot → ${target.label}`
-              : multi
-                ? "Shot"
-                : `Shot · ${spinLabel[drill.recommendedSpin]}`
+              : round && rounds
+                ? `Shot ${roundIndex + 1}/${rounds.length} · ${spinLabel[round.spin]}`
+                : multi
+                  ? "Shot"
+                  : `Shot · ${spinLabel[drill.recommendedSpin]}`
         }
         shot={shot}
         pass={`${required} of ${total}`}
       />
-      {/* K/45: số mẫu đạt khi lực lệch ±10% và đầu cơ lệch ±0.1, harness `scripts/position-harness/`. */}
-      {planned && (
+      {/* K/45: số mẫu đạt khi lực lệch ±10% và đầu cơ lệch ±0.1, harness `scripts/position-harness/`. Round không có rate. */}
+      {(planned || round?.why) && (
         <View style={s.copy}>
           <AppText variant="callout" style={s.body}>
-            {planned.why}
+            {planned?.why ?? round?.why}
           </AppText>
-          <AppText variant="monoSmall" color="textTertiary">
-            {planned.zone === undefined
-              ? `${planned.rate}/45 potted`
-              : `${planned.rate}/45 in zone ${drill.cueBallTargetZones[planned.zone]?.label ?? planned.zone + 1}`}
-            {" · pace ±10%, tip ±0.1"}
-          </AppText>
+          {planned && (
+            <AppText variant="monoSmall" color="textTertiary">
+              {planned.zone === undefined
+                ? `${planned.rate}/45 potted`
+                : `${planned.rate}/45 in zone ${drill.cueBallTargetZones[planned.zone]?.label ?? planned.zone + 1}`}
+              {" · pace ±10%, tip ±0.1"}
+            </AppText>
+          )}
         </View>
       )}
       {/* Mọi drill có Play, chạy đúng cú ô Shot đang hiện. Drill nhiều đích chưa chọn đích thì chưa có cú để chạy.
