@@ -4,7 +4,8 @@ import type { PoolDrill } from '../types';
  * BU Exam II S1, cấp Bachelors: 4 bi, khoảng hở 3 bi. Bốn cú cố định đổi bên dãy bi: 1 lỗ giữa trái, 2 góc chân phải,
  * 3 lỗ giữa trái, 4 lỗ giữa phải. Cú 1–3 phải để bi cái dừng trong zone. Trường cấp bài (`targetPocket`, spin, lực) mô tả cú 1.
  * Tip, lực, zone và `rate` chép từ beam search + verifier 45 mẫu trên ShotPhysics ddf3049
- * (`git log -1 --format=%h -- modules/pool-table/ios/Editor/ShotPhysics.swift`). Hash khác thì chạy lại, chép lại số.
+ * (`git log -1 --format=%h -- modules/pool-table/ios/Editor/ShotPhysics.swift`). Hash khác thì chạy lại
+ * `scripts/position-harness/run.sh` (`drill12()`), chép lại số.
  */
 export const lineOfBalls = {
   id: '12',

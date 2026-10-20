@@ -5,7 +5,7 @@ import type { PoolDrill } from '../types';
  * Layout mẫu chạy ba cú cố định: draw bi 1 vào lỗ giữa trái, draw nhẹ bi 2 vào góc foot phải, bi 3 vào góc foot trái.
  * Bi cái chỉ đặt ở cú 1, cú sau đánh từ chỗ dừng thật. Zone r 6.5": đứng chỗ nào trong zone cú kế vẫn cắt ≤ 30°.
  * Chỗ đặt bi cái, tip, lực, zone và `rate` dò bằng harness scratch trên ShotPhysics ddf3049, cùng luật 45 mẫu của
- * `scripts/position-harness/` cộng điều kiện cú kế cắt ≤ 30°. Harness này chưa vào repo.
+ * `scripts/position-harness/` cộng điều kiện cú kế cắt ≤ 30°. Chạy lại rate bằng `drill15()` trong harness đó.
  */
 export const threeBall = {
   id: '15',

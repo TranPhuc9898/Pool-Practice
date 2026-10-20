@@ -201,7 +201,7 @@ extension PoolEditorModel {
         if !shots.isEmpty {
           let s = shots[k]
           guard let ms = FixedShot.setup(s, on: cur) else { break }
-          b = (s.ball, s.pocket, ms, 0, CGFloat(s.tipY), CGFloat(s.speed))
+          b = (s.ball, s.pocket, ms, CGFloat(s.tipX), CGFloat(s.tipY), CGFloat(s.speed))
         } else {
           let pick = only.map { RackShotSolver.opening(cur, only: $0, zone: zone) } ?? RackShotSolver.best(cur)
           guard let p = pick, !run.cancelled else { break }
@@ -301,7 +301,7 @@ extension PoolEditorModel {
   }
 }
 
-/// Cú cố định của drill có `shots`: hướng cơ giải từ chỗ bi cái đang đứng, tipX 0. Chạy bàn và nút cú trước/cú sau
+/// Cú cố định của drill có `shots`: hướng cơ giải từ chỗ bi cái đang đứng. Chạy bàn và nút cú trước/cú sau
 /// dùng chung, để thế bàn dựng lại trước cú i khớp đúng chỗ bi dừng lúc chạy.
 enum FixedShot {
   static func setup(_ s: ShotRecord, on cur: [Int: CGPoint]) -> ShotPhysics.Setup? {
@@ -324,7 +324,7 @@ enum FixedShot {
     var cur = start
     for s in shots.prefix(i) {
       guard let ms = setup(s, on: cur) else { return nil }
-      let r = ShotReplay(ms, ball: s.ball, tipX: 0, tipY: CGFloat(s.tipY), speed: CGFloat(s.speed), jump: true)
+      let r = ShotReplay(ms, ball: s.ball, tipX: CGFloat(s.tipX), tipY: CGFloat(s.tipY), speed: CGFloat(s.speed), jump: true)
       guard r.ob.sink, !r.cue.sink else { return nil }
       cur = after(r, on: cur)
     }

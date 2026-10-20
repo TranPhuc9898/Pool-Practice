@@ -392,7 +392,7 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
     model.balls = cur
     model.aimBall = s.ball
     model.aimPocket = s.pocket
-    model.tipX = 0
+    model.tipX = CGFloat(s.tipX)
     model.tipY = CGFloat(s.tipY)
     model.speed = CGFloat(s.speed)
     shownShot = i

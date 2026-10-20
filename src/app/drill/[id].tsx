@@ -253,7 +253,7 @@ export default function DrillScreen() {
   };
   const lastRun = useLastRun(drill);
   const shot = planned
-    ? { tipX: 0, tipY: planned.tipY, speed: planned.speed }
+    ? { tipX: planned.tipX ?? 0, tipY: planned.tipY, speed: planned.speed }
     : target?.found
       ? {
           tipX: target.tipX ?? 0,

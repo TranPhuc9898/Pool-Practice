@@ -105,11 +105,13 @@ export type DrillStep = { label: string; caption: string };
 
 /**
  * Một cú của drill chạy bài cố định. Tip, lực, zone và `rate` chép từ `scripts/position-harness/`, app không tính lại.
- * Chỉ cú 1 đặt bi cái; cú sau đánh từ chỗ bi cái dừng thật sau cú trước, hướng cơ giải lại từ đó, tipX luôn 0.
+ * Chỉ cú 1 đặt bi cái; cú sau đánh từ chỗ bi cái dừng thật sau cú trước, hướng cơ giải lại từ đó.
  */
 export type DrillShot = {
   ball: ObjectBallNumber;
   pocket: PocketId;
+  /** Phê ngang, cùng thang với `ContactPoint.x`, âm là bên trái. Không có là 0. */
+  tipX?: number;
   tipY: number;
   /** m/s. */
   speed: number;

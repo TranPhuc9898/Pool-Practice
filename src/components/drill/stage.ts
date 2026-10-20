@@ -56,7 +56,7 @@ export const stageState = (d: PoolDrill, diamonds: number): EditorState => ({
   aimPocket: d.objectBalls.length
     ? bankTarget(d) ?? d.targetPocket
     : `railFoot@${(d.cueBall.x * PLAY_WIDTH).toFixed(1)}`,
-  tipX: d.shots ? 0 : d.recommendedContactPoint.x,
+  tipX: d.shots ? (d.shots[0].tipX ?? 0) : d.recommendedContactPoint.x,
   tipY: d.shots?.[0].tipY ?? d.recommendedContactPoint.y,
   speed: d.shots?.[0].speed ?? speedMs[d.recommendedSpeed],
   theta: 0,

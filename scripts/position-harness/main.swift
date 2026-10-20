@@ -1,12 +1,12 @@
 import CoreGraphics
 import Foundation
 
-// Drill 23 (position 3 bi) bằng đúng ShotPhysics của app: mỗi cú chạy 45 mẫu lệch tay quanh cú danh nghĩa (lực ×0.9…1.1
-// năm mức, tipX và tipY ±0.1 ba mức, hướng cơ giữ như cú danh nghĩa) và đếm K mẫu đạt. Mẫu đạt khi: bi mục tiêu vào đúng
-// lỗ, bi cái không rơi, không đụng bi khác; bi cái dừng trong zone; và từ đúng chỗ dừng đó cú kế (tip, lực ghi trong
-// data, hướng cơ giải lại như app) vẫn đưa bi kế vào lỗ. Cú 3 không có zone, K là số mẫu bi 3 vào lỗ.
-// Cú 2 bắt đầu từ chỗ bi cái dừng sau cú 1 danh nghĩa, cú 3 từ chỗ dừng sau cú 2, như app chơi lại.
-// Toạ độ chép từ src/pool-engine/drills/23-three-ball-position.ts, đổi sang inch (x·50, y·100, r·50).
+// Drill chạy chuỗi `shots` (12, 15, 23) bằng đúng ShotPhysics của app: mỗi cú chạy 45 mẫu lệch tay quanh cú danh nghĩa
+// (lực ×0.9…1.1 năm mức, tipX và tipY ±0.1 ba mức quanh tip của cú, hướng cơ giữ như cú danh nghĩa) và đếm K mẫu đạt.
+// Mẫu đạt khi: bi mục tiêu vào đúng lỗ, bi cái không rơi, không đụng bi khác; bi cái dừng trong zone; và từ đúng chỗ dừng
+// đó cú kế (tip, lực ghi trong data, hướng cơ giải lại như app) vẫn đưa bi kế vào lỗ. Drill 15 thêm: cú kế cắt ≤ 30°.
+// Cú cuối không có zone, K là số mẫu bi cuối vào lỗ. Cú sau bắt đầu từ chỗ bi cái dừng sau cú trước danh nghĩa, như app
+// chơi lại. Toạ độ chép từ file drill trong src/pool-engine/drills/, đổi sang inch (x·50, y·100, r·50).
 // Drill 24, 25, 30 cùng kiểu 45 mẫu, mỗi round một dòng. Toạ độ ở đây là nguồn để chép sang data drill (x/50, y/100).
 
 typealias SP = ShotPhysics
@@ -14,22 +14,9 @@ func inch(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x * 50, y: y * 100
 func dist(_ a: CGPoint, _ b: CGPoint) -> CGFloat { hypot(a.x - b.x, a.y - b.y) }
 func f(_ p: CGPoint) -> String { String(format: "(%.1f,%.1f)", p.x, p.y) }
 
-struct Shot { let ball: Int; let pocket: String; let tipY: CGFloat; let speed: CGFloat; let zone: (c: CGPoint, r: CGFloat)? }
+struct Shot { let ball: Int; let pocket: String; var tipX: CGFloat = 0; let tipY: CGFloat; let speed: CGFloat; let zone: (c: CGPoint, r: CGFloat)? }
 
-let cue = inch(0.47, 0.588)
-let balls: [Int: CGPoint] = [1: inch(0.69, 0.568), 2: inch(0.896, 0.79), 3: inch(0.852, 0.859)]
-let shots = [
-  // Z2: bi 1 cắt 17° vào lỗ giữa phải, follow cho bi cái theo đà bi 1 rồi bẻ lên, dừng dưới bi 2 chừng 9" với góc 13° vào
-  // lỗ góc đầu bàn. Dừng thấp quá hay sát băng quá thì bi 2 thành cắt mỏng dọc băng.
-  Shot(ball: 1, pocket: "sideRight", tipY: 0.3, speed: 1.4, zone: (inch(0.88, 0.699), 0.07 * 50)),
-  // Z3: bi 2 vào lỗ góc phải đầu bàn, draw để bi cái lùi lại 7" thay vì lăn theo về góc; từ đó bi 3 cách chừng 9",
-  // cắt 21° vào cùng lỗ.
-  Shot(ball: 2, pocket: "headRight", tipY: -0.4, speed: 1.2, zone: (inch(0.816, 0.765), 0.07 * 50)),
-  Shot(ball: 3, pocket: "headRight", tipY: 0, speed: 1.4, zone: nil),
-]
-
-func setup(_ c: CGPoint, _ i: Int, _ left: [Int: CGPoint]) -> SP.Setup {
-  let s = shots[i]
+func setup(_ c: CGPoint, _ s: Shot, _ left: [Int: CGPoint]) -> SP.Setup {
   let others = left.filter { $0.key != s.ball }.map { SP.Obstacle(n: $0.key, p: $0.value) }.sorted { $0.n < $1.n }
   return SP.Setup(c: c, o: left[s.ball]!, pocket: s.pocket, others: others, ball: s.ball)
 }
@@ -42,34 +29,82 @@ func cutDeg(_ c: CGPoint, _ o: CGPoint, _ P: CGPoint) -> CGFloat {
   return abs(atan2(a.x * b.y - a.y * b.x, a.x * b.x + a.y * b.y)) * 180 / .pi
 }
 
-func drill23() {
+/// Cả chuỗi, mỗi cú hai dòng. `maxCut` có thì mẫu đạt còn phải để cú kế cắt không quá số độ đó.
+func chain(_ label: String, cue: CGPoint, balls: [Int: CGPoint], shots: [Shot], maxCut: CGFloat? = nil) {
 var c = cue, left = balls
 for (i, s) in shots.enumerated() {
-  let ms = setup(c, i, left)
-  let nom = SP.runWith(ms, tipX: 0, tipY: s.tipY, speed: s.speed)
-  guard clean(nom, s.pocket) else { print("shot \(i + 1) danh nghĩa hỏng: \(SP.why(nom))"); exit(1) }
-  let aim = atan2(nom.a.y, nom.a.x)
+  let ms = setup(c, s, left)
+  let nom = SP.runWith(ms, tipX: s.tipX, tipY: s.tipY, speed: s.speed)
+  guard clean(nom, s.pocket) else { print("\(label) shot \(i + 1) danh nghĩa hỏng: \(SP.why(nom))"); exit(1) }
+  // `nom.a` là hướng bi cái sau squirt. Cộng lại squirt mới ra hướng cơ, không thì mẫu có tipX bị squirt hai lần.
+  let aim = atan2(nom.a.y, nom.a.x) + nom.squirtDeg * .pi / 180
   var after = left
   after[s.ball] = nil
-  var k = 0, miss = 0, out = 0, next = 0
+  var k = 0, miss = 0, out = 0, next = 0, wide = 0
   for m in [0.9, 0.95, 1, 1.05, 1.1] as [CGFloat] { for dx in [-0.1, 0, 0.1] as [CGFloat] { for dy in [-0.1, 0, 0.1] as [CGFloat] {
-    let r = SP.runWith(ms, tipX: dx, tipY: s.tipY + dy, speed: s.speed * m, aim: aim)
+    let r = SP.runWith(ms, tipX: s.tipX + dx, tipY: s.tipY + dy, speed: s.speed * m, aim: aim)
     guard clean(r, s.pocket) else { miss += 1; continue }
     if let z = s.zone {
       guard dist(r.stop, z.c) <= z.r else { out += 1; continue }
-      let n = shots[i + 1], nr = SP.runWith(setup(r.stop, i + 1, after), tipX: 0, tipY: n.tipY, speed: n.speed)
+      let n = shots[i + 1], nr = SP.runWith(setup(r.stop, n, after), tipX: n.tipX, tipY: n.tipY, speed: n.speed)
       guard clean(nr, n.pocket) else { next += 1; continue }
+      if let maxCut, cutDeg(r.stop, after[n.ball]!, SP.pockets[n.pocket]!) > maxCut { wide += 1; continue }
     }
     k += 1
   } } }
   let zs = s.zone.map { String(format: "zone(%.1f,%.1f,%.1f)", $0.c.x, $0.c.y, $0.r) } ?? "zone(-)"
-  print(String(format: "shot %d tipY %+.2f speed %.2f %@ rate=%d/45", i + 1, s.tipY, s.speed, zs, k))
+  print(String(format: "%@ shot %d tipX %+.2f tipY %+.2f speed %.2f %@ rate=%d/45", label, i + 1, s.tipX, s.tipY, s.speed, zs, k))
   let P = SP.pockets[s.pocket]!
-  print(String(format: "   b%d→%@ từ %@ cắt %.0f° D %.1f L %.1f, dừng %@ · trượt lỗ/đụng %d, ngoài zone %d, cú kế hỏng %d",
-               s.ball, s.pocket, f(c), cutDeg(c, ms.o, P), dist(c, ms.o), dist(ms.o, P), f(nom.stop), miss, out, next))
+  print(String(format: "   b%d→%@ từ %@ cắt %.0f° D %.1f L %.1f, dừng %@ · trượt lỗ/đụng %d, ngoài zone %d, cú kế hỏng %d%@",
+               s.ball, s.pocket, f(c), cutDeg(c, ms.o, P), dist(c, ms.o), dist(ms.o, P), f(nom.stop), miss, out, next,
+               maxCut.map { String(format: ", cú kế cắt > %.0f° %d", $0, wide) } ?? ""))
   c = nom.stop
   left = after
 }
+}
+
+/// Drill 12, BU Exam II S1 Bachelors: dãy 4 bi, zone r 5".
+func drill12() {
+  chain("12", cue: inch(0.66, 0.43), balls: [1: inch(0.5, 0.45), 2: inch(0.5, 0.36), 3: inch(0.5, 0.27), 4: inch(0.5, 0.18)], shots: [
+    Shot(ball: 1, pocket: "sideLeft", tipY: 0.6, speed: 0.8, zone: (inch(0.3, 0.5), 0.1 * 50)),
+    Shot(ball: 2, pocket: "footRight", tipY: 0, speed: 1.4, zone: (inch(0.63, 0.24), 0.1 * 50)),
+    Shot(ball: 3, pocket: "sideLeft", tipY: 0.4, speed: 1.4, zone: (inch(0.32, 0.05), 0.1 * 50)),
+    Shot(ball: 4, pocket: "sideRight", tipY: -0.2, speed: 1.6, zone: nil),
+  ])
+}
+
+/// Drill 15, Three-Ball 30° Max: zone r 6.5", đứng đâu trong zone cú kế cũng cắt ≤ 30°.
+func drill15() {
+  chain("15", cue: inch(0.45, 0.735), balls: [1: inch(0.3, 0.62), 2: inch(0.72, 0.35), 3: inch(0.35, 0.18)], shots: [
+    Shot(ball: 1, pocket: "sideLeft", tipY: -0.4, speed: 1.6, zone: (inch(0.572, 0.541), 0.13 * 50)),
+    Shot(ball: 2, pocket: "footRight", tipY: -0.3, speed: 1.6, zone: (inch(0.68, 0.31), 0.13 * 50)),
+    Shot(ball: 3, pocket: "footLeft", tipY: -0.2, speed: 1.6, zone: nil),
+  ], maxCut: 30)
+}
+
+/// Drill 23, position 3 bi.
+func drill23() {
+  chain("23", cue: inch(0.47, 0.588), balls: [1: inch(0.69, 0.568), 2: inch(0.896, 0.79), 3: inch(0.852, 0.859)], shots: [
+    // Z2: bi 1 cắt 17° vào lỗ giữa phải, follow cho bi cái theo đà bi 1 rồi bẻ lên, dừng dưới bi 2 chừng 9" với góc 13°
+    // vào lỗ góc đầu bàn. Dừng thấp quá hay sát băng quá thì bi 2 thành cắt mỏng dọc băng.
+    Shot(ball: 1, pocket: "sideRight", tipY: 0.3, speed: 1.4, zone: (inch(0.88, 0.699), 0.07 * 50)),
+    // Z3: bi 2 vào lỗ góc phải đầu bàn, draw để bi cái lùi lại 7" thay vì lăn theo về góc; từ đó bi 3 cách chừng 9",
+    // cắt 21° vào cùng lỗ.
+    Shot(ball: 2, pocket: "headRight", tipY: -0.4, speed: 1.2, zone: (inch(0.816, 0.765), 0.07 * 50)),
+    Shot(ball: 3, pocket: "headRight", tipY: 0, speed: 1.4, zone: nil),
+  ])
+}
+
+/// Thử tipX khác 0, không phải data drill: bi 1 → 2 của drill 31 với tip và `playSpeed` của round 1, 2. Ở lực video
+/// 3.2 m/s bi cái engine đi xa hơn video và đụng bi 6, nên cú 1 dùng 3.0. Zone là chỗ bi cái đứng ở round 2 trong video.
+func drill31Trial() {
+  let balls: [Int: CGPoint] = [1: inch(0.955, 0.8125), 2: inch(0.5, 0.25), 3: inch(0.045, 0.8125), 4: inch(0.5, 0.2062),
+                               5: inch(0.955, 0.6875), 6: inch(0.5, 0.1625), 7: inch(0.045, 0.6875), 8: inch(0.5, 0.1187),
+                               9: inch(0.955, 0.5625), 10: inch(0.5, 0.075), 11: inch(0.045, 0.5625), 12: inch(0.5, 0.0312)]
+  chain("31 thử", cue: inch(0.5025, 0.4963), balls: balls, shots: [
+    Shot(ball: 1, pocket: "headRight", tipX: -0.21, tipY: -0.37, speed: 3.0, zone: (inch(0.28, 0.285), 5)),
+    Shot(ball: 2, pocket: "footRight", tipX: 0.07, tipY: 0.47, speed: 1.35, zone: nil),
+  ])
 }
 
 // MARK: drill 24, 25, 30
@@ -208,7 +243,10 @@ func drill28() {
   }
 }
 
+drill12()
+drill15()
 drill23()
+drill31Trial()
 drill24()
 drill25()
 drill30()

@@ -9,9 +9,10 @@ import { twelveBallRailsReplay } from './31-twelve-ball-rails.replay';
  * `expectedCuePath` là đường bi cái thật sau va chạm. Đổi toạ độ video (L 0→8 dọc, W 0→4 ngang, hàng bi giữa ở L thấp)
  * sang app: x = 1 − W/4, y = L/8. Đây là phép quay nên dấu phê ngang giữ nguyên.
  * Lỗ không tracking bi mục tiêu mà suy ra từ góc cắt nhỏ nhất. Cú bi 7 cắt 64° vào headLeft là đoán yếu nhất.
- * Không dùng `shots`: `FixedShot` ép tipX 0, mà bài này có phê ngang. Play diễn lại `replay`, đường bi cái của video
- * cắt bằng `scripts/video-harness/replay.py`: bi cái đi đúng đường và nhịp video, bi mục tiêu đi thẳng vào lỗ guide,
- * hết cú thì round kế dựng bàn với bi cái ở `cueBall` của nó, cũng là chỗ bi cái dừng trong video.
+ * Không dùng `shots`: cú sau của chuỗi đánh từ chỗ bi cái engine dừng, mà engine lệch khỏi thế video (bi 1 ở lực video
+ * đụng bi 6, `drill31Trial()` trong `scripts/position-harness/`). Play diễn lại `replay`, đường bi cái của video cắt bằng
+ * `scripts/video-harness/replay.py`: bi cái đi đúng đường và nhịp video, bi mục tiêu đi thẳng vào lỗ guide, hết cú thì
+ * round kế dựng bàn với bi cái ở `cueBall` của nó, cũng là chỗ bi cái dừng trong video.
  * `playSpeed` chỉ còn cho engine khi bàn lệch khỏi thế video: dò bằng beam search trên ShotPhysics (scratchpad h107,
  * mode `beam2`), bi 8, 10, 12 engine cần hơn 1.6 lần lực thật, bi 6, 7 thêm khoảng 40%. Card hiện `speed` đo từ video.
  */
