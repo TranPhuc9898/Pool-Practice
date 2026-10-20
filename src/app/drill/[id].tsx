@@ -65,6 +65,9 @@ const GUIDES: { key: GuideKey; label: string }[] = [
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
+/** Planner native chỉ giải cú pot một bi: các bài này không nhận target và không có Play. */
+const NO_PLAN: readonly PoolDrill["skill"][] = ["bank", "break", "combo", "safety", "kick", "jump", "masse", "test"];
+
 export default function DrillScreen() {
   // `debug=1` bật lưới hình học, `w=<pt>` ép bề rộng container để kiểm tỉ lệ, `guide=0` tắt guide,
   // `dev=1` (chỉ bản dev) kéo bi + Copy JSON để soạn toạ độ drill. `debug`, `guide=0`, `dev` dùng bàn ngang cũ.
@@ -199,9 +202,9 @@ export default function DrillScreen() {
       ),
     );
   // Vùng đích đang chọn trên bàn: Spin/Speed đổi theo cú tới vùng đó. Đổi drill thì bỏ.
-  // Drill break không có cú giải tới zone nên không nhận target.
+  // Drill break, safety, kick… không có cú giải tới zone nên không nhận target.
   const target =
-    pick?.drillId === drill.id && pick.shot.label && drill.skill !== "break"
+    pick?.drillId === drill.id && pick.shot.label && !NO_PLAN.includes(drill.skill)
       ? pick.shot
       : undefined;
   const zoneCount = drill.cueBallTargetZones.length;
@@ -446,12 +449,12 @@ export default function DrillScreen() {
           Drill English bỏ Play ở round phê ngang: engine có squirt nhưng không có swerve, mà bài đó dạy đúng độ lệch.
           Drill khác vẫn có Play ở cú phê ngang, đường thật đã vẽ bằng guide để so.
           Drill bank cũng không: băng engine chưa hiệu chỉnh, bank dài hơn 0.8 W quá một bi.
-          Drill break cũng không: planner native chỉ giải cú pot, không đánh break. */}
+          Drill trong `NO_PLAN` cũng không: planner native chỉ giải cú pot một bi. */}
       {shot &&
         !legacyTable &&
         !(round?.contactPoint?.x && drill.skill === "english") &&
         !bank &&
-        drill.skill !== "break" && (
+        !NO_PLAN.includes(drill.skill) && (
         <GraphiteAction
           sheen
           title="Play shot"

@@ -1,0 +1,48 @@
+import type { PoolDrill } from '../types';
+
+/**
+ * Short Stop / Follow / Draw into Side, bài 33 của `docs/research/pool-practice-drills/drills-32-48-dua-bi.md`, Dr. Dave
+ * BD 05/2020 #6 (https://drdavepoolinfo.com/bd_articles/2020/may20.pdf). Layout bi cái ở center, bi 1 cách 1 diamond thẳng
+ * lỗ giữa trái, ba bài stop, follow, draw, mỗi bài 5 cú liên tiếp là [nguồn]. Ba round 5 cú, đạt 15/15 là cách dịch
+ * "5 liên tiếp mỗi bài" sang đếm bi vào. Điểm chạm cơ và lực medium là [đề xuất]. Chưa kiểm trên bàn thật.
+ */
+export const shortStopFollowDraw = {
+  id: '33',
+  number: 33,
+  title: 'Short Stop / Follow / Draw',
+  subtitle: 'One short straight shot into the side. Stop it, follow it in, draw it across.',
+  category: 'shotMaking',
+  skill: 'straightStroke',
+  skillLabel: 'Straight-In',
+  difficulty: 1,
+  objective: 'Five in a row with each stroke: stop, follow into the same side pocket, draw back to the opposite side.',
+  cueBall: { x: 0.5, y: 0.5 },
+  objectBalls: [{ number: 1, x: 0.25, y: 0.5 }],
+  targetPocket: 'sideLeft',
+  cueBallTargetZones: [],
+  guideLines: [
+    { kind: 'objectBallPath', ball: 1, pocket: 'sideLeft' },
+    { kind: 'ghostBall', ball: 1, pocket: 'sideLeft' },
+  ],
+  recommendedContactPoint: { x: 0, y: -0.1 },
+  recommendedSpin: 'stun',
+  recommendedSpeed: 'medium',
+  allowedRails: 0,
+  attemptCount: 15,
+  passCondition: { kind: 'pocketed', required: 15 },
+  tips: [
+    'Five in a row per stroke. A miss restarts that stroke at zero.',
+    'Stop: the cue ball parks where the 1-ball was.',
+    'Follow: the cue ball rolls in right behind the 1-ball. Draw: it comes straight back into the far side pocket.',
+    'Same aim for all three. Only the tip height changes.',
+  ],
+  mistakes: [
+    'Follow or draw drifts off the line: tip off the vertical center, or the shot is not dead straight.',
+    'Draw dies halfway: the stroke stops at the ball. Finish through the cue ball.',
+  ],
+  rounds: [
+    { title: 'Stop', spin: 'stun', contactPoint: { x: 0, y: -0.1 } },
+    { title: 'Follow', spin: 'follow', contactPoint: { x: 0, y: 0.4 } },
+    { title: 'Draw', spin: 'draw', contactPoint: { x: 0, y: -0.4 } },
+  ],
+} satisfies PoolDrill;

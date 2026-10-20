@@ -53,7 +53,14 @@ export type DrillSkill =
   | 'drawAngle'
   | 'english'
   | 'bank'
-  | 'break';
+  | 'break'
+  | 'combo'
+  | 'speedControl'
+  | 'safety'
+  | 'kick'
+  | 'jump'
+  | 'masse'
+  | 'test';
 export type Difficulty = 1 | 2 | 3 | 4 | 5;
 export type Spin = 'center' | 'stun' | 'follow' | 'draw';
 export type Speed = 'soft' | 'medium' | 'firm';
