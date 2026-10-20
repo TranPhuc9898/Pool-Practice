@@ -26,8 +26,10 @@ Từ trên xuống, đúng thứ tự của drill 31:
 | Điểm chạm cơ x, y (x khác 0 là phê ngang) | harness hoặc video | mặt bi trên card, dòng tip |
 | Lực m/s | harness hoặc video | thanh lực, số m/s |
 | Đường bi cái sau va chạm | engine, video hoặc vẽ tay (mục 5) | đường đứt trên bàn |
-| Zone bi cái phải dừng (trừ cú cuối) | harness | vòng zone trên bàn |
+| Zone bi cái phải dừng (trừ cú cuối), khi bài chấm vị trí | harness | vòng zone trên bàn |
 | Một câu vì sao chọn cú này | người soạn | dòng dưới card |
+
+Bài chấm vị trí là bài có `cueBallTargetZones`. Bài chỉ đếm bi vào, như Rail Cut BU (18–20), để `cueBallTargetZones` rỗng và cú không có zone.
 
 ## 4. Play
 

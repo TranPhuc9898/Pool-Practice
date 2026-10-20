@@ -11,7 +11,8 @@ export const railCutDoctorate = {
   id: '20',
   number: 20,
   title: 'Rail Cut · Doctorate',
-  subtitle: 'Fifteen rail balls. Balls near the corners crowd the pocket.',
+  // Route, tip, lực và tỉ lệ chỉ đo trên ShotPhysics, chưa đo bàn thật.
+  subtitle: 'Fifteen rail balls. Balls near the corners crowd the pocket. Checked in simulation, not on a real table.',
   category: 'shotMaking',
   skill: 'railCut',
   skillLabel: 'Rail Cut',

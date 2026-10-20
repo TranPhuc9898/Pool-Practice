@@ -103,6 +103,7 @@ export const twelveBallRails = {
       speed: 3.2,
       playSpeed: 3.0,
       replay: twelveBallRailsReplay[0],
+      why: '30° cut on a rail ball. Draw with left english takes the cue ball off the near rail and across to the far rail, back out 12" from ball 2 with a 34° cut into the foot right corner.',
     },
     {
       title: 'Ball 2',
@@ -137,6 +138,7 @@ export const twelveBallRails = {
       speed: 1.1,
       playSpeed: 1.35,
       replay: twelveBallRailsReplay[1],
+      why: '34° cut on the spot line. Follow carries the cue ball off the right rail to the middle of the table, 41" from ball 3 with a 33° cut into the head left corner.',
     },
     {
       title: 'Ball 3',
@@ -170,6 +172,7 @@ export const twelveBallRails = {
       speed: 3.2,
       playSpeed: 2.4,
       replay: twelveBallRailsReplay[2],
+      why: '33° cut on a rail ball. Draw with right english sends the cue ball across to the right rail and back toward the spot line, 12" from ball 4 with a 27° cut into the foot left corner.',
     },
     {
       title: 'Ball 4',
@@ -203,6 +206,7 @@ export const twelveBallRails = {
       speed: 2.0,
       playSpeed: 2.3,
       replay: twelveBallRailsReplay[3],
+      why: '27° cut on the spot line. Follow with right english takes the cue ball off the foot rail and the right rail out to mid-table, 22" from ball 5 with a 36° cut into the head right corner.',
     },
     {
       title: 'Ball 5',
@@ -234,6 +238,7 @@ export const twelveBallRails = {
       speed: 2.4,
       playSpeed: 2.35,
       replay: twelveBallRailsReplay[4],
+      why: '36° cut on a rail ball. Draw with left english takes the cue ball off the near rail and across to the left rail, 20" from ball 6 with a 4° cut into the foot right corner.',
     },
     {
       title: 'Ball 6',
@@ -264,6 +269,7 @@ export const twelveBallRails = {
       speed: 3.3,
       playSpeed: 4.75,
       replay: twelveBallRailsReplay[5],
+      why: 'Nearly straight, so follow would chase ball 6 into the corner. Draw pulls the cue ball back off the left rail and out past the center, 33" from ball 7 with a 67° cut into the head left corner.',
     },
     {
       title: 'Ball 7',
@@ -294,6 +300,7 @@ export const twelveBallRails = {
       speed: 3.4,
       playSpeed: 4.5,
       replay: twelveBallRailsReplay[6],
+      why: '67° cut on a rail ball, the thinnest of the run. Draw with right english sends the cue ball across to the right rail and back off the left rail, 10" from ball 8 with a 25° cut into the foot right corner.',
     },
     {
       title: 'Ball 8',
@@ -323,6 +330,7 @@ export const twelveBallRails = {
       speed: 2.4,
       playSpeed: 4.0,
       replay: twelveBallRailsReplay[7],
+      why: '25° cut on the spot line. Draw with left english brings the cue ball off the foot rail and the left rail, 27" from ball 9 with a 40° cut into the head right corner.',
     },
     {
       title: 'Ball 9',
@@ -343,6 +351,7 @@ export const twelveBallRails = {
       speed: 2.5,
       playSpeed: 2.55,
       replay: twelveBallRailsReplay[8],
+      why: '40° cut on a rail ball. Draw with left english takes the cue ball off the near rail and across to the left rail and on toward the foot rail, 7" from ball 10 with a 46° cut into the foot right corner.',
     },
     {
       title: 'Ball 10',
@@ -371,6 +380,7 @@ export const twelveBallRails = {
       speed: 1.8,
       playSpeed: 3.0,
       replay: twelveBallRailsReplay[9],
+      why: '46° cut on the spot line. Follow carries the cue ball to the right rail and off the head rail, back across to 17" from ball 11 with a 22° cut into the head left corner.',
     },
     {
       title: 'Ball 11',
@@ -397,6 +407,7 @@ export const twelveBallRails = {
       speed: 3.2,
       playSpeed: 2.8,
       replay: twelveBallRailsReplay[10],
+      why: '22° cut on a rail ball. Draw with right english sends the cue ball across to the right rail and on toward the foot rail, 13" from ball 12 with a 33° cut into the foot left corner.',
     },
     {
       title: 'Ball 12',
@@ -421,6 +432,7 @@ export const twelveBallRails = {
       speed: 1.5,
       playSpeed: 2.6,
       replay: twelveBallRailsReplay[11],
+      why: 'Last ball, 33° cut. Follow takes the cue ball off the foot rail and back out to open table, clear of the pockets.',
     },
   ],
 } satisfies PoolDrill;

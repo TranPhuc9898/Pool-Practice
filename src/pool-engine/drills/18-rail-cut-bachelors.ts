@@ -14,7 +14,9 @@ export const railCutBachelors = {
   id: '18',
   number: 18,
   title: 'Rail Cut · Bachelors',
-  subtitle: 'Seven balls on the rails and the center spot. Ball in hand for the first shot only.',
+  // Route, tip, lực và tỉ lệ chỉ đo trên ShotPhysics, chưa đo bàn thật.
+  subtitle:
+    'Seven balls on the rails and the center spot. Ball in hand for the first shot only. Checked in simulation, not on a real table.',
   category: 'shotMaking',
   skill: 'railCut',
   skillLabel: 'Rail Cut',

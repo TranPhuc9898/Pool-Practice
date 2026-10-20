@@ -11,7 +11,8 @@ export const threeBall = {
   id: '15',
   number: 15,
   title: 'Three-Ball, 30° Max',
-  subtitle: 'Every shot must leave the next cut at 30° or less.',
+  // Zone, tip, lực và tỉ lệ chỉ đo trên ShotPhysics, chưa đo bàn thật.
+  subtitle: 'Every shot must leave the next cut at 30° or less. Checked in simulation, not on a real table.',
   category: 'patternPlay',
   skill: 'runout',
   skillLabel: '3-Ball Pattern',

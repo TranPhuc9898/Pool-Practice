@@ -11,7 +11,8 @@ export const railCutMasters = {
   id: '19',
   number: 19,
   title: 'Rail Cut · Masters',
-  subtitle: 'Eleven rail balls. More balls in the way on every end rail.',
+  // Route, tip, lực và tỉ lệ chỉ đo trên ShotPhysics, chưa đo bàn thật.
+  subtitle: 'Eleven rail balls. More balls in the way on every end rail. Checked in simulation, not on a real table.',
   category: 'shotMaking',
   skill: 'railCut',
   skillLabel: 'Rail Cut',

@@ -91,6 +91,8 @@ export type DrillRound = {
   playSpeed?: number;
   /** Có thì Play diễn lại đường bi cái này thay cho engine, khi bàn còn đúng thế của round. */
   replay?: CueReplay;
+  /** Vì sao chọn cú này, một câu, như `DrillShot.why`. */
+  why?: string;
 };
 
 /**

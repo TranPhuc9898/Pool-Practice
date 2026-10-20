@@ -28,6 +28,7 @@ function shotsOf(d) {
       tipY: (r.contactPoint ?? d.recommendedContactPoint)?.y,
       speed: typeof r.speed === 'number' ? r.speed : null,
       zone: r.zone,
+      why: r.why,
       cueBall: r.cueBall,
       balls,
       replay: !!r.replay,
@@ -86,7 +87,10 @@ function lint(d) {
   if (noSpeed.length) add(3, `thiếu lực m/s, chỉ có bậc '${d.recommendedSpeed}'`, noSpeed);
   const noPath = pick((s) => !s.src);
   if (noPath.length) add(3, 'thiếu nguồn đường bi cái (shots, replay hay expectedCuePath)', noPath);
-  const noZone = pick((s, i) => s.src === 'engine' && i < shots.length - 1 && (s.zone === undefined || s.zone === null));
+  // Bài không có zone chỉ đếm bi vào (Rail Cut BU), cú không cần zone.
+  const noZone = pick(
+    (s, i) => s.src === 'engine' && d.cueBallTargetZones.length > 0 && i < shots.length - 1 && (s.zone === undefined || s.zone === null),
+  );
   if (noZone.length) add(3, 'cú engine thiếu zone bi cái', noZone);
   const zoneOut = pick((s) => typeof s.zone === 'number' && !d.cueBallTargetZones[s.zone]);
   if (zoneOut.length) add(3, 'zone trỏ ra ngoài cueBallTargetZones', zoneOut);
