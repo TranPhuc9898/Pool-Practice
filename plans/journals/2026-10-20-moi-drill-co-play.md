@@ -20,7 +20,7 @@ summary: "Drill 12 chuỗi 4 cú, chuẩn drill theo drill 31, 81/81 drill có n
 - Harness dò cú: 88/89 trường hợp đạt. Trượt duy nhất là drill 69 round 5.
 - AXe mở cả 81 drill: 81/81 có nút "Play shot".
 - 32 drill mới bật: quay video từng drill, bấm Play, cả 32 thấy bi chạy (bank vào lỗ, break bung rack, combo, safety, kick, nhảy, massé cong).
-- 49 drill có Play từ trước: đang chụp trước/sau Play để soát hồi quy, chưa xong lúc ghi.
+- 49 drill có Play từ trước: chụp trước Play, 1 s và 2.2 s sau Play. Cả 49 thấy bi chạy. Drill 23 lượt đầu đứng yên vì nút Play nằm dưới mép màn, cuộn lên bấm lại thì bi 1 vào và card sang `SHOT 2/3`.
 - `npx tsc --noEmit` và `npx expo lint` exit 0.
 
 ## Decision
