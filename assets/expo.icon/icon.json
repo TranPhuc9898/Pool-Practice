@@ -7,8 +7,8 @@
       "layers" : [
         {
           "glass" : false,
-          "image-name" : "c-enso.png",
-          "name" : "c-enso",
+          "image-name" : "puck.png",
+          "name" : "puck",
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
