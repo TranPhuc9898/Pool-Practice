@@ -44,7 +44,14 @@
           "initialOrientation": "PORTRAIT_UP"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Pick a video of your stroke to analyse your cue arm frame by frame.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
