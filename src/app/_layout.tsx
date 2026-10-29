@@ -5,6 +5,8 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { darkTheme, navigationTheme, stackScreenOptions, ThemeProvider, useAppFonts } from '@/design-system';
+import { LogoOutro } from '@/components/onboarding/logo-outro';
+import { useOnboardingDone, useOutroPlaying } from '@/pool-engine/onboarding';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -13,6 +15,8 @@ export const unstable_settings = { initialRouteName: '(tabs)' };
 
 export default function RootLayout() {
   const fontsReady = useAppFonts();
+  const onboarded = useOnboardingDone();
+  const outroPlaying = useOutroPlaying();
 
   useEffect(() => {
     if (fontsReady) SplashScreen.hideAsync();
@@ -28,9 +32,24 @@ export default function RootLayout() {
         <NavigationThemeProvider value={navigationTheme(theme)}>
           <StatusBar style={theme.name === 'dark' ? 'light' : 'dark'} />
           <Stack screenOptions={stackScreenOptions(theme)}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="design-system" options={{ title: 'Design System' }} />
+            {/* Chưa xem intro thì chỉ có intro; xem xong thì intro biến mất khỏi stack. */}
+            <Stack.Protected guard={!onboarded}>
+              <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+            </Stack.Protected>
+            <Stack.Protected guard={onboarded}>
+              {/* Logo outro phủ lên và tự expand ra home, không để stack trượt home từ phải vào. */}
+              <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none' }} />
+              <Stack.Screen name="design-system" options={{ title: 'Design System' }} />
+              <Stack.Screen name="settings" />
+              <Stack.Screen name="workout" />
+              <Stack.Screen name="stance" />
+              <Stack.Screen name="clip" />
+              <Stack.Screen name="editor" />
+              <Stack.Screen name="drill/[id]" />
+              <Stack.Screen name="area/[id]" />
+            </Stack.Protected>
           </Stack>
+          {outroPlaying && <LogoOutro />}
         </NavigationThemeProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
