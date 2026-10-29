@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First Shot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Doto:wght@900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #000; --surface: #0D0D0D; --text: #fff; --text2: #BDBDBD; --text3: #8A8A8A;
+    --border: rgba(255,255,255,.1); --gold: #C9A45C;
+    --ease: cubic-bezier(.23,1,.32,1);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: #111; color: var(--text); font-family: 'Be Vietnam Pro', system-ui, sans-serif; padding: 32px 16px 64px; }
+  header { max-width: 1280px; margin: 0 auto 28px; }
+  header h1 { font-size: 20px; font-weight: 600; }
+  header p { color: var(--text3); font-size: 14px; margin-top: 6px; line-height: 1.5; }
+  .row { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; max-width: 1280px; margin: 0 auto; }
+  figure { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  figcaption { font-size: 12px; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; font-weight: 600; text-align: center; max-width: 290px; line-height: 1.5; }
+  figcaption b { color: var(--text2); }
+
+  /* iPhone 15, 393×852 thu 0.75 */
+  .phone { width: 295px; height: 640px; border-radius: 44px; background: var(--bg); border: 6px solid #1c1c1c; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+  .status { height: 40px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 6px 24px 0; font-size: 12px; font-weight: 600; }
+  .nav { height: 36px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font-size: 13px; font-weight: 600; }
+  .nav .back { color: var(--text); font-size: 18px; width: 30px; height: 30px; border-radius: 15px; background: #1a1a1a; display: grid; place-items: center; }
+  .nav .gear { width: 30px; height: 30px; border-radius: 15px; background: #1a1a1a; display: grid; place-items: center; font-size: 14px; }
+  .scroll { flex: 1; overflow-y: auto; padding: 8px 15px 24px; display: flex; flex-direction: column; gap: 24px; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+  .scroll > * { flex-shrink: 0; }
+
+  .eyebrow { font-size: 9px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--text3); }
+  .heroTitle { font-size: 19.5px; line-height: 1.2; font-weight: 500; letter-spacing: -.3px; }
+  .callout { font-size: 10.5px; line-height: 1.36; font-weight: 500; color: var(--text2); }
+
+  /* Hero card như homeSurfaces.hero */
+  .hero { border-radius: 18px; padding: 14px 15px 15px; display: flex; flex-direction: column; gap: 4px; position: relative; overflow: hidden;
+    background:
+      radial-gradient(ellipse 240px 195px at 100% 100%, rgba(201,164,74,.30) 0%, rgba(201,164,74,.09) 42%, rgba(201,164,74,0) 100%),
+      radial-gradient(ellipse 180px 150px at 0% 0%, rgba(255,255,255,.06) 0%, rgba(255,255,255,0) 100%),
+      linear-gradient(170deg, #161616 0%, #0E0E0E 50%, #090909 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(255,255,255,.025), 0 14px 28px rgba(0,0,0,.6); cursor: pointer; }
+  .hero .eyebrow { letter-spacing: .1em; }
+  .gauge { position: relative; height: 112px; margin-top: 4px; }
+  .gauge svg { width: 100%; height: 100%; }
+  .gauge .num { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; font-family: 'Doto', monospace; font-size: 28px; letter-spacing: 1px; }
+  .gauge .num small { font-size: 15px; color: var(--text3); }
+  .gauge .cap { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 8.5px; color: var(--text3); font-family: ui-monospace, monospace; }
+  .hero .text { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 12px; text-align: center; }
+  .hero .text .callout { color: rgba(255,255,255,.62); font-weight: 400; max-width: 225px; }
+  .cta { height: 42px; border-radius: 11px; margin-top: 9px; display: grid; place-items: center; font-size: 11.5px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #121212;
+    background: linear-gradient(180deg, #DDB955 0%, #C29C40 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.32), inset 0 -1px 0 rgba(0,0,0,.18), 0 8px 18px rgba(201,164,74,.10); }
+
+  .bento { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .tile { border-radius: 14px; height: 88px; background: linear-gradient(160deg, #1D1D1D 0%, #121212 55%, #0A0A0A 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.13); padding: 11px; font-size: 12px; font-weight: 500; }
+  .tile.wide { grid-column: span 2; height: 64px; }
+  .ghost { height: 40px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11.5px; font-weight: 600; }
+
+  /* Workout */
+  .head { display: flex; flex-direction: column; gap: 6px; }
+  .stage { aspect-ratio: 2 / 1; border-radius: 10px; background: #0a0a0a; border: 1px solid #1f1f1f; position: relative; overflow: hidden; }
+  .stage::before { content: ''; position: absolute; inset: 9px; border: 1px solid #262626; border-radius: 4px; }
+  .ball { position: absolute; width: 9px; height: 9px; border-radius: 50%; transform: translate(-50%,-50%); }
+  .cueball { background: #f4f4f4; }
+  .obj { background: #e2c043; }
+  .path { position: absolute; height: 1px; background: var(--gold); transform-origin: left center; opacity: .8; }
+  .ghostball { border: 1px dashed rgba(255,255,255,.5); background: none; }
+  .shotcard { border-radius: 12px; background: #0F0F0F; box-shadow: inset 0 1px 0 rgba(255,255,255,.08); padding: 11px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+  .shotcard .mono { font-family: ui-monospace, monospace; color: var(--text3); font-size: 9.5px; }
+  .action { height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 11.5px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; cursor: pointer; user-select: none; }
+  .graphite { background: linear-gradient(160deg, #1A1A1A 0%, #0F0F0F 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.10); color: var(--text); }
+  .gold { background: linear-gradient(180deg, #DDB955 0%, #C29C40 100%); color: #121212; box-shadow: inset 0 1px 0 rgba(255,255,255,.32); }
+  .pair { display: flex; gap: 9px; } .pair > * { flex: 1; }
+  .scoreboard { border-radius: 12px; background: #0F0F0F; box-shadow: inset 0 1px 0 rgba(255,255,255,.08); padding: 11px 12px; display: flex; flex-direction: column; gap: 9px; }
+  .dots { display: flex; gap: 5px; } .dots i { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid #3a3a3a; }
+  .dots i.pass { background: #fff; border-color: #fff; } .dots i.fail { border-color: #8a8a8a; }
+  .scoreboard .mono { font-family: ui-monospace, monospace; color: var(--text3); font-size: 9.5px; }
+
+  /* FirstUseHint: chấm gold, callout xám, Bỏ qua. Ăn bớt 9pt (space.sm) khoảng cách tới nút nó chỉ. */
+  .hint { display: flex; align-items: center; gap: 9px; margin-bottom: -9px; animation: fadeIn 250ms var(--ease) both; }
+  .hint.out { animation: fadeOut 150ms var(--ease) both; }
+  .hint .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex: none; }
+  .hint .callout { flex: 1; }
+  .hint .skip { min-height: 33px; display: grid; place-items: center; padding-left: 6px; font-size: 10px; color: var(--text3); cursor: pointer; }
+  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes fadeOut { from { opacity: 1 } to { opacity: 0 } }
+  @media (prefers-reduced-motion: reduce) { .hint, .hint.out { animation: none; } }
+
+  /* Settings */
+  .card { border-radius: 14px; background: var(--surface); padding: 22px 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+  .card .ic { width: 48px; height: 48px; border-radius: 24px; background: rgba(255,255,255,.08); display: grid; place-items: center; font-size: 20px; margin-bottom: 4px; }
+  .card h3 { font-size: 16px; font-weight: 700; }
+  .card p { font-size: 11.5px; color: var(--text2); line-height: 1.45; }
+  .section { display: flex; flex-direction: column; gap: 7px; }
+  .section > .eyebrow { padding-left: 4px; }
+  .list { border-radius: 12px; background: var(--surface); overflow: hidden; }
+  .prow { display: flex; align-items: center; gap: 10px; padding: 0 12px; min-height: 44px; font-size: 13px; cursor: pointer; }
+  .prow + .prow { border-top: 1px solid var(--border); }
+  .prow .ri { width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,.08); display: grid; place-items: center; font-size: 12px; }
+  .prow .chev { margin-left: auto; color: var(--text3); }
+  .prow.hl { box-shadow: inset 0 0 0 1px rgba(201,164,92,.5); border-radius: 12px; }
+
+  .note { max-width: 1280px; margin: 36px auto 0; font-size: 13px; color: var(--text3); line-height: 1.6; }
+  .note b { color: var(--text2); font-weight: 600; }
+  .reset { margin-left: 8px; font: inherit; font-size: 12px; color: var(--text); background: #1f1f1f; border: 1px solid #333; border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>First Shot · kiểm tra first-use</h1>
+  <p>Mô phỏng HTML theo code đã sửa trong <code>index.tsx</code>, <code>workout.tsx</code>, <code>settings.tsx</code>. Khung thứ hai bấm được: Play shot → hint Pass/Miss → Pass hoặc Miss → hết hint. Bàn bi chỉ là khối giữ chỗ cho view native.
+  <button class="reset" onclick="resetLive()">Chạy lại khung 2</button></p>
+</header>
+
+<div class="row">
+  <!-- 1. Home, người mới -->
+  <figure>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="nav"><span style="font-size:22px;font-weight:700">Today</span><span class="gear">⚙︎</span></div>
+      <div class="scroll">
+        <span class="eyebrow">Wednesday, October 22</span>
+        <div class="hero">
+          <span class="eyebrow">Daily · Fundamentals</span>
+          <div class="gauge">
+            <svg viewBox="0 0 300 162" id="gauge"></svg>
+            <div class="num">000<small>/120</small></div>
+            <div class="cap">00 passed · Stop L1</div>
+          </div>
+          <div class="text">
+            <div class="heroTitle">Tốt hơn từng cú đánh.</div>
+            <div class="callout">Xem đường bi. Đánh thật. Ghi kết quả.</div>
+          </div>
+          <div class="cta">Bắt đầu tập</div>
+        </div>
+        <span class="eyebrow">Your program</span>
+        <div class="bento"><div class="tile wide">Start here · Fundamentals</div><div class="tile">Fundamentals</div><div class="tile">Cue Ball Control</div></div>
+        <div class="ghost">⌂ Stance check</div>
+      </div>
+    </div>
+    <figcaption><b>1 · Home, người mới</b><br>Bấm cả card = thao tác 1</figcaption>
+  </figure>
+
+  <!-- 2. Workout, hint Play (bấm được) -->
+  <figure>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="nav"><span class="back">‹</span><span>Daily Workout</span><span style="width:30px"></span></div>
+      <div class="scroll" id="live"></div>
+    </div>
+    <figcaption><b>2 · Workout, bấm thử</b><br>Pass/Miss = thao tác 2, cú thật đầu tiên</figcaption>
+  </figure>
+
+  <!-- 3. Workout, hint ghi kết quả -->
+  <figure>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="nav"><span class="back">‹</span><span>Daily Workout</span><span style="width:30px"></span></div>
+      <div class="scroll" id="recordStatic"></div>
+    </div>
+    <figcaption><b>3 · Sau khi bấm Play</b><br>Hint chuyển xuống ngay trên Pass/Miss</figcaption>
+  </figure>
+
+  <!-- 4. Settings -->
+  <figure>
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●● ▮</span></div>
+      <div class="nav"><span class="back">‹</span><span>Settings</span><span style="width:30px"></span></div>
+      <div class="scroll">
+        <div class="card"><div class="ic">⚙︎</div><h3>Settings</h3><p>Playing as guest. Your progress is saved on this device.</p></div>
+        <div class="section">
+          <span class="eyebrow">Help</span>
+          <div class="list"><div class="prow hl"><span class="ri">?</span>Hướng dẫn nhanh<span class="chev">›</span></div></div>
+        </div>
+        <div class="section">
+          <span class="eyebrow">Developer</span>
+          <div class="list"><div class="prow"><span class="ri">◐</span>Design System<span style="margin-left:auto;color:var(--text2);font-size:12px">Catalog</span><span class="chev" style="margin-left:6px">›</span></div></div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>4 · Settings</b><br>Bật lại hint rồi mở Workout, back về Settings</figcaption>
+  </figure>
+</div>
+
+<p class="note">
+  <b>Người cũ:</b> máy đã có key <code>daily</code> hoặc <code>progress</code> thì Home giữ nguyên "Stroke · Short", CTA "Start workout", Workout không có hint.<br>
+  <b>Khác bản thật:</b> gauge vẽ lại gần đúng, bàn bi là khối giữ chỗ, mục tiêu cú dùng tạm goal của block.
+</p>
+
+<script>
+  // Gauge nửa vòng: 4 cung vạch như ProgramGauge, chưa vạch nào sáng.
+  (function () {
+    const svg = document.getElementById('gauge');
+    const CX = 150, CY = 156, R_OUT = 140, R_IN = 129, TICKS = 44, GAP = 2, n = 4;
+    const per = Math.round(TICKS / n), slots = n * per + (n - 1) * GAP;
+    let html = '';
+    for (let s = 0, slot = 0; s < n; s++, slot += GAP) {
+      for (let j = 0; j < per; j++, slot++) {
+        const a = Math.PI - ((slot + .5) / slots) * Math.PI;
+        const edge = j === 0 || j === per - 1;
+        const ri = edge ? R_IN - 5 : R_IN;
+        html += `<line x1="${CX + R_OUT * Math.cos(a)}" y1="${CY - R_OUT * Math.sin(a)}" x2="${CX + ri * Math.cos(a)}" y2="${CY - ri * Math.sin(a)}" stroke="${s === 0 && j === 0 ? '#C9A45C' : 'rgba(255,255,255,.18)'}" stroke-width="2.4" stroke-linecap="round"/>`;
+      }
+    }
+    svg.innerHTML = html;
+  })();
+
+  const HINT_PLAY = 'Bấm Play shot để xem đường bi. Chỉ là mô phỏng, chưa tính cú.';
+  const HINT_RECORD = 'Đánh thật trên bàn, rồi ghi Pass hoặc Miss.';
+
+  function hint(text) {
+    return `<div class="hint" role="note"><span class="dot"></span><span class="callout">${text}</span><span class="skip" role="button" aria-label="Bỏ qua hướng dẫn" data-skip>Bỏ qua</span></div>`;
+  }
+
+  function workout(step, shots) {
+    const dots = Array.from({ length: 10 }, (_, i) => `<i class="${shots[i] || ''}"></i>`).join('');
+    return `
+      <div class="head">
+        <span class="eyebrow">Block 1 of 4 · ${shots.length}/120 shots</span>
+        <div class="heroTitle">Stroke · Short</div>
+        <div class="callout">Cue ball returns to the tip</div>
+      </div>
+      <div class="stage">
+        <span class="ball cueball" style="left:30%;top:50%"></span>
+        <span class="path" style="left:30%;top:50%;width:46%"></span>
+        <span class="ball cueball ghostball" style="left:76%;top:50%"></span>
+      </div>
+      <div class="shotcard"><span>Shot · Center</span><span class="mono">${shots.filter(s => s === 'pass').length} of 10</span></div>
+      ${step === 'play' ? hint(HINT_PLAY) : ''}
+      <div class="action graphite" data-play>▶ Play shot</div>
+      <div class="scoreboard"><div class="dots">${dots}</div><span class="mono">Shot ${shots.length + 1} of 10</span></div>
+      ${step === 'record' ? hint(HINT_RECORD) : ''}
+      <div class="pair"><div class="action gold" data-rec="pass">✓ Pass</div><div class="action graphite" data-rec="fail">✕ Miss</div></div>
+      ${shots.length ? '<div class="action graphite" style="height:38px;font-size:11px;letter-spacing:0;text-transform:none">↶ Undo last shot</div>' : ''}`;
+  }
+
+  // Khung 2: cùng máy trạng thái với first-use.ts.
+  let step = 'play', shots = [];
+  const live = document.getElementById('live');
+  function render() { live.innerHTML = workout(step, shots); }
+  live.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-play],[data-rec],[data-skip]');
+    if (!t) return;
+    if (t.dataset.play !== undefined) { if (step === 'play') step = 'record'; }
+    else if (t.dataset.rec) { shots.push(t.dataset.rec); step = 'done'; }
+    else if (t.dataset.skip !== undefined) step = 'done';
+    render();
+  });
+  function resetLive() { step = 'play'; shots = []; render(); }
+  render();
+
+  document.getElementById('recordStatic').innerHTML = workout('record', []);
+</script>
+</body>
+</html>

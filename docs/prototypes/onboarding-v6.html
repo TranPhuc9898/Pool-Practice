@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Onboarding v6</title>
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@900&display=swap" rel="stylesheet" />
+<style>
+/* v6 = không có màn onboarding. Lần đầu mở app vào thẳng cú đầu tiên của Workout,
+   ba gợi ý tại chỗ dạy cách chấm, xong là biến mất. Màu theo lightColors (MONO LIGHT). */
+:root{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,sans-serif;
+  -webkit-font-smoothing:antialiased;font-synthesis:none;
+  --canvas:#E9E9E9;--bg:#F4F4F4;--surface:#FFFFFF;--pressed:#EFEFEF;
+  --ink:#0A0A0A;--ink2:#3A3A3A;--ink3:#6B6B6B;--ink4:#B0B0B0;
+  --line:rgba(10,10,10,.06);--line2:rgba(10,10,10,.12);
+  --gold:#8A6A2A;--inv:#0A0A0A;--inv2:rgba(255,255,255,.62);
+  --shadow:0 1px 2px rgba(10,10,10,.04),0 8px 24px rgba(10,10,10,.06);
+  --felt:#E2E2E2;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--canvas);color:var(--ink)}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.dot{font-family:Doto,ui-monospace,monospace;font-weight:900;letter-spacing:1px}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace}
+
+.page{min-height:100vh;display:grid;grid-template-columns:minmax(280px,470px) auto;gap:clamp(40px,6vw,110px);justify-content:center;align-items:center;padding:48px 56px}
+.side .eyebrow{font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--ink3)}
+.side h1{font-size:clamp(34px,3.4vw,48px);font-weight:600;line-height:1.08;letter-spacing:-.045em;margin:18px 0 16px}
+.side h1 span{color:var(--ink4)}
+.side p{font-size:14px;line-height:1.65;color:var(--ink2);margin:0 0 12px}
+.rows{margin-top:24px;border-top:1px solid var(--line2)}
+.rows div{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--line2);font-size:13px;line-height:1.5;color:var(--ink2)}
+.rows b{flex:0 0 96px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);padding-top:2px}
+.ctrl{display:flex;gap:6px;margin-top:22px;flex-wrap:wrap}
+.ctrl button{border:1px solid var(--line2);background:none;border-radius:8px;padding:7px 10px;font-size:12px;color:var(--ink3)}
+.ctrl button:hover{color:var(--ink);border-color:var(--ink)}
+
+.device{position:relative;width:390px;height:844px;border:8px solid #1b1b1d;border-radius:54px;overflow:hidden;background:var(--bg);box-shadow:0 24px 60px rgba(0,0,0,.12),0 70px 130px rgba(0,0,0,.08)}
+.island{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:108px;height:31px;border-radius:20px;background:#0b0b0c;z-index:30}
+.status{position:absolute;top:19px;left:32px;right:30px;display:flex;justify-content:space-between;font-size:15px;font-weight:600;z-index:29}
+
+.view{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .3s ease}
+.view.on{opacity:1;pointer-events:auto}
+
+/* ---------- workout ---------- */
+.w-top{position:absolute;top:60px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:center}
+.w-top .x{border:0;background:none;font-size:14px;color:var(--ink3);padding:8px 0}
+.w-top .meta{font-size:12px;color:var(--ink3)}
+.w-head{position:absolute;top:104px;left:24px;right:24px}
+.kicker{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3)}
+.w-title{font-size:30px;font-weight:600;letter-spacing:-.035em;margin:8px 0 0;line-height:1.1}
+.stage{position:absolute;top:186px;left:16px;right:16px;background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:10px}
+.stage svg{display:block;width:100%;height:auto}
+.board{position:absolute;left:16px;right:16px;top:548px;background:var(--inv);color:#fff;border-radius:16px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.board .big{font-size:40px;line-height:1}
+.board small{display:block;font-size:10px;letter-spacing:.08em;color:var(--inv2);margin-top:6px;font-weight:600}
+.pips{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;width:150px}
+.pips i{aspect-ratio:1;border-radius:50%;border:1.5px solid rgba(255,255,255,.28)}
+.pips i.p{background:#fff;border-color:#fff}
+.pips i.m{border-color:rgba(255,255,255,.75)}
+.pips i.cur{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.18)}
+.actions{position:absolute;left:16px;right:16px;bottom:34px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{height:56px;border:0;border-radius:14px;background:var(--ink);color:#fff;font-size:16px;font-weight:600}
+.btn:active{background:#262626}
+.btn.ghost{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.btn.ghost:active{background:var(--pressed)}
+.cue-line{font-size:13px;line-height:1.5;color:var(--ink2);position:absolute;left:24px;right:24px;top:494px}
+
+/* gợi ý tại chỗ */
+.hint{position:absolute;left:24px;right:24px;background:var(--ink);color:#fff;border-radius:14px;padding:14px 16px;font-size:14px;line-height:1.45;box-shadow:0 12px 30px rgba(0,0,0,.18);opacity:0;transform:translateY(6px);transition:opacity .25s,transform .3s cubic-bezier(.22,1,.36,1);pointer-events:none;z-index:20}
+.hint.on{opacity:1;transform:none}
+.hint b{font-weight:600}
+.hint .step{display:block;font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.55);margin-bottom:6px;font-weight:600}
+.hint:after{content:"";position:absolute;width:12px;height:12px;background:var(--ink);transform:rotate(45deg)}
+.hint.down:after{bottom:-6px;left:var(--ax,50%)}
+.hint.up:after{top:-6px;left:var(--ax,50%)}
+#h1{top:664px;--ax:72%}
+#h2{top:640px;--ax:72%}
+#h3{top:396px;--ax:30%}
+.ring{position:absolute;border-radius:18px;box-shadow:0 0 0 2px var(--ink),0 0 0 7px rgba(10,10,10,.08);opacity:0;transition:opacity .25s,all .35s cubic-bezier(.22,1,.36,1);pointer-events:none;z-index:19}
+.ring.on{opacity:1}
+
+/* ---------- home khi chưa ở bàn ---------- */
+.h-top{position:absolute;top:66px;left:24px;right:24px}
+.h-title{font-size:34px;color:var(--ink);margin:0}
+.hero{position:absolute;top:130px;left:16px;right:16px;background:var(--surface);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+.hero .mini{background:var(--felt);height:150px;position:relative}
+.hero .mini svg{position:absolute;inset:0;width:100%;height:100%}
+.hero .body{padding:16px 18px 18px}
+.hero .t{font-size:20px;font-weight:600;letter-spacing:-.03em;margin:10px 0 4px}
+.hero .s{font-size:13px;color:var(--ink3);line-height:1.5}
+.hero .btn{width:100%;margin-top:16px}
+.gauge{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px}
+.gauge div{font-size:9px;font-weight:600;letter-spacing:.08em;color:var(--ink3)}
+.gauge div i{display:block;height:4px;border-radius:2px;background:var(--line2);margin-bottom:7px}
+.gauge div.on i{background:var(--ink)}
+.toast{position:absolute;left:16px;right:16px;bottom:40px;background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;font-size:13px;color:var(--ink2);line-height:1.5}
+.toast b{color:var(--ink)}
+
+@media(max-width:920px){.page{display:flex;flex-direction:column;padding:24px 16px 40px;gap:24px}.side{width:min(390px,100%)}}
+@media(max-width:420px){.device{transform:scale(calc((100vw - 32px)/390));transform-origin:top center;margin-bottom:calc(-844px*(1 - ((100vw - 32px)/390)))}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="page">
+  <section class="side">
+    <div class="eyebrow">Onboarding v6 · hướng khác</div>
+    <h1>Không có onboarding.<br><span>Cú đầu tiên là onboarding.</span></h1>
+    <p>Lần đầu mở app, người chơi đứng ngay trước cú số 1 của Workout. Không hỏi đang ở bàn hay không, không có set baseline. Ba gợi ý tại chỗ dạy cách chấm điểm rồi biến mất.</p>
+    <p>Bỏ được set baseline vì <span class="mono">ladderOf</span> đã tự suy mức từ mọi cú Workout. Mười cú Stop đầu tiên trong Workout tự xếp level, y như mười cú warm-up của v3.</p>
+    <div class="rows">
+      <div><b>Màn mới</b><span>Không có. Chỉ thêm lớp gợi ý đè lên màn Workout và một dòng trên hero Home.</span></div>
+      <div><b>Lưu</b><span>Một cờ <span class="mono">hintsSeen</span>. Không cần <span class="mono">baseline</span>, không đổi <span class="mono">ladderOf</span>.</span></div>
+      <div><b>Chưa ở bàn</b><span>Đóng gợi ý là về Home. Hero vẫn chỉ vào cú số 1, gợi ý chờ tới lần mở Workout sau.</span></div>
+      <div><b>Đánh đổi</b><span>Mất màn chào và câu "Your Stop block starts at…". Người chơi giỏi phải đánh vài cú Stop ở 1 diamond trước khi ladder đẩy lên.</span></div>
+    </div>
+    <div class="ctrl">
+      <button id="r-first">Lần đầu mở app</button>
+      <button id="r-home">Chưa ở bàn → Home</button>
+    </div>
+  </section>
+
+  <div class="device">
+    <div class="island"></div>
+    <div class="status"><span>9:41</span><span class="mono" style="font-size:12px">●●● ▮</span></div>
+
+    <!-- Workout, lần đầu -->
+    <section class="view on" id="workout">
+      <div class="w-top"><button class="x" id="not-table">Not at a table</button><span class="meta mono" id="w-total">0 / 120</span></div>
+      <div class="w-head">
+        <div class="kicker">Block 1 of 4 · Stroke</div>
+        <h2 class="w-title">Up the table<br>and back.</h2>
+      </div>
+      <div class="stage">
+        <svg viewBox="0 0 340 260" aria-hidden="true">
+          <rect x="4" y="4" width="332" height="252" rx="12" fill="var(--felt)"/>
+          <rect x="18" y="18" width="304" height="224" rx="4" fill="none" stroke="rgba(10,10,10,.12)"/>
+          <g fill="#0A0A0A"><circle cx="18" cy="18" r="7"/><circle cx="322" cy="18" r="7"/><circle cx="18" cy="130" r="7"/><circle cx="322" cy="130" r="7"/><circle cx="18" cy="242" r="7"/><circle cx="322" cy="242" r="7"/></g>
+          <line x1="170" y1="214" x2="170" y2="26" stroke="#8A6A2A" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <path d="M176 30 L176 210" stroke="rgba(10,10,10,.18)" stroke-dasharray="2 5"/>
+          <rect x="164" y="226" width="12" height="40" rx="3" fill="#0A0A0A" opacity=".75"/>
+          <circle id="cue" cx="170" cy="210" r="8" fill="#fff" stroke="rgba(0,0,0,.3)"/>
+        </svg>
+      </div>
+      <p class="cue-line" id="cue-line">Center ball, smooth stroke. Pass if it comes back and touches your cue tip.</p>
+      <div class="board">
+        <div><span class="dot big" id="passed">0</span><small>PASSED · NEED 7</small></div>
+        <div class="pips" id="pips"></div>
+      </div>
+      <div class="actions"><button class="btn ghost" id="miss">Miss</button><button class="btn" id="pass">Pass</button></div>
+
+      <div class="ring" id="ring"></div>
+      <div class="hint down" id="h1"><span class="step">1 / 3</span><b>Shoot it on your table.</b> Then tap Pass or Miss. You're the referee.</div>
+      <div class="hint up" id="h2"><span class="step">2 / 3</span><b>Every tap lands here.</b> Seven of ten clears the set.</div>
+      <div class="hint down" id="h3"><span class="step">3 / 3</span><b>Stop, Follow and Draw move by diamonds.</b> Pass two in a row and the ball moves back one. That's the whole app.</div>
+    </section>
+
+    <!-- Home khi bấm Not at a table -->
+    <section class="view" id="home">
+      <div class="h-top"><h1 class="dot h-title">TODAY</h1></div>
+      <div class="hero">
+        <div class="mini"><svg viewBox="0 0 340 150" preserveAspectRatio="none" aria-hidden="true"><line x1="170" y1="130" x2="170" y2="18" stroke="#8A6A2A" stroke-width="1.5" stroke-dasharray="3 5"/><circle cx="170" cy="126" r="8" fill="#fff" stroke="rgba(0,0,0,.3)"/></svg></div>
+        <div class="body">
+          <div class="kicker">Today's workout · <span class="mono">0 / 120</span></div>
+          <div class="t">Your first shot is set up.</div>
+          <div class="s">Open it at the table. The app shows you how scoring works on the first three taps.</div>
+          <div class="gauge"><div><i></i>STROKE</div><div><i></i>STOP</div><div><i></i>FOLLOW</div><div><i></i>DRAW</div></div>
+          <button class="btn" id="open-w">Start workout</button>
+        </div>
+      </div>
+      <div class="toast"><b>Nothing to set up.</b> Your Stop, Follow and Draw distances adjust from the shots you play.</div>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  let shots = [], hint = 0, hintsSeen = false;
+
+  const targets = {
+    1: () => $('.actions'),
+    2: () => $('.board'),
+    3: () => $('.cue-line')
+  };
+
+  function place(){
+    ['h1','h2','h3'].forEach((id,k) => $('#'+id).classList.toggle('on', hint === k + 1));
+    const ring = $('#ring');
+    if (!hint) { ring.classList.remove('on'); return; }
+    const t = targets[hint](), dev = $('.device').getBoundingClientRect(), r = t.getBoundingClientRect();
+    const s = dev.width / 390;
+    Object.assign(ring.style, {
+      left: (r.left - dev.left) / s - 8 + 'px', top: (r.top - dev.top) / s - 8 + 'px',
+      width: r.width / s + 16 + 'px', height: r.height / s + 16 + 'px'
+    });
+    ring.classList.add('on');
+  }
+
+  function render(){
+    const n = shots.length;
+    $('#passed').textContent = shots.filter(Boolean).length;
+    $('#w-total').textContent = n + ' / 120';
+    $('#pips').innerHTML = Array.from({length:10}, (_,k) =>
+      `<i class="${k < n ? (shots[k] ? 'p' : 'm') : (k === n ? 'cur' : '')}"></i>`).join('');
+    place();
+  }
+
+  function roll(ok){
+    const c = $('#cue');
+    c.animate([{cy:210},{cy:34},{cy: ok ? 210 : 180}], {duration:900, easing:'cubic-bezier(.3,.6,.3,1)', fill:'forwards'});
+  }
+
+  function shoot(ok){
+    if (shots.length >= 10) return;
+    shots.push(ok); roll(ok);
+    if (!hintsSeen) { hint++; if (hint > 3) { hint = 0; hintsSeen = true; } }
+    render();
+  }
+  // gợi ý 3 tắt ở cú thứ 4, hoặc chạm vào nó
+  $('#h3').style.pointerEvents = 'auto';
+  $('#h3').addEventListener('click', () => { hint = 0; hintsSeen = true; render(); });
+
+  $('#pass').addEventListener('click', () => shoot(true));
+  $('#miss').addEventListener('click', () => shoot(false));
+
+  function view(id){ document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === id)); }
+  function first(){ shots = []; hintsSeen = false; hint = 1; view('workout'); render(); }
+  $('#not-table').addEventListener('click', () => { hint = 0; render(); view('home'); });
+  $('#open-w').addEventListener('click', () => { view('workout'); if (!hintsSeen) hint = Math.max(hint, 1); render(); });
+  $('#r-first').addEventListener('click', first);
+  $('#r-home').addEventListener('click', () => { hint = 0; render(); view('home'); });
+  window.addEventListener('resize', place);
+  first();
+})();
+</script>
+</body>
+</html>

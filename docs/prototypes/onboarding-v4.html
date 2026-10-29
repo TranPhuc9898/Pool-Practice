@@ -1,0 +1,1384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onboarding v4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Doto:wght@900&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap" rel="stylesheet">
+<!--
+  Prototype onboarding v3, rẽ nhánh như v2, chỉ còn kiểu Minimal:
+    Value → Đang ở bàn? → (ở bàn) Sắp bàn → Set khởi động 10 cú → Kết quả
+                        → (chưa)  Demo chấm Pass/Miss
+  Minimal: tiêu đề serif, phẳng, kẻ mảnh, nút chữ nhật, lưới chấm, một khối lớn tràn mép. Bảng màu app (nền đen, vàng).
+  Bàn, bi, cơ: hằng số chép từ modules/pool-table/ios (PoolTableGeometry, PoolTableTheme, PoolTableSurface,
+  PoolBallSphere, PoolCueRenderer). Thế bi, zone, khoảng cách theo diamond: src/pool-engine/drills/02-stop.ts.
+  Ladder 2-down-1-up: src/pool-engine/workout.ts.
+-->
+<style>
+:root{
+  --bg:#000;
+  --text:#FFFFFF; --text2:#BDBDBD; --text3:#8A8A8A;
+  --accent-gold:#C9A45C;          /* accentGold: chữ Doto */
+  --gold:#D8B451;                 /* HOME_GOLD: vạch tiến độ, marker gauge */
+  --ink:#ECEAEE;
+  --tick-off:rgba(255,255,255,.12);
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --ts:1; --gutter:20px; --safe-top:62px; --safe-bottom:34px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0A0A0A;color:var(--text);font-family:'Be Vietnam Pro',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+h1:focus{outline:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- Khung prototype (ngoài điện thoại) ---------- */
+.bench{display:flex;flex-direction:column;height:100%}
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:center;padding:10px 16px;border-bottom:1px solid #1A1A1A;font-size:13px;color:#9A9A9A}
+.ctl{display:flex;align-items:center;gap:8px}
+.seg{display:flex;background:#151515;border-radius:9px;padding:2px}
+.seg button{padding:6px 10px;border-radius:7px;font-size:12px;font-weight:500;color:#9A9A9A}
+.seg button[aria-pressed="true"]{background:#2A2A2A;color:#fff}
+.stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden}
+.fit{position:relative}
+
+/* ---------- Điện thoại ---------- */
+.phone{position:absolute;left:0;top:0;transform-origin:0 0;background:var(--bg);overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 0 0 10px #161616,0 0 0 11px #2A2A2A,0 30px 80px rgba(0,0,0,.6)}
+.phone[data-device="max"]{width:440px;height:956px;border-radius:56px}
+.phone[data-device="se"]{width:375px;height:667px;border-radius:6px}
+.status{flex:0 0 var(--safe-top);display:flex;align-items:flex-end;justify-content:space-between;padding:0 30px 14px 46px;font:600 17px/1 -apple-system,system-ui,sans-serif}
+.phone[data-device="se"] .status{padding:0 8px 4px 8px;font-size:12px;align-items:center}
+.status .icons{display:flex;gap:6px;align-items:center}
+.home-ind{position:absolute;left:50%;bottom:8px;width:140px;height:5px;margin-left:-70px;border-radius:3px;background:#fff;pointer-events:none;z-index:5}
+.phone[data-device="se"] .home-ind{display:none}
+
+/* ---------- Chữ: token typography, nhân min(cỡ chữ hệ thống, maxScale) ---------- */
+.t{font-size:calc(var(--fs) * min(var(--ts), var(--mx)) * 1px);line-height:calc(var(--lh) * min(var(--ts), var(--mx)) * 1px);margin:0}
+.t-brand{--fs:22;--lh:26;--mx:1.3;font-family:Doto,monospace;font-weight:900;letter-spacing:1px}
+.t-title{--fs:var(--title-fs);--lh:var(--title-lh);--mx:1.4;font-family:var(--title-font);font-weight:var(--title-weight);letter-spacing:var(--title-ls);text-wrap:balance}
+.t-bodyLarge{--fs:17;--lh:24;--mx:2;font-weight:400}
+.t-body{--fs:15;--lh:21;--mx:2;font-weight:400}
+.t-callout{--fs:14;--lh:19;--mx:2;font-weight:500}
+.t-caption{--fs:13;--lh:17;--mx:2;font-weight:400;letter-spacing:.1px}
+.t-eyebrow{--fs:12;--lh:16;--mx:1.6;font-weight:600;letter-spacing:.9px;text-transform:uppercase}
+.t-label{--fs:11;--lh:14;--mx:1.6;font-weight:500;letter-spacing:1.6px;text-transform:uppercase}
+.t-monoSmall{--fs:11;--lh:14;--mx:1.6;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-weight:500;letter-spacing:.4px}
+.t-tileTitle{--fs:17;--lh:21;--mx:1.6;font-weight:500;letter-spacing:-.1px}
+.t-button{--fs:15;--lh:20;--mx:1.6;font-weight:600;letter-spacing:1.2px;text-transform:uppercase}
+.c2{color:var(--text2)}.c3{color:var(--text3)}.cg{color:var(--accent-gold)}
+
+/* ---------- Minimal: nền đen, chữ trắng ngà, vàng tối đa 3 chỗ mỗi màn ---------- */
+.phone{--title-font:'Newsreader',Georgia,serif;--title-weight:500;--title-ls:-.2px;--title-fs:31;--title-lh:35;
+  --btn-r:2px;--line:rgba(255,255,255,.14)}
+.hl{font-style:italic}
+.card{border:1px solid var(--line);border-radius:2px}
+
+/* ---------- Header: back · tiến độ · Skip ---------- */
+.head{display:grid;grid-template-columns:minmax(44px,1fr) auto minmax(44px,1fr);align-items:center;min-height:48px;padding:0 calc(var(--gutter) - 8px)}
+.head .back,.head .skip{min-height:44px;min-width:44px;display:flex;align-items:center;transition:opacity .2s ease-out}
+.head .back{justify-content:flex-start}
+.head .skip{justify-content:flex-end;justify-self:end;padding:0 8px;color:var(--text2)}
+.head [data-hidden="true"]{opacity:0;pointer-events:none;visibility:hidden}
+.back .disc{display:grid;place-items:center;width:28px;height:40px}
+.prog .num{display:block;color:var(--text2)}
+
+/* ---------- Màn ---------- */
+.screens{position:relative;flex:1;min-height:0}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;visibility:hidden;transform:translateX(24px);
+  transition:opacity .28s var(--ease-out),transform .32s var(--ease-out),visibility 0s linear .32s}
+.scr.now{opacity:1;visibility:visible;transform:none;transition:opacity .28s var(--ease-out),transform .32s var(--ease-out),visibility 0s}
+.body{container-type:inline-size;flex:1;min-height:0;overflow-y:auto;padding:8px var(--gutter) 16px;display:flex;flex-direction:column;gap:16px;scrollbar-width:none}
+.body::-webkit-scrollbar{display:none}
+.copy{display:flex;flex-direction:column;gap:8px}
+.foot{position:relative;padding:12px var(--gutter) max(calc(var(--safe-bottom) + 8px),16px);display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.foot::before{content:"";position:absolute;left:0;right:0;top:-24px;height:24px;background:linear-gradient(rgba(0,0,0,0),#000);pointer-events:none}
+.bleed{margin-left:calc(-1 * var(--gutter));margin-right:calc(-1 * var(--gutter))}
+/* Art lấy phần cao còn lại. Máy thấp hoặc chữ to thì art về --art-min và màn cuộn. */
+.art{position:relative;flex:1 0 var(--art-min,170px)}
+.art canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.row-between{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap}
+
+/* ---------- Nút ---------- */
+.btn{min-height:56px;border-radius:var(--btn-r);display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 18px;transition:transform .12s var(--ease-out),opacity .2s ease-out}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.3;pointer-events:none}
+.btn-text{min-height:44px;color:var(--text2)}
+.btn-primary{background:var(--ink);color:#000}
+.btn-gold{background:var(--gold);color:#000}
+.btn-line{box-shadow:inset 0 0 0 1px rgba(236,234,238,.45);color:var(--text)}
+.row2{display:flex;gap:12px}
+.row2 .btn{flex:1}
+/* Pass và Miss nặng ngang nhau để giao diện không lái người chấm. Khác nhau ở hình: chấm đặc, vòng rỗng. */
+.pm .ic{width:14px;height:14px;border-radius:50%;flex:0 0 auto}
+.pm .ic.fill{background:var(--ink)}
+.pm .ic.ring{box-shadow:inset 0 0 0 1.75px var(--ink)}
+
+/* ---------- Điểm, dải 10 cú ---------- */
+.score{display:flex;align-items:flex-end;justify-content:space-between;gap:8px 12px;flex-wrap:wrap}
+.nums{display:flex;align-items:flex-end;gap:6px}
+.shots{display:flex;justify-content:space-between;gap:4px}
+.shot{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.shot i{display:block;border-radius:50%;transition:all .16s var(--ease-out)}
+.shot[data-s="todo"] i{width:6px;height:6px;background:var(--tick-off)}
+.shot[data-s="next"] i{width:14px;height:14px;box-shadow:inset 0 0 0 1.5px var(--gold)}
+.shot[data-s="pass"] i{width:14px;height:14px;background:var(--ink)}
+.shot[data-s="miss"] i{width:14px;height:14px;box-shadow:inset 0 0 0 1.5px var(--ink)}
+
+/* ---------- 1 · Value ---------- */
+.scr[data-id="value"] .body{padding-top:0}
+.art-value{--art-min:190px}
+.art-value canvas{-webkit-mask-image:linear-gradient(#000 80%,transparent);mask-image:linear-gradient(#000 80%,transparent)}
+.art-cap{position:absolute;left:var(--gutter);bottom:6px;margin:0}
+
+/* ---------- 2 · Đang ở bàn? ---------- */
+.art-ask{--art-min:140px}
+.art-ask::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(255,255,255,.17) .9px,transparent 1.3px);background-size:11px 11px;
+  -webkit-mask-image:radial-gradient(ellipse 70% 70% at 70% 50%,#000 30%,transparent 75%);mask-image:radial-gradient(ellipse 70% 70% at 70% 50%,#000 30%,transparent 75%)}
+.choices{display:flex;flex-direction:column}
+.choice{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;text-align:left;padding:16px 0;min-height:72px;
+  border:0;border-top:1px solid var(--line);border-radius:0;transition:transform .12s var(--ease-out)}
+.choice:last-child{border-bottom:1px solid var(--line)}
+.choice:active{transform:scale(.98)}
+.choice .txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.choice .ic{width:12px;height:12px;border-radius:50%;background:var(--ink)}
+.choice .ic.ring{background:none;box-shadow:inset 0 0 0 1.5px var(--ink)}
+
+/* ---------- 3a · Sắp bàn ---------- */
+.art-crop{--art-min:170px}
+.checks{list-style:none;margin:0;padding:0;border:0}
+.check{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;text-align:left;padding:12px 0;min-height:56px;border-top:1px solid var(--line)}
+.checks li:last-child .check{border-bottom:1px solid var(--line)}
+.check .txt{display:flex;flex-direction:column;gap:2px}
+.check .num{color:var(--text3);align-self:start;padding-top:3px}
+.box{width:24px;height:24px;display:grid;place-items:center;box-shadow:inset 0 0 0 1.5px rgba(236,234,238,.6)}
+.box svg{opacity:0;transition:opacity .16s ease-out}
+.check[aria-pressed="true"] .box{background:var(--ink);box-shadow:none}
+.check[aria-pressed="true"] .box svg{opacity:1}
+
+/* ---------- 4a · Set khởi động ---------- */
+/* Mức diamond nằm trên dòng meta, không đè lên bàn: crop rộng thì lỗ góc trên phải lộ ra ở đúng chỗ tag cũ. */
+.meta{display:flex;align-items:center;gap:10px}
+.tag{margin:0;padding:3px 7px;border-radius:2px;box-shadow:inset 0 0 0 1px var(--line);color:var(--text2);transition:color .3s ease-out,box-shadow .3s ease-out}
+.tag.bump{color:var(--gold);box-shadow:inset 0 0 0 1px rgba(216,180,81,.7)}
+
+/* ---------- 5a · Kết quả ---------- */
+.gauge-card{padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px}
+.gauge{position:relative;width:100%;max-width:300px;margin:0 auto;aspect-ratio:300/162}
+.gauge > svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.gauge .mid{position:absolute;left:0;right:0;bottom:2%;display:flex;flex-direction:column;align-items:center;gap:8px}
+.legend{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center;color:var(--text3)}
+.legend .now{color:var(--text)}
+.notif{padding:16px;display:flex;flex-direction:column;gap:12px}
+.notif .row2 .btn{min-height:48px}
+.notif[data-s] .row2{display:none}
+
+/* ---------- 3b · Demo ---------- */
+.demo-card{display:flex;flex-direction:column;overflow:hidden;flex:1 0 auto}
+.demo-card .art{--art-min:130px}
+.demo-in{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}
+
+/* ---------- Màn kết của prototype ---------- */
+.end{position:absolute;inset:0;z-index:4;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:0 32px;text-align:center;opacity:0;pointer-events:none;transition:opacity .24s ease-out}
+.end.show{opacity:1;pointer-events:auto}
+.end .btn{min-width:200px}
+.end .t-brand{--fs:44;--lh:46;--mx:1.2}
+
+.reduced *{transition-duration:0s!important}
+.reduced .scr{transition:none!important;transform:none!important}
+
+/* ================= v4: onboarding như khi đã vào app =================
+   Stage cả bàn như màn Workout (PoolEditorView stageOnly), nút GoldAction / GraphiteAction, ShotCard, Scoreboard,
+   ProgramGauge, HeroCard, ProgramBento đều restyle từ src/components và src/design-system/tokens (homeSurfaces).
+   Hai lớp màn: data-layer="ob" (onboarding, có header tiến độ) và "app" (Home, Workout, Settings mock). */
+.scr[data-id="value"] .body{padding-top:8px}
+.phone[data-layer="app"] .head{display:none}
+.ink{color:var(--ink)}
+.mt{color:rgba(236,234,238,.58)}
+.one{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-btn{--fs:15;--lh:20;--mx:1.6;font-weight:600}
+.t-heroTitle{--fs:26;--lh:31;--mx:1.4;font-weight:500;letter-spacing:-.4px}
+.t-title1{--fs:28;--lh:32;--mx:1.6;font-weight:600;letter-spacing:-.6px}
+.t-lt{--fs:34;--lh:41;--mx:1.4;font-family:Doto,monospace;font-weight:900;letter-spacing:1px;color:var(--accent-gold)}
+
+/* ---------- homeSurfaces ---------- */
+.s-hero{background-color:#0E0E0E;background-image:radial-gradient(ellipse 320px 260px at 100% 100%,rgba(216,180,81,.30) 0%,rgba(216,180,81,.09) 42%,rgba(216,180,81,0) 100%),radial-gradient(ellipse 240px 200px at 0% 0%,rgba(255,255,255,.06),transparent),linear-gradient(170deg,#161616 0%,#0E0E0E 50%,#090909 100%);
+  box-shadow:inset 0 1.5px 1px rgba(255,255,255,.12),inset 0 -3px 10px rgba(0,0,0,.45),inset 0 0 28px rgba(255,255,255,.025),inset 0 0 0 .5px rgba(255,255,255,.035),0 18px 36px rgba(0,0,0,.6)}
+.s-cta{background:linear-gradient(180deg,#DDB955,#C29C40);box-shadow:inset 0 1px 0 rgba(255,255,255,.32),inset 0 -1px 0 rgba(0,0,0,.18),0 10px 24px rgba(216,180,81,.10)}
+.s-graphite{background-color:#121212;background-image:radial-gradient(ellipse 170px 140px at 18% 8%,rgba(255,255,255,.07),transparent 72%),linear-gradient(160deg,#1D1D1D,#121212 55%,#0A0A0A);
+  box-shadow:inset 0 1.5px 1px rgba(255,255,255,.13),inset 0 -3px 10px rgba(0,0,0,.45),inset 0 0 28px rgba(255,255,255,.03),inset 0 0 0 .5px rgba(255,255,255,.035),0 14px 28px rgba(0,0,0,.55)}
+.s-quick{background-color:#0F0F0F;background-image:radial-gradient(ellipse 120px 90px at 0% 0%,rgba(255,255,255,.06),transparent 70%),linear-gradient(160deg,#171717,#0F0F0F 55%,#0A0A0A);
+  box-shadow:inset 0 1.5px 1px rgba(255,255,255,.11),inset 0 -3px 10px rgba(0,0,0,.45),inset 0 0 28px rgba(255,255,255,.025),inset 0 0 0 .5px rgba(255,255,255,.035),0 14px 28px rgba(0,0,0,.55)}
+.s-purple{background-color:#18101B;background-image:radial-gradient(ellipse 210px 170px at 0% 0%,rgba(150,98,160,.42),transparent 70%),radial-gradient(ellipse 200px 180px at 100% 100%,rgba(92,48,104,.35),transparent 70%),linear-gradient(150deg,#2B1C30,#18101B 55%,#0E0A10);
+  box-shadow:inset 0 1.5px 1px rgba(232,196,240,.26),inset 0 -3px 10px rgba(0,0,0,.45),inset 0 0 28px rgba(140,88,152,.24),inset 0 0 0 .5px rgba(255,255,255,.035)}
+.s-indigo{background-color:#0C0C17;background-image:radial-gradient(ellipse 240px 150px at 50% 120%,rgba(88,84,176,.5) 0%,rgba(60,54,130,.18) 55%,transparent 82%),linear-gradient(180deg,#08080F,#10101F);
+  box-shadow:inset 0 1.5px 1px rgba(196,192,255,.22),inset 0 -3px 10px rgba(0,0,0,.45),inset 0 0 28px rgba(96,90,190,.22),inset 0 0 0 .5px rgba(255,255,255,.035)}
+
+/* ---------- Nút app: PrimaryButton, GhostButton, GoldAction, GraphiteAction ---------- */
+.btn-app{min-height:52px;border-radius:12px;padding:0 24px;background:#FFFFFF;color:#000;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s var(--ease-out),opacity .2s ease-out}
+.btn-app:active{transform:scale(.97)}
+.btn-app:disabled{opacity:.3;pointer-events:none}
+.btn-ghost{min-height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text2)}
+.ghost-w{min-height:52px;color:#fff}
+.act{position:relative;overflow:hidden;min-height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 18px;
+  transition:transform .12s var(--ease-out),opacity .2s ease-out,filter .2s ease-out}
+.act:active,.act.press{transform:scale(.97)}
+.act.press{filter:brightness(1.3);outline:2px solid rgba(255,255,255,.7);outline-offset:2px}
+.act:disabled{opacity:.35;pointer-events:none}
+.act-gold{background:linear-gradient(180deg,#DDB955,#C29C40);box-shadow:inset 0 1px 0 rgba(255,255,255,.32),inset 0 -1px 0 rgba(0,0,0,.18),0 10px 24px rgba(216,180,81,.10);color:#0A0A0A}
+.act-graphite{background-color:#0F0F0F;background-image:radial-gradient(ellipse 120px 90px at 0% 0%,rgba(255,255,255,.06),transparent 70%),linear-gradient(160deg,#171717,#0F0F0F 55%,#0A0A0A);
+  box-shadow:inset 0 1.5px 1px rgba(255,255,255,.11),inset 0 -3px 10px rgba(0,0,0,.45),inset 0 0 28px rgba(255,255,255,.025),inset 0 0 0 .5px rgba(255,255,255,.035),0 14px 28px rgba(0,0,0,.55);color:#fff}
+.row2 .act{flex:1}
+div.act{pointer-events:none}
+/* SheenSweep: vệt sáng chạy ngang mỗi 3,6 s, tắt khi Reduce Motion */
+.sheen::after{content:"";position:absolute;inset:0;pointer-events:none;transform:translateX(-100%);animation:sheen 3600ms ease-in-out infinite;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.08) 30%,rgba(255,255,255,.28) 47%,rgba(216,180,81,.4) 51%,rgba(255,255,255,.1) 66%,transparent 100%)}
+@keyframes sheen{0%{transform:translateX(-100%)}45%,100%{transform:translateX(100%)}}
+.reduced .sheen::after{animation:none;opacity:0}
+
+/* ---------- Stage: bàn dọc nửa trái, hai ô Aim / Thickness nửa phải, khe 12 (stage.ts) ---------- */
+.stagebox{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:0 0 auto}
+.stagebox .tbl{position:relative;aspect-ratio:61/111}
+.stagebox canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.tiles{display:grid;grid-template-rows:1fr 1fr;gap:12px;min-height:0}
+.tile{position:relative;border-radius:20px;overflow:hidden;background:#0D1820;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.1)}
+.tile::after{content:"";position:absolute;left:0;right:0;bottom:0;height:64px;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.62));pointer-events:none}
+.tcap{position:absolute;left:12px;right:12px;bottom:10px;z-index:1}
+.tcap p{margin:0;font-family:-apple-system,'SF Pro Text',system-ui,sans-serif}
+.tcap .tt{font-size:13px;line-height:16px;font-weight:600;color:#fff}
+.tcap .tv{font-size:12px;line-height:15px;font-weight:500;color:rgba(235,235,245,.7)}
+.tile .exp{position:absolute;right:8px;top:8px;z-index:1;width:24px;height:24px;border-radius:12px;background:rgba(0,0,0,.38);display:grid;place-items:center}
+
+/* ---------- ShotCard (drill-ui.tsx) ---------- */
+.shotcard{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:18px}
+.face{position:relative;flex:0 0 64px;width:64px;height:64px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 35% 30%,#FFF 0%,#E9E7EA 45%,#B9B6BC 100%)}
+.face i{position:absolute;display:block}
+.face .fr{left:16px;top:16px;width:32px;height:32px;border-radius:50%;border:1px dashed rgba(0,0,0,.28)}
+.face .fx{left:0;right:0;top:31.5px;height:1px;background:rgba(0,0,0,.1)}
+.face .fy{top:0;bottom:0;left:31.5px;width:1px;background:rgba(0,0,0,.1)}
+.face .fd{width:12px;height:12px;border-radius:50%;background:var(--gold);border:1.5px solid #0A0A0A}
+.scm{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.bars{display:flex;gap:3px;margin:2px 0}
+.bars i{width:14px;height:5px;border-radius:2.5px;background:var(--tick-off)}
+.bars i.on{background:var(--gold)}
+.scp{align-self:stretch;display:flex;flex-direction:column;justify-content:center;gap:4px;padding-left:14px;border-left:1px solid rgba(255,255,255,.08)}
+
+/* ---------- Scoreboard + DotProgress ---------- */
+.board{display:flex;align-items:center;gap:16px;border-radius:22px;padding:18px}
+.board .bl{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.board .br{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.dprog{display:flex;flex-wrap:wrap;gap:6px}
+.dprog i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.16)}
+.dprog i[data-s="pass"]{background:#fff}
+.dprog i[data-s="miss"]{background:none;box-shadow:inset 0 0 0 1.5px #fff}
+
+/* ---------- Màn onboarding ---------- */
+.w-head{display:flex;flex-direction:column;gap:8px}
+.hc{border-radius:24px;padding:18px 20px 20px;display:flex;flex-direction:column;gap:6px}
+.hc-eye{letter-spacing:1.2px}
+.hc-text{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:18px;text-align:center}
+.hc-sub{color:rgba(236,234,238,.55);max-width:300px}
+.hc-cta{position:relative;overflow:hidden;min-height:56px;border-radius:14px;margin-top:12px;color:#0A0A0A;display:flex;align-items:center;justify-content:center;transition:transform .12s var(--ease-out)}
+.hc-cta:active{transform:scale(.97)}
+.gauge .mid{bottom:3%;gap:12px}
+
+/* ---------- App: nav bar, Home, bento, tab bar, Settings ---------- */
+.nav{flex:0 0 auto;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px;min-height:52px;padding:4px calc(var(--gutter) - 4px)}
+.nav-title{margin:0;text-align:center;font:600 17px/22px -apple-system,'SF Pro Text',system-ui,sans-serif;color:#fff}
+.glass{width:44px;height:44px;border-radius:22px;display:grid;place-items:center;background:rgba(255,255,255,.09);backdrop-filter:blur(12px);
+  box-shadow:inset 0 0 0 .5px rgba(255,255,255,.16),0 4px 12px rgba(0,0,0,.4)}
+.app-body{gap:24px;padding-bottom:calc(var(--safe-bottom) + 24px)}
+.home-body{gap:24px;padding-bottom:calc(var(--safe-bottom) + 104px)}
+.home-body .t-lt{margin-bottom:-16px}
+.blk{display:flex;flex-direction:column;gap:12px}
+.bento{display:flex;flex-direction:column;gap:12px}
+.b-row{display:flex;gap:12px}
+.b-right{flex:1.35;min-width:0;display:flex;flex-direction:column;gap:12px}
+.tile2{border-radius:22px;overflow:hidden}
+.cbc{flex:1;min-width:0;aspect-ratio:.76;padding:18px;display:flex;flex-direction:column;justify-content:space-between}
+.big{position:relative;display:flex;align-items:center;justify-content:center;padding:18px 0}
+.side{position:absolute;bottom:0;right:0;color:rgba(236,234,238,.32)}
+.track{position:relative;height:14px;display:flex;align-items:center;justify-content:space-between;padding:0 2px}
+.track i{width:1.5px;height:1.5px;border-radius:1px;background:rgba(255,255,255,.38)}
+.tlabels{display:flex;justify-content:space-between;margin-top:4px;color:rgba(236,234,238,.32)}
+.pill{flex:1;min-height:100px;display:flex;align-items:center;gap:12px;padding:12px 12px 12px 18px}
+.pill.wide{flex:0 0 auto;padding-right:18px}
+.ptext{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ptext > *{display:block}
+.knob{flex:0 0 26px;width:26px;height:26px;border-radius:13px;background:#D9D7DE;display:grid;place-items:center}
+.ring54{flex:0 0 54px;width:54px;height:54px;border-radius:27px;border:1px dashed rgba(255,255,255,.22);display:grid;place-items:center}
+.cap{flex:0 0 auto;height:32px;border-radius:16px;display:flex;align-items:center;gap:6px;padding:0 10px 0 3px;background:rgba(255,255,255,.07)}
+.cap .t{letter-spacing:.8px;color:#fff}
+.phone[data-stacked="true"] .b-row{flex-direction:column}
+.phone[data-stacked="true"] .cbc{aspect-ratio:auto;min-height:220px;gap:16px}
+.phone[data-stacked="true"] .b-right{flex:0 0 auto}
+.tabbar{position:absolute;left:21px;right:21px;bottom:max(calc(var(--safe-bottom) - 8px),8px);z-index:3;height:62px;border-radius:31px;display:flex;padding:4px;
+  background:rgba(28,28,30,.72);backdrop-filter:blur(20px) saturate(1.4);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.16),0 8px 24px rgba(0,0,0,.5)}
+.tab{flex:1;border-radius:27px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:rgba(235,235,245,.6);font:600 10px/12px -apple-system,system-ui,sans-serif}
+.tab.on{background:rgba(255,255,255,.1);color:#fff}
+.ph{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:16px 8px 8px}
+.group{display:flex;flex-direction:column;gap:8px}
+.gh{padding-left:16px}
+.list{border-radius:16px;background:#161616;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.06);overflow:hidden}
+.row{width:100%;display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 16px;text-align:left}
+button.row:active{background:#1F1F1F}
+.row .grow{flex:1;min-width:0}
+.ri{flex:0 0 28px;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:#2A2A2A}
+.toast{position:absolute;left:16px;right:16px;bottom:calc(var(--safe-bottom) + 84px);z-index:6;max-width:340px;margin:0 auto;padding:12px 16px;border-radius:16px;
+  background:rgba(40,40,40,.94);backdrop-filter:blur(16px);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.14),0 10px 30px rgba(0,0,0,.5);
+  color:#fff;font:500 14px/19px 'Be Vietnam Pro',system-ui,sans-serif;text-align:center;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s ease-out,transform .2s var(--ease-out)}
+.toast.show{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<div class="bench">
+  <div class="controls" role="toolbar" aria-label="Prototype controls">
+    <div class="ctl">Máy
+      <div class="seg" data-ctl="device">
+        <button data-v="se">SE · 375×667</button>
+        <button data-v="max" aria-pressed="true">Pro Max · 440×956</button>
+      </div>
+    </div>
+    <div class="ctl">Cỡ chữ
+      <div class="seg" data-ctl="ts">
+        <button data-v="1" aria-pressed="true">Mặc định</button>
+        <button data-v="1.353">xxxL</button>
+        <button data-v="3.12">AX5</button>
+      </div>
+    </div>
+    <div class="ctl">Reduce Motion
+      <div class="seg" data-ctl="motion">
+        <button data-v="off" aria-pressed="true">Tắt</button>
+        <button data-v="on">Bật</button>
+      </div>
+    </div>
+    <div class="ctl">Nhảy tới
+      <div class="seg" id="jump">
+        <button data-v="value">1</button>
+        <button data-v="ask">2</button>
+        <button data-v="setup">3a</button>
+        <button data-v="result">4a</button>
+        <button data-v="demo">3b</button>
+        <button data-v="home">Home</button>
+        <button data-v="workout">Workout</button>
+        <button data-v="settings">Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="fit" id="fit">
+      <div class="phone" id="phone" data-device="max" data-layer="ob">
+        <div class="status" aria-hidden="true">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="#fff"><path d="M8 2.2c2.3 0 4.4.9 6 2.4l1.2-1.3A10.4 10.4 0 0 0 8 .4 10.4 10.4 0 0 0 .8 3.3L2 4.6a8.6 8.6 0 0 1 6-2.4Zm0 3.6c1.3 0 2.5.5 3.4 1.3l1.2-1.3A6.6 6.6 0 0 0 8 4a6.6 6.6 0 0 0-4.6 1.8l1.2 1.3c.9-.8 2.1-1.3 3.4-1.3Zm0 3.6c-.5 0-1 .2-1.3.5L8 11.3l1.3-1.4c-.3-.3-.8-.5-1.3-.5Z"/></svg>
+            <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="22" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".4"/><rect x="2" y="2" width="19" height="9" rx="2" fill="#fff"/><path d="M24.5 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2Z" fill="#fff" fill-opacity=".4"/></svg>
+          </span>
+        </div>
+
+        <header class="head">
+          <button class="back" id="back" data-hidden="true" aria-label="Back">
+            <span class="disc"><svg width="11" height="18" viewBox="0 0 11 18" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 1.8 2 9l7 7.2"/></svg></span>
+          </button>
+          <div class="prog" id="prog" role="img" aria-label="Step 1 of 5"><span class="num t t-monoSmall" id="progNum"></span></div>
+          <button class="skip t t-callout" id="skip">Skip</button>
+        </header>
+
+        <main class="screens">
+          <!-- 1 · Value: stage cả bàn như Workout, cú Stop chạy lặp -->
+          <section class="scr" data-id="value" data-layer="ob" aria-labelledby="h-value" inert>
+            <div class="body">
+              <div class="stagebox" data-stage="value" role="img" aria-label="Drill 02, Stop shot. The cue strikes, the 1-ball drops in the corner pocket and the cue ball stops in the chalk ring."></div>
+              <div class="copy">
+                <p class="t t-brand cg">Pool Training</p>
+                <h1 class="t t-title" id="h-value" tabindex="-1">Put the cue ball <span class="hl">where you want it.</span></h1>
+                <p class="t t-bodyLarge c2">A 120-shot workout on your own table. You shoot, tap Pass or Miss, and the app keeps score.</p>
+              </div>
+            </div>
+            <div class="foot">
+              <button class="btn-app" data-go="ask"><span class="t t-btn">Continue</span></button>
+            </div>
+          </section>
+
+          <!-- 2 · Rẽ nhánh -->
+          <section class="scr" data-id="ask" data-layer="ob" aria-labelledby="h-ask" inert>
+            <div class="body">
+              <div class="art art-ask bleed" aria-hidden="true"><canvas id="cvAsk"></canvas></div>
+              <div class="copy">
+                <p class="t t-eyebrow c3">Get started</p>
+                <h1 class="t t-title" id="h-ask" tabindex="-1">Are you at a table <span class="hl">right now?</span></h1>
+                <p class="t t-body c2">Two balls and a piece of chalk is all the first drill needs.</p>
+              </div>
+            </div>
+            <div class="foot">
+              <div class="choices">
+                <button class="choice card" data-pick="table">
+                  <span class="ic" aria-hidden="true"></span>
+                  <span class="txt"><span class="t t-tileTitle">I'm at the table</span><span class="t t-caption c3">Set up two balls, then start today's workout</span></span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#8A8A8A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                </button>
+                <button class="choice card" data-pick="demo">
+                  <span class="ic ring" aria-hidden="true"></span>
+                  <span class="txt"><span class="t t-tileTitle">Not yet</span><span class="t t-caption c3">See how scoring works first</span></span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#8A8A8A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3a · Sắp bàn: cả bàn, bi cái ở mức 1 diamond -->
+          <section class="scr" data-id="setup" data-layer="ob" aria-labelledby="h-setup" inert>
+            <div class="body">
+              <div class="copy">
+                <p class="t t-eyebrow c3">Set up · Drill 02</p>
+                <h1 class="t t-title" id="h-setup" tabindex="-1">Two balls, <span class="hl">one chalk ring.</span></h1>
+              </div>
+              <div class="stagebox" data-stage="setup" role="img" aria-label="Table layout: the 1-ball one diamond off the side rail and two off the end rail, the cue ball one diamond behind it, the chalk ring past the 1-ball."></div>
+              <ol class="checks">
+                <li><button class="check" aria-pressed="false"><span class="num t t-monoSmall">01</span><span class="txt"><span class="t t-tileTitle">1-ball</span><span class="t t-caption c3">One diamond off the side rail, two off the end rail.</span></span><span class="box"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5 5.6 10.5 11.5 3.5"/></svg></span></button></li>
+                <li><button class="check" aria-pressed="false"><span class="num t t-monoSmall">02</span><span class="txt"><span class="t t-tileTitle">Cue ball</span><span class="t t-caption c3">One diamond behind the 1-ball, in line with the corner pocket.</span></span><span class="box"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5 5.6 10.5 11.5 3.5"/></svg></span></button></li>
+                <li><button class="check" aria-pressed="false"><span class="num t t-monoSmall">03</span><span class="txt"><span class="t t-tileTitle">Chalk ring</span><span class="t t-caption c3">About 8 in. across, one ball in front of the 1-ball. Stop inside it to pass.</span></span><span class="box"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5 5.6 10.5 11.5 3.5"/></svg></span></button></li>
+              </ol>
+            </div>
+            <div class="foot">
+              <button class="btn-app" data-go="result"><span class="t t-btn">Ready</span></button>
+            </div>
+          </section>
+
+          <!-- 4a · Kết quả: ProgramGauge 0/120, không có primer thông báo -->
+          <section class="scr" data-id="result" data-layer="ob" aria-labelledby="h-result" inert>
+            <div class="body">
+              <div class="copy">
+                <h1 class="t t-title" id="h-result" tabindex="-1">Your Stop block starts at <span class="hl">1 diamond.</span></h1>
+                <p class="t t-body c2">Pass two in a row and the cue ball moves back a diamond. Miss and it moves in one.</p>
+              </div>
+              <div class="hc s-hero">
+                <p class="t t-eyebrow c3 hc-eye">Today's workout</p>
+                <div class="gauge" id="gResult"></div>
+              </div>
+            </div>
+            <div class="foot">
+              <button class="act act-gold" id="start"><span class="t t-button">Start workout</span></button>
+            </div>
+          </section>
+
+          <!-- 3b · Demo: tự đánh 3 cú, tự chấm Pass, Pass, Miss -->
+          <section class="scr" data-id="demo" data-layer="ob" aria-labelledby="h-demo" inert>
+            <div class="body">
+              <div class="copy">
+                <p class="t t-eyebrow c3">Demo · nothing is saved</p>
+                <h1 class="t t-title" id="h-demo" tabindex="-1">You call <span class="hl">every shot.</span></h1>
+                <p class="t t-body c2">Shoot on your table, then tap Pass or Miss. Two in a row moves the cue ball back a diamond.</p>
+              </div>
+              <div class="stagebox" data-stage="demo" role="img" aria-label="Demo: three Stop shots play on their own and get scored."></div>
+              <div class="shotcard s-quick" id="scDemo"></div>
+              <div class="board s-hero" id="bdDemo" role="img"></div>
+              <div class="row2" aria-hidden="true">
+                <div class="act act-gold" data-demo="pass"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5 6.2 12 13.5 4"/></svg><span class="t t-button">Pass</span></div>
+                <div class="act act-graphite" data-demo="miss"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M2 2l10 10M12 2 2 12"/></svg><span class="t t-button">Miss</span></div>
+              </div>
+              <p class="sr" id="liveDemo" aria-live="polite"></p>
+            </div>
+            <div class="foot">
+              <button class="btn-app" id="gotIt" disabled><span class="t t-btn">Got it</span></button>
+              <button class="btn-ghost" data-go="setup"><span class="t t-callout">I'm at a table now</span></button>
+            </div>
+          </section>
+
+          <!-- App · Home (mock theo src/app/(tabs)/(today)/index.tsx) -->
+          <section class="scr" data-id="home" data-layer="app" aria-labelledby="h-home" inert>
+            <div class="nav">
+              <span></span><span></span>
+              <button class="glass" id="gear" aria-label="Settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2 5.5 5.5"/><circle cx="12" cy="12" r="6.4"/></svg></button>
+            </div>
+            <div class="body home-body">
+              <div class="copy">
+                <h1 class="t t-lt" id="h-home" tabindex="-1">Today</h1>
+                <p class="t t-eyebrow c3" id="homeDate"></p>
+              </div>
+              <div class="hc s-hero">
+                <p class="t t-eyebrow c3 hc-eye">Daily · Fundamentals</p>
+                <div class="gauge" id="gHome"></div>
+                <div class="hc-text">
+                  <p class="t t-heroTitle ink">Stroke</p>
+                  <p class="t t-callout hc-sub">Short · Cue ball returns to the tip</p>
+                </div>
+                <button class="hc-cta s-cta sheen" data-go="workout"><span class="t t-button">Start workout</span></button>
+              </div>
+              <div class="blk">
+                <p class="t t-eyebrow c3">Your program</p>
+                <div class="bento">
+                  <button class="tile2 pill wide s-graphite">
+                    <span id="dmUp"></span>
+                    <span class="ptext"><span class="t t-caption mt one">Start here · Fundamentals</span><span class="t t-tileTitle ink one">Straight-In</span></span>
+                    <span class="knob"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5"/></svg></span>
+                  </button>
+                  <div class="b-row">
+                    <button class="tile2 cbc s-graphite">
+                      <span class="t t-tileTitle ink" style="text-align:left">Cue Ball Control</span>
+                      <span class="big"><span id="dmCbc"></span><span class="t t-monoSmall side">7%</span></span>
+                      <span style="display:block">
+                        <span class="track" id="track"></span>
+                        <span class="tlabels"><span class="t t-monoSmall">Drill 1</span><span class="t t-monoSmall">14</span></span>
+                      </span>
+                    </button>
+                    <div class="b-right">
+                      <button class="tile2 pill s-purple">
+                        <span class="ptext"><span class="t t-tileTitle ink one">Fundamentals</span><span class="t t-caption mt">Up next</span></span>
+                        <span class="ring54" id="dmFund"></span>
+                      </button>
+                      <button class="tile2 pill s-indigo">
+                        <span class="ptext"><span class="t t-tileTitle ink one">Position Play</span><span class="t t-caption mt one">+ 9-Ball Patterns</span></span>
+                        <span class="cap"><span class="knob"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5"/></svg></span><span class="t t-monoSmall">0/34</span></span>
+                      </button>
+                    </div>
+                  </div>
+                  <button class="tile2 pill wide s-graphite">
+                    <span class="ptext"><span class="t t-tileTitle ink one">Weak spots</span><span class="t t-caption mt">Rebuild the layouts you miss and drill them</span></span>
+                    <span class="knob"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h8M6.5 2.5 10 6l-3.5 3.5"/></svg></span>
+                  </button>
+                </div>
+              </div>
+              <button class="btn-ghost ghost-w"><svg width="14" height="20" viewBox="0 0 14 20" fill="#fff" aria-hidden="true"><circle cx="7" cy="2.6" r="2.4"/><path d="M4 6.2h6c.9 0 1.6.7 1.6 1.6v5.4c0 .6-.5 1.1-1.1 1.1h-.6l-.5 4.6c-.1.6-.6 1.1-1.2 1.1H5.8c-.6 0-1.1-.5-1.2-1.1L4.1 14.3h-.6c-.6 0-1.1-.5-1.1-1.1V7.8c0-.9.7-1.6 1.6-1.6Z"/></svg><span class="t t-btn">Stance check</span></button>
+            </div>
+            <nav class="tabbar" aria-label="Tabs">
+              <span class="tab on"><svg width="24" height="22" viewBox="0 0 24 22" fill="currentColor" aria-hidden="true"><path d="M12 1.2 1.5 10.3c-.5.4-.2 1.2.4 1.2H4v8.3c0 .7.5 1.2 1.2 1.2h4.3v-6h5v6h4.3c.7 0 1.2-.5 1.2-1.2v-8.3h2.1c.6 0 .9-.8.4-1.2L12 1.2Z"/></svg>Home</span>
+              <span class="tab"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2" y="2" width="7.5" height="7.5" rx="2"/><rect x="12.5" y="2" width="7.5" height="7.5" rx="2"/><rect x="2" y="12.5" width="7.5" height="7.5" rx="2"/><rect x="12.5" y="12.5" width="7.5" height="7.5" rx="2"/></svg>Drills</span>
+            </nav>
+          </section>
+
+          <!-- App · Workout (mock theo src/app/workout.tsx, khối 1 Stroke · Short) -->
+          <section class="scr" data-id="workout" data-layer="app" aria-labelledby="h-workout" inert>
+            <div class="nav">
+              <button class="glass" data-back aria-label="Back"><svg width="10" height="17" viewBox="0 0 11 18" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 1.8 2 9l7 7.2"/></svg></button>
+              <p class="nav-title">Daily Workout</p>
+              <span></span>
+            </div>
+            <div class="body app-body">
+              <div class="w-head">
+                <p class="t t-eyebrow c3">Block 1 of 4 · 0/120 shots</p>
+                <h1 class="t t-heroTitle ink" id="h-workout" tabindex="-1">Stroke · Short</h1>
+                <p class="t t-callout c2">Place the cue ball on the spot shown, hit it dead center up the table. It should come straight back to your tip.</p>
+              </div>
+              <div class="stagebox" data-stage="workout" role="img" aria-label="Stroke drill: the cue ball goes up the table to the rail and comes straight back."></div>
+              <div class="shotcard s-quick" id="scWork"></div>
+              <button class="act act-graphite sheen" data-play="workout"><svg width="13" height="15" viewBox="0 0 13 15" fill="currentColor" aria-hidden="true"><path d="M1 1.3v12.4c0 .8.9 1.3 1.5.8l9.6-6.2c.6-.4.6-1.2 0-1.6L2.5.5C1.9.1 1 .5 1 1.3Z"/></svg><span class="t t-button">Play shot</span></button>
+              <div class="board s-hero" id="bdWork" role="img"></div>
+              <div class="row2">
+                <button class="act act-gold" data-wmark><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.5 6.2 12 13.5 4"/></svg><span class="t t-button">Pass</span></button>
+                <button class="act act-graphite" data-wmark><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12"/></svg><span class="t t-button">Miss</span></button>
+              </div>
+            </div>
+          </section>
+
+          <!-- App · Settings: placeholder hiện có, thêm nhóm General › Show intro -->
+          <section class="scr" data-id="settings" data-layer="app" aria-labelledby="h-settings" inert>
+            <div class="nav">
+              <button class="glass" data-back aria-label="Back"><svg width="10" height="17" viewBox="0 0 11 18" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 1.8 2 9l7 7.2"/></svg></button>
+              <p class="nav-title">Settings</p>
+              <span></span>
+            </div>
+            <div class="body app-body">
+              <div class="ph">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#8A8A8A" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2 5.5 5.5"/><circle cx="12" cy="12" r="6.4"/></svg>
+                <h1 class="t t-title1" id="h-settings" tabindex="-1">Settings</h1>
+                <p class="t t-body c2">Playing as guest. Your progress is saved on this device.</p>
+              </div>
+              <div class="group">
+                <p class="t t-label c3 gh">General</p>
+                <div class="list">
+                  <button class="row" id="showIntro">
+                    <span class="ri"><svg width="14" height="14" viewBox="0 0 14 14" fill="#fff" aria-hidden="true"><path d="M3 1.5v11c0 .6.7 1 1.2.7l8.4-5.5c.5-.3.5-1.1 0-1.4L4.2.8C3.7.5 3 .9 3 1.5Z"/></svg></span>
+                    <span class="grow"><span class="t t-body" style="display:block">Show intro</span></span>
+                    <svg width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="#5A5A5A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m1.5 1.5 5 5-5 5"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="group">
+                <p class="t t-label c3 gh">Developer</p>
+                <div class="list">
+                  <button class="row"><span class="grow"><span class="t t-body" style="display:block">Design System</span></span><svg width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="#5A5A5A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m1.5 1.5 5 5-5 5"/></svg></button>
+                  <button class="row" style="border-top:.5px solid rgba(255,255,255,.08)"><span class="grow"><span class="t t-body" style="display:block">Catalog</span></span><svg width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="#5A5A5A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m1.5 1.5 5 5-5 5"/></svg></button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        <div class="home-ind" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const phone = $('#phone');
+  const state = { device: 'max', ts: 1, reduced: matchMedia('(prefers-reduced-motion: reduce)').matches, pick: 'table', hist: ['value'], rung: 1 };
+  const DPR = Math.min(2, window.devicePixelRatio || 1);
+
+  // ---------- Toán nhỏ ----------
+  const clamp01 = t => Math.max(0, Math.min(1, t));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const mixP = (p, q, t) => ({ x: lerp(p.x, q.x, t), y: lerp(p.y, q.y, t) });
+  const easeOut = (t, k = 3) => 1 - Math.pow(1 - clamp01(t), k);
+  const easeIn = (t, k = 2) => Math.pow(clamp01(t), k);
+  const easeInOut = t => (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+  const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+  const norm3 = (x, y, z) => { const l = Math.hypot(x, y, z); return [x / l, y / l, z / l]; };
+  const unit = (a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy); return { x: dx / l, y: dy / l }; };
+  const pad = n => String(n).padStart(2, '0');
+
+  // Một vòng rAF chung; hàm tick trả false là tự gỡ.
+  const ticks = new Set();
+  let looping = false;
+  function loop(now) {
+    for (const f of [...ticks]) if (f(now) === false) ticks.delete(f);
+    if (ticks.size) requestAnimationFrame(loop); else looping = false;
+  }
+  function addTick(f) { ticks.add(f); if (!looping) { looping = true; requestAnimationFrame(loop); } }
+
+  // ---------- Bàn: inch, dọc, băng đầu ở trên (PoolTableGeometry, PoolTableSurface) ----------
+  const PW = 50, PL = 100, RAIL = 5.5, CUSHION = 2, R = 1.125, SIGHT = 3.6875;
+  const at = (x, y) => ({ x: x * PW, y: y * PL });
+  // Drill 02 · Stop: bi 1 ở (0.25, 0.25), lỗ footLeft, zone tròn (0.27, 0.27) bán kính 0.08 bề ngang.
+  const OB = at(0.25, 0.25);
+  const ZONE = { ...at(0.27, 0.27), r: 0.08 * PW };
+  // `distances` của drill: bi cái cách bi 1 đúng 1, 2, 3 diamond trên đường ra lỗ góc.
+  const RUNG_CB = [null, at(0.362, 0.362), at(0.474, 0.474), at(0.585, 0.585)];
+  const VALUE_CB = RUNG_CB[2];
+  const LIP = { x: 0.3, y: 0.6 }, DROP = { x: -0.9, y: -0.9 };
+  const POCKETS = [[-0.9, -0.9, 2.25], [PW + 0.9, -0.9, 2.25], [-0.9, PL + 0.9, 2.25], [PW + 0.9, PL + 0.9, 2.25], [-1.6, PL / 2, 2.5], [PW + 1.6, PL / 2, 2.5]];
+  const DIAMONDS = [];
+  for (let i = 1; i <= 3; i++) DIAMONDS.push([12.5 * i, -SIGHT], [12.5 * i, PL + SIGHT]);
+  for (let i = 1; i <= 7; i++) if (i !== 4) DIAMONDS.push([-SIGHT, 12.5 * i], [PW + SIGHT, 12.5 * i]);
+  const contactFor = cb => { const u = unit(OB, cb); return { x: OB.x + u.x * 2 * R, y: OB.y + u.y * 2 * R }; };
+
+  // src/pool-engine/workout.ts · ladderRung: vào 2 cú liền thì lùi bi cái 1 diamond, trượt 1 cú thì tiến lại 1.
+  function ladderRung(results, min = 1, max = 3) {
+    let rung = min, streak = 0;
+    for (const r of results) {
+      if (r === 'miss') { rung = Math.max(min, rung - 1); streak = 0; }
+      else if (++streak === 2) { rung = Math.min(max, rung + 1); streak = 0; }
+    }
+    return { rung, streak };
+  }
+  const diamondLabel = d => `${d} diamond${d > 1 ? 's' : ''}`;
+
+  // ---------- Xoay bi: ma trận 3×3 hàng-trước, toạ độ shader (x phải, y lên, z ra phía người nhìn) ----------
+  const M3 = {
+    id: () => [1, 0, 0, 0, 1, 0, 0, 0, 1],
+    mul(a, b) {
+      const r = new Array(9);
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) r[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j];
+      return r;
+    },
+    rot([x, y, z], th) {
+      const c = Math.cos(th), s = Math.sin(th), t = 1 - c;
+      return [t * x * x + c, t * x * y - s * z, t * x * z + s * y, t * x * y + s * z, t * y * y + c, t * y * z - s * x, t * x * z - s * y, t * y * z + s * x, t * z * z + c];
+    },
+  };
+  // Tư thế nghỉ của bi cái: norm(1,1,1) quay về phía người nhìn, ba chấm lộ đều.
+  const CUE_REST = M3.rot(norm3(1, -1, 0), Math.acos(1 / Math.sqrt(3)));
+  // Lăn không trượt trên mặt bàn: trục = ẑ × hướng đi, góc = quãng / R. dy của màn hình hướng xuống.
+  function roll(q, dx, dy) {
+    const l = Math.hypot(dx, dy);
+    return l < 1e-6 ? q : M3.mul(M3.rot([dy / l, dx / l, 0], l / R), q);
+  }
+
+  // ---------- PoolBallSphere, port sang JS: tô từng pixel ----------
+  const LIGHT = norm3(-.35, .5, .8), HALF = norm3(LIGHT[0], LIGHT[1], LIGHT[2] + 1);
+  const hex = h => [(h >> 16 & 255) / 255, (h >> 8 & 255) / 255, (h & 255) / 255];
+  const IVORY = hex(0xF0EDE3), DOT_BLUE = [.10, .27, .66], DOT_RED = [.78, .09, .11], INK = hex(0x111111), FACE = [.95, .95, .95];
+  const SOLID = { 1: hex(0xE99C00) };
+  let mask = null;
+  function buildMask() {
+    const n = 128, c = document.createElement('canvas');
+    c.width = c.height = n;
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = `800 ${Math.round(n * .55)}px "Be Vietnam Pro", system-ui, sans-serif`;
+    g.fillText('1', n / 2, n / 2 + n * .04);
+    mask = { a: g.getImageData(0, 0, n, n).data, n };
+  }
+  function maskAt(u, v) {
+    if (!mask || u <= 0 || u >= 1 || v <= 0 || v >= 1) return 0;
+    const n = mask.n, x = u * n - .5, y = v * n - .5, x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0;
+    const A = (i, j) => (i < 0 || j < 0 || i >= n || j >= n ? 0 : mask.a[(j * n + i) * 4 + 3] / 255);
+    return lerp(lerp(A(x0, y0), A(x0 + 1, y0), fx), lerp(A(x0, y0 + 1), A(x0 + 1, y0 + 1), fx), fy);
+  }
+  /** `kind` 0 là bi cái, số khác là bi số. `rpx`: bán kính theo pixel thiết bị. */
+  function shadeBall(kind, q, rpx, into) {
+    const size = Math.max(2, Math.ceil(rpx * 2)), r = size / 2;
+    const c = into && into.width === size ? into : Object.assign(document.createElement('canvas'), { width: size, height: size });
+    const g = c.getContext('2d'), img = g.createImageData(size, size), d = img.data;
+    const e = Math.max(.003, .25 / r), rim = 1 - 1.5 / r, base = SOLID[kind];
+    const a = [0, 0, 0];
+    for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) {
+      const x = (i + .5 - r) / r, y = (r - j - .5) / r, rr = x * x + y * y;
+      if (rr >= 1) continue;
+      const z = Math.sqrt(1 - rr);
+      const bx = q[0] * x + q[3] * y + q[6] * z, by = q[1] * x + q[4] * y + q[7] * z, bz = q[2] * x + q[5] * y + q[8] * z;
+      if (!kind) {
+        const k = smooth(.957 - e, .957 + e, Math.max(Math.abs(bx), Math.abs(by), Math.abs(bz)));
+        const dot = bx > .9 ? DOT_BLUE : DOT_RED;
+        for (let n = 0; n < 3; n++) a[n] = lerp(IVORY[n], dot[n], k);
+      } else {
+        const az = Math.abs(bz), kr = smooth(.882 - e, .882 + e, az), kf = smooth(.899 - e, .899 + e, az);
+        const m = kf > 0 ? maskAt(.5 + bx * Math.sign(bz) / .94, .5 - by / .94) * kf : 0;
+        for (let n = 0; n < 3; n++) a[n] = lerp(lerp(lerp(base[n], INK[n], kr), FACE[n], kf), INK[n], m);
+      }
+      const nl = Math.max(0, x * LIGHT[0] + y * LIGHT[1] + z * LIGHT[2]), nh = Math.max(0, x * HALF[0] + y * HALF[1] + z * HALF[2]);
+      const diff = (.27 + .8 * nl) * (.7 + .3 * z), spec = Math.pow(nh, 90) * .55;
+      const bounce = .22 * (1 - z) * (1 - z) * Math.max(0, .6 * x - .8 * y);
+      const o = (j * size + i) * 4;
+      d[o] = 255 * Math.min(1, a[0] * diff + spec + .62 * bounce);
+      d[o + 1] = 255 * Math.min(1, a[1] * diff + spec + .76 * bounce);
+      d[o + 2] = 255 * Math.min(1, a[2] * diff + spec + .86 * bounce);
+      d[o + 3] = 255 * (1 - smooth(rim, 1, Math.sqrt(rr)));
+    }
+    g.putImageData(img, 0, 0);
+    return c;
+  }
+
+  // ---------- Vẽ bàn (PoolTableTheme), đơn vị inch ----------
+  const disc = (g, x, y, r) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); };
+  function drawTable(g, px) {
+    const rg = g.createLinearGradient(-RAIL, -RAIL, PW + RAIL, PL + RAIL);
+    rg.addColorStop(0, '#262626'); rg.addColorStop(1, '#0E0E0E');
+    g.fillStyle = rg; g.beginPath(); g.roundRect(-RAIL, -RAIL, PW + 2 * RAIL, PL + 2 * RAIL, 2.5); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = px;
+    g.beginPath(); g.roundRect(-RAIL + px / 2, -RAIL + px / 2, PW + 2 * RAIL - px, PL + 2 * RAIL - px, 2.5); g.stroke();
+    g.fillStyle = '#1B3040'; g.fillRect(-CUSHION, -CUSHION, PW + 2 * CUSHION, PL + 2 * CUSHION);
+    const cg = g.createRadialGradient(PW / 2, PL / 2, 0, PW / 2, PL / 2, .62 * PL);
+    cg.addColorStop(0, '#2F4E64'); cg.addColorStop(1, '#223A4C');
+    g.fillStyle = cg; g.fillRect(0, 0, PW, PL);
+    g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 2 * px; g.strokeRect(px, px, PW - 2 * px, PL - 2 * px);
+    g.fillStyle = 'rgba(201,196,180,.45)';
+    for (const y of [25, 50, 75]) { disc(g, 25, y, .35); g.fill(); }
+    g.fillStyle = '#C9C4B4';
+    for (const [x, y] of DIAMONDS) { g.beginPath(); g.moveTo(x, y - .55); g.lineTo(x + .385, y); g.lineTo(x, y + .55); g.lineTo(x - .385, y); g.closePath(); g.fill(); }
+    g.fillStyle = '#000';
+    for (const [x, y, r] of POCKETS) { disc(g, x, y, r); g.fill(); }
+  }
+
+  // Cơ nhìn từ trên: màu khúc của PoolCueRenderer, chiều dài thật 58".
+  const CUE_LEN = 58;
+  const CUE_PARTS = [[0, .4, '#3F6DA8'], [.4, 1.4, '#ECE7DA'], [1.4, 29, '#D6B584'], [29, 30.2, '#C4C8CE'], [30.2, CUE_LEN, '#16100D'], [31.6, 31.9, '#C4C8CE']];
+  function drawCue(g, { tip, u, a }) {
+    const w = t => .5 + .7 * t / CUE_LEN;
+    const band = (t0, t1, a0 = 0, a1 = 1) => {
+      const w0 = w(t0), w1 = w(t1);
+      g.beginPath(); g.moveTo(t0, -w0 / 2 + w0 * a0); g.lineTo(t0, -w0 / 2 + w0 * a1); g.lineTo(t1, -w1 / 2 + w1 * a1); g.lineTo(t1, -w1 / 2 + w1 * a0); g.closePath();
+    };
+    g.save();
+    g.globalAlpha = a;
+    g.translate(tip.x, tip.y); g.rotate(Math.atan2(u.y, u.x));
+    g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 6 * DPR; g.shadowOffsetX = 3 * DPR; g.shadowOffsetY = 5 * DPR;
+    g.fillStyle = '#000'; band(.2, CUE_LEN); g.fill();
+    g.shadowColor = 'transparent';
+    band(0, CUE_LEN); g.clip();
+    for (const [t0, t1, c] of CUE_PARTS) { g.fillStyle = c; band(t0, t1); g.fill(); }
+    g.fillStyle = '#9C4A33';
+    for (const c of [.5, 0, 1]) {
+      const wa = w(37), wb = w(CUE_LEN);
+      g.beginPath(); g.moveTo(37, -wa / 2 + wa * c); g.lineTo(CUE_LEN, -wb / 2 + wb * (c + .17)); g.lineTo(CUE_LEN, -wb / 2 + wb * (c - .17)); g.closePath(); g.fill();
+    }
+    g.fillStyle = 'rgba(0,0,0,.35)'; band(0, CUE_LEN, 0, .14); g.fill();
+    g.fillStyle = 'rgba(0,0,0,.45)'; band(0, CUE_LEN, .86, 1); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.22)'; band(0, CUE_LEN, .26, .38); g.fill();
+    g.restore();
+  }
+
+  // Đường bi mục tiêu trắng .9, đường bi cái trắng .6 gạch [4,4] (PoolGuideRenderer).
+  const shotGuides = cb => (g, px) => {
+    const C = contactFor(cb);
+    g.lineWidth = 1.25 * px; g.strokeStyle = 'rgba(255,255,255,.9)';
+    g.beginPath(); g.moveTo(OB.x, OB.y); g.lineTo(LIP.x, LIP.y); g.stroke();
+    g.setLineDash([4 * px, 4 * px]); g.strokeStyle = 'rgba(255,255,255,.6)';
+    g.beginPath(); g.moveTo(cb.x, cb.y); g.lineTo(C.x, C.y); g.stroke();
+    g.setLineDash([]);
+  };
+
+  /** Một mặt bàn trên canvas. `fit(W, H)` trả {s: px mỗi inch, ox, oy: vị trí góc mặt vải}. */
+  function tableView(canvas, fit) {
+    const g = canvas.getContext('2d');
+    const v = { s: 1, ox: 0, oy: 0, W: 0, H: 0, balls: [], zone: null, pulse: 0, marks: [], guides: null, cue: null, flash: -1, after: null };
+    v.resize = () => {
+      const W = canvas.clientWidth, H = canvas.clientHeight;
+      if (!W || !H) return false;
+      v.W = W; v.H = H;
+      canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+      v.refit();
+      return true;
+    };
+    v.refit = () => Object.assign(v, fit(v.W, v.H));
+    v.ball = (kind, p) => { const b = { kind, x: p.x, y: p.y, q: kind ? M3.id() : CUE_REST.slice(), a: 1, sc: 1, spr: null, key: '' }; v.balls.push(b); return b; };
+    v.put = (b, p, rolling) => { if (rolling) { b.q = roll(b.q, p.x - b.x, p.y - b.y); b.key = ''; } b.x = p.x; b.y = p.y; };
+    v.toPx = p => ({ x: v.ox + p.x * v.s, y: v.oy + p.y * v.s });
+    v.draw = () => {
+      if (!v.W && !v.resize()) return;
+      const k = DPR * v.s, px = 1 / v.s;
+      const inch = () => g.setTransform(k, 0, 0, k, DPR * v.ox, DPR * v.oy);
+      g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, canvas.width, canvas.height);
+      inch();
+      drawTable(g, px);
+      if (v.zone) { // PoolTargetRenderer: nền trắng .12, viền trắng .9 dày 1.25
+        disc(g, v.zone.x, v.zone.y, v.zone.r * (1 + .05 * v.pulse));
+        g.fillStyle = `rgba(255,255,255,${.12 + .12 * v.pulse})`; g.fill();
+        g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = (1.25 + v.pulse) * px; g.stroke();
+      }
+      for (const m of v.marks) {
+        disc(g, m.x, m.y, .5);
+        if (m.pass) { g.fillStyle = 'rgba(236,234,238,.92)'; g.fill(); }
+        else { g.strokeStyle = 'rgba(236,234,238,.92)'; g.lineWidth = 1.5 * px; g.stroke(); }
+      }
+      if (v.guides) v.guides(g, px);
+      for (const b of v.balls) if (b.a > 0) {
+        const sx = b.x + .2 * R, sy = b.y + .3 * R, sr = 1.15 * R * b.sc;
+        const sg = g.createRadialGradient(sx, sy, 0, sx, sy, sr);
+        sg.addColorStop(0, `rgba(0,0,0,${.5 * b.a})`); sg.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = sg; disc(g, sx, sy, sr); g.fill();
+      }
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      const rpx = R * v.s * DPR, key = rpx.toFixed(1);
+      for (const b of v.balls) if (b.a > 0) {
+        if (b.key !== key) { b.spr = shadeBall(b.kind, b.q, rpx, b.spr); b.key = key; }
+        const X = DPR * (v.ox + b.x * v.s), Y = DPR * (v.oy + b.y * v.s), sz = b.spr.width * b.sc;
+        g.globalAlpha = b.a; g.drawImage(b.spr, X - sz / 2, Y - sz / 2, sz, sz); g.globalAlpha = 1;
+      }
+      inch();
+      if (v.cue) drawCue(g, v.cue);
+      if (v.flash >= 0) { // một lần lóe vàng duy nhất: lúc bi rơi lỗ
+        disc(g, DROP.x, DROP.y, 2.25 + 4.5 * easeOut(v.flash, 2));
+        g.strokeStyle = `rgba(216,180,81,${.95 * (1 - v.flash)})`; g.lineWidth = 1.6 * px; g.stroke();
+      }
+      if (v.after) { g.setTransform(DPR, 0, 0, DPR, 0, 0); v.after(g); }
+    };
+    return v;
+  }
+
+  // Bàn đủ bề ngang, đầu bàn ở trên; bi cái nằm trong 80% chiều cao để không lọt vào vùng mờ.
+  const TABLE_W = PW + 2 * RAIL;
+  const fitValue = (W, H) => {
+    const s = Math.min(W / TABLE_W, .8 * H / (RAIL + VALUE_CB.y + R));
+    return { s, ox: (W - TABLE_W * s) / 2 + RAIL * s, oy: RAIL * s };
+  };
+  // Crop góc bàn: lỗ góc, bi 1, bi cái, zone. Dư chỗ thì lộ thêm bàn về bên phải và phía dưới, tràn mép.
+  // Khung thấp (SE, AX5) thì cả bề ngang bàn vẫn hẹp hơn khung: căn giữa thay vì dạt trái.
+  const fitCrop = cbAt => (W, H) => {
+    const cb = cbAt(), cw = Math.max(cb.x + 8, 31) + RAIL, ch = cb.y + 6 + RAIL, s = Math.min(W / cw, H / ch);
+    return { s, ox: Math.max(0, (W - TABLE_W * s) / 2) + RAIL * s, oy: RAIL * s };
+  };
+
+  // ---------- Chữ chấm (DotMatrixDisplay) ----------
+  const GLYPHS = {
+    '0': ['01110', '10001', '10011', '10101', '11001', '10001', '01110'],
+    '1': ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],
+    '2': ['01110', '10001', '00001', '00010', '00100', '01000', '11111'],
+    '3': ['11110', '00001', '00001', '01110', '00001', '00001', '11110'],
+    '4': ['00010', '00110', '01010', '10010', '11111', '00010', '00010'],
+    '5': ['11111', '10000', '11110', '00001', '00001', '10001', '01110'],
+    '6': ['00110', '01000', '10000', '11110', '10001', '10001', '01110'],
+    '7': ['11111', '00001', '00010', '00100', '01000', '01000', '01000'],
+    '8': ['01110', '10001', '10001', '01110', '10001', '10001', '01110'],
+    '9': ['01110', '10001', '10001', '01111', '00001', '00010', '01100'],
+    '/': ['00001', '00010', '00010', '00100', '01000', '01000', '10000'],
+  };
+  const DM = { lg: { d: 5, s: 2, g: 5 }, sm: { d: 2.5, s: 1.25, g: 2.5 } };
+  function dotMatrix(text, size, color, glow) {
+    const m = DM[size], pitch = m.d + m.s;
+    let x = 0, dots = '';
+    for (const ch of text) {
+      GLYPHS[ch].forEach((row, r) => [...row].forEach((b, c) => {
+        if (b === '1') dots += `<circle cx="${x + c * pitch + m.d / 2}" cy="${r * pitch + m.d / 2}" r="${m.d / 2}"/>`;
+      }));
+      x += 5 * m.d + 4 * m.s + m.g;
+    }
+    const w = x - m.g, h = 7 * m.d + 6 * m.s;
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="${color}"${glow ? ` style="filter:drop-shadow(0 0 3px ${glow})"` : ''}>${dots}</svg>`;
+  }
+  const score = (passed, of) => dotMatrix(pad(passed), 'lg', '#FFFFFF', 'rgba(255,255,255,.4)') + dotMatrix('/' + of, 'sm', '#8A8A8A');
+
+  GLYPHS['%'] = ['11001', '11010', '00010', '00100', '01000', '01011', '10011'];
+  Object.assign(DM, { xs: { d: 1.5, s: .8, g: 2.5 }, md: { d: 3.5, s: 1.5, g: 3.5 } });
+
+  // ---------- Stage cả bàn như màn Workout: bàn dọc nửa trái, hai ô Ngắm / Dày mỏng nửa phải ----------
+  const fitFull = (W, H) => {
+    const s = Math.min(W / TABLE_W, H / (PL + 2 * RAIL));
+    return { s, ox: (W - TABLE_W * s) / 2 + RAIL * s, oy: (H - (PL + 2 * RAIL) * s) / 2 + RAIL * s };
+  };
+  const STROKE_CB = { x: 25, y: 25 };
+  const STOP_TIP = [0, -.12, -.22, -.34];
+  const TILE_CAP = {
+    stop: [['Aim', 'Center'], ['Thickness', 'Straight in']],
+    stroke: [['Aim', 'No pocket chosen'], ['Thickness', 'No pocket chosen']],
+  };
+
+  function stage(box, kind, { rung: r0 = 1, decorate } = {}) {
+    box.innerHTML = `<div class="tbl"><canvas></canvas></div><div class="tiles">${TILE_CAP[kind].map(([tt, tv]) =>
+      `<div class="tile"><canvas></canvas><div class="tcap"><p class="tt">${tt}</p><p class="tv">${tv}</p></div></div>`).join('')}</div>`;
+    const tblC = $('.tbl canvas', box), tileC = $$('.tile canvas', box);
+    const v = tableView(tblC, fitFull), stop = kind === 'stop';
+    let rung = r0, job = 0, running = false;
+    if (stop) v.zone = ZONE;
+    const ob = stop ? v.ball(1, OB) : null, cb = v.ball(0, stop ? RUNG_CB[rung] : STROKE_CB);
+    const base = () => (stop ? RUNG_CB[rung] : STROKE_CB);
+    const dir = () => (stop ? unit(OB, base()) : { x: 0, y: 1 });
+    const tipAt = gap => { const c = base(), u = dir(); return { x: c.x + u.x * (R + gap), y: c.y + u.y * (R + gap) }; };
+    const strokeGuide = (g, px) => {
+      g.setLineDash([4 * px, 4 * px]); g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 1.25 * px;
+      g.beginPath(); g.moveTo(STROKE_CB.x, STROKE_CB.y - R); g.lineTo(STROKE_CB.x, 0); g.stroke(); g.setLineDash([]);
+    };
+    function place(alpha) {
+      if (ob) { v.put(ob, OB); ob.q = M3.id(); ob.key = ''; ob.sc = 1; if (alpha) ob.a = 1; }
+      v.put(cb, base()); cb.q = CUE_REST.slice(); cb.key = ''; if (alpha) cb.a = 1;
+    }
+    function reset() {
+      place(true);
+      v.cue = { tip: tipAt(2.5), u: dir(), a: 1 };
+      v.guides = stop ? shotGuides(base()) : strokeGuide;
+      v.flash = -1; v.pulse = 0;
+      if (decorate) decorate(v);
+      v.draw();
+    }
+    // Cú Stop của v3, bi cái tính theo mức hiện tại. `miss`: bi cái trôi theo quá mép zone.
+    function stopPose(t, miss) {
+      const c = base(), C = contactFor(c), u = dir();
+      let gap = 2.5, ca = 1;
+      if (t < 400) ca = t / 400;
+      else if (t < 2200) gap = 2.5 + 1.6 * (1 - Math.cos(4 * Math.PI * (t - 400) / 1800)) / 2;
+      else if (t < 2750) gap = 2.5 + 5.5 * easeInOut((t - 2200) / 550);
+      else if (t < 2900) gap = 8;
+      else if (t < 3050) gap = 8 * (1 - easeIn((t - 2900) / 150));
+      else if (t < 3300) gap = -3.5 * easeOut((t - 3050) / 250, 2);
+      else { gap = -3.5; ca = 1 - clamp01((t - 3500) / 400); }
+      v.cue = ca > 0 ? { tip: tipAt(gap), u, a: ca } : null;
+      if (t < 3050) v.put(cb, c);
+      else if (!miss || t < 3430) v.put(cb, mixP(c, C, easeOut((t - 3050) / 380, 1.6)));
+      else v.put(cb, mixP(C, { x: C.x - u.x * 7, y: C.y - u.y * 7 }, easeOut((t - 3430) / 700, 2)), true);
+      if (t >= 3430 && t < 4230) v.put(ob, mixP(OB, LIP, easeOut((t - 3430) / 800, 1.8)), true);
+      else if (t >= 4230) { const e = clamp01((t - 4230) / 170); v.put(ob, mixP(LIP, DROP, e)); ob.sc = 1 - .4 * e; }
+      v.flash = t >= 4230 && t < 4900 ? (t - 4230) / 670 : -1;
+      v.pulse = !miss && t >= 3430 && t < 4300 ? Math.sin(Math.PI * (t - 3430) / 870) : 0;
+      cb.a = t < 5000 ? 1 : t < 5250 ? 1 - (t - 5000) / 250 : (t - 5250) / 350;
+      ob.a = t < 4230 ? 1 : t < 4400 ? 1 - (t - 4230) / 170 : t < 5250 ? 0 : (t - 5250) / 350;
+      if (t >= 5250) place(false);
+    }
+    // Stroke: kéo cơ, ra cơ chính tâm, bi cái lên băng cuối rồi về lại đúng chỗ đặt.
+    function strokePose(t) {
+      const c = STROKE_CB, top = { x: c.x, y: R };
+      let gap = 2.5, ca = 1;
+      if (t < 550) gap = 2.5 + 5.5 * easeInOut(t / 550);
+      else if (t < 700) gap = 8;
+      else if (t < 850) gap = 8 * (1 - easeIn((t - 700) / 150));
+      else if (t < 1000) gap = -2 * easeOut((t - 850) / 150, 2);
+      else { gap = -2; ca = 1 - clamp01((t - 1100) / 300); }
+      if (t >= 2450) { gap = 2.5; ca = clamp01((t - 2450) / 350); }
+      v.cue = ca > 0 ? { tip: tipAt(gap), u: dir(), a: ca } : null;
+      if (t < 850) v.put(cb, c);
+      else if (t < 1450) v.put(cb, mixP(c, top, easeOut((t - 850) / 600, 1.4)), true);
+      else v.put(cb, mixP(top, c, easeOut((t - 1450) / 1000, 2)), true);
+    }
+    function run(pose, dur) {
+      return new Promise(done => {
+        const my = ++job;
+        if (state.reduced) { running = false; reset(); done(); return; }
+        running = true; v.guides = null;
+        const t0 = performance.now();
+        addTick(now => {
+          if (job !== my) return false;
+          const t = now - t0;
+          if (t >= dur) { running = false; reset(); done(); return false; }
+          pose(t); v.draw();
+        });
+      });
+    }
+    function tiles() {
+      tileC.forEach((c, i) => {
+        const W = c.clientWidth, H = c.clientHeight;
+        if (!W || !H) return;
+        c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
+        const g = c.getContext('2d');
+        g.setTransform(DPR, 0, 0, DPR, 0, 0); g.clearRect(0, 0, W, H);
+        (i ? thickTile : aimTile)(g, W, H);
+      });
+    }
+    function sprite(g, kind, x, y, r, a = 1) {
+      g.globalAlpha = a;
+      g.drawImage(shadeBall(kind, kind ? M3.id() : CUE_REST, r * DPR), x - r, y - r, r * 2, r * 2);
+      g.globalAlpha = 1;
+    }
+    function aimTile(g, W, H) {
+      const bg = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * .7);
+      bg.addColorStop(0, '#2F4E64'); bg.addColorStop(1, '#16293A');
+      g.fillStyle = bg; g.fillRect(0, 0, W, H);
+      const k = W / 9, r = R * k;
+      g.lineWidth = 1.25;
+      if (stop) {
+        const cx = W / 2, cy = H * .42, P = p => ({ x: cx + (p.x - OB.x) * k, y: cy + (p.y - OB.y) * k });
+        const lip = P(LIP), gh = P(contactFor(base())), from = P(base());
+        g.strokeStyle = 'rgba(255,255,255,.9)';
+        g.beginPath(); g.moveTo(cx, cy); g.lineTo(lip.x, lip.y); g.stroke();
+        g.setLineDash([4, 4]); g.strokeStyle = 'rgba(255,255,255,.6)';
+        g.beginPath(); g.moveTo(from.x, from.y); g.lineTo(gh.x, gh.y); g.stroke();
+        g.beginPath(); g.arc(gh.x, gh.y, r, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+        sprite(g, 1, cx, cy, r);
+      } else {
+        const cx = W / 2, cy = H * .55;
+        g.setLineDash([4, 4]); g.strokeStyle = 'rgba(255,255,255,.6)';
+        g.beginPath(); g.moveTo(cx, cy - r); g.lineTo(cx, 0); g.stroke(); g.setLineDash([]);
+        sprite(g, 0, cx, cy, r);
+      }
+    }
+    function thickTile(g, W, H) {
+      g.fillStyle = '#0D1820'; g.fillRect(0, 0, W, H);
+      const r = Math.min(W, H) * .24, cx = W / 2, cy = H * .45;
+      if (stop) sprite(g, 1, cx, cy, r);
+      sprite(g, 0, cx, cy, r, stop ? .55 : 1);
+    }
+    return {
+      v,
+      play: res => (stop ? run(t => stopPose(2200 + t, res === 'miss'), 3400) : run(strokePose, 2800)),
+      loop() {
+        const my = ++job;
+        if (state.reduced) { running = false; reset(); return; }
+        running = true; v.guides = null;
+        const t0 = performance.now();
+        addTick(now => { if (job !== my) return false; stopPose((now - t0) % 5600); v.draw(); });
+      },
+      stop() { job++; running = false; reset(); },
+      // Đổi mức: bi cái mờ đi, sang chỗ mới, hiện lại.
+      setRung(r, animate) {
+        if (r === rung) return;
+        rung = r;
+        if (!animate || state.reduced) { job++; running = false; reset(); tiles(); return; }
+        const my = ++job, t0 = performance.now();
+        let moved = false;
+        running = true;
+        addTick(now => {
+          if (job !== my) return false;
+          const t = now - t0;
+          if (t < 200) { cb.a = 1 - t / 200; if (v.cue) v.cue.a = cb.a; }
+          else {
+            if (!moved) { moved = true; reset(); tiles(); }
+            const e = clamp01((t - 200) / 250);
+            cb.a = e; if (v.cue) v.cue.a = e;
+            if (e >= 1) { running = false; v.draw(); return false; }
+          }
+          v.draw();
+        });
+      },
+      redraw() { if (v.resize() && !running) reset(); else v.draw(); tiles(); },
+    };
+  }
+
+  // ---------- ShotCard, Scoreboard, ProgramGauge (restyle từ component app) ----------
+  const POWER = [[.45, 'Touch'], [.89, 'Soft'], [1.9, 'Medium'], [3.2, 'Firm'], [Infinity, 'Power']];
+  const TIP_R = .45, QUARTER = ['', '¼', '½', '¾'];
+  function spinText(x, y) {
+    const part = (r, neg, pos) => {
+      const q = Math.round(Math.abs(r) / TIP_R / .25);
+      return q ? `${q >= 4 ? '1' : QUARTER[q]} tip ${r < 0 ? neg : pos}` : '';
+    };
+    return [part(y, 'low', 'high'), part(x, 'left', 'right')].filter(Boolean).join(' · ') || 'Center';
+  }
+  function shotcard(el, { kind, tipX = 0, tipY = 0, speed, passed }) {
+    const step = POWER.findIndex(([max]) => speed < max), word = POWER[step][1];
+    el.innerHTML = `
+      <div class="face" aria-hidden="true"><i class="fx"></i><i class="fy"></i><i class="fr"></i><i class="fd" style="left:${32 + tipX * 32 - 6}px;top:${32 - tipY * 32 - 6}px"></i></div>
+      <div class="scm">
+        <p class="t t-label c3">Shot · ${kind}</p>
+        <p class="t t-tileTitle ink">${spinText(tipX, tipY)}</p>
+        <span class="bars" aria-hidden="true">${POWER.map((_, i) => `<i${i <= step ? ' class="on"' : ''}></i>`).join('')}</span>
+        <p class="t t-caption c3">${word} · ${speed.toFixed(1)} m/s</p>
+      </div>
+      <div class="scp"><p class="t t-label c3">Pass</p><p class="t t-tileTitle ink">${passed} of 10</p></div>`;
+  }
+  function board(el, results, caption) {
+    const passed = results.filter(r => r === 'pass').length;
+    el.innerHTML = `
+      <div class="bl"><p class="t t-label c3">${caption}</p>
+        <span class="dprog">${Array.from({ length: 10 }, (_, i) => `<i${results[i] ? ` data-s="${results[i]}"` : ''}></i>`).join('')}</span></div>
+      <div class="br">${dotMatrix(pad(passed), 'lg', '#FFFFFF', 'rgba(255,255,255,.4)')}<p class="t t-label c3">of 10</p></div>`;
+    el.setAttribute('aria-label', `${passed} of 10 passed. ${caption}`);
+  }
+  function gauge(el, value, of, label, focus = 0) {
+    const CX = 150, CY = 156, R_OUT = 140, R_IN = 129, R_EDGE = 124, R_LABEL = 108, R_DASH = 114, TICKS = 44, GAP = 2, N = 4;
+    const ang = t => Math.PI - t * Math.PI;
+    const per = Math.round(TICKS / N), slots = N * per + (N - 1) * GAP, lit = Math.round(value / of * N * per);
+    const segAng = [];
+    let lines = '';
+    for (let s = 0, slot = 0, idx = 0; s < N; s++, slot += GAP) {
+      segAng.push(ang((slot + per / 2) / slots));
+      for (let j = 0; j < per; j++, slot++, idx++) {
+        const a = ang((slot + .5) / slots), rIn = j === 0 || j === per - 1 ? R_EDGE : R_IN, now = s === focus;
+        const col = idx < lit ? (now ? '#D8B451' : 'rgba(236,234,238,.6)') : 'rgba(255,255,255,.12)';
+        lines += `<line x1="${CX + rIn * Math.cos(a)}" y1="${CY - rIn * Math.sin(a)}" x2="${CX + R_OUT * Math.cos(a)}" y2="${CY - R_OUT * Math.sin(a)}" stroke="${col}" stroke-width="${now ? 1.8 : 1.4}" stroke-linecap="round"/>`;
+      }
+    }
+    el.innerHTML = `<svg viewBox="0 0 300 162" aria-hidden="true">
+      <path d="M${CX - R_DASH} ${CY} A${R_DASH} ${R_DASH} 0 0 1 ${CX + R_DASH} ${CY}" fill="none" stroke="rgba(255,255,255,.14)" stroke-width=".9" stroke-linecap="round" stroke-dasharray="0.01 2.4"/>
+      ${lines}
+      ${segAng.map((a, s) => `<text x="${CX + R_LABEL * Math.cos(a)}" y="${CY - R_LABEL * Math.sin(a) + 4}" text-anchor="middle" font-size="11" font-weight="500" font-family="ui-monospace, SF Mono, Menlo, monospace" fill="${s === focus ? '#D8B451' : '#8A8A8A'}">${s + 1}</text>`).join('')}
+      <g style="transform-box:view-box;transform-origin:${CX}px ${CY}px;transform:rotate(${(Math.PI / 2 - segAng[focus]) * 180 / Math.PI}deg)"><polygon points="${CX - 4.5},3.5 ${CX + 4.5},3.5 ${CX},10.5" fill="#D8B451"/></g>
+    </svg>
+    <div class="mid"><div class="nums">${dotMatrix(pad(value), 'lg', '#FFFFFF', 'rgba(255,255,255,.4)')}${dotMatrix('/' + pad(of), 'sm', '#8A8A8A')}</div><p class="t t-caption c3">${label}</p></div>`;
+    el.setAttribute('role', 'img');
+    el.setAttribute('aria-label', `${value} of ${of} shots. ${label}`);
+  }
+
+  // ---------- Toast ----------
+  let toastT = 0;
+  function toast(msg) {
+    const t = $('#toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  // ---------- 1 · Value ----------
+  const valueSt = stage($('[data-stage="value"]'), 'stop', { rung: 2 });
+
+  // ---------- 2 · Đang ở bàn? ----------
+  function askArt() {
+    const c = $('#cvAsk'), g = c.getContext('2d'), W = c.clientWidth, H = c.clientHeight;
+    if (!W || !H) return;
+    c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
+    const r = H * .47, x = W - r * .42, y = H * .5;
+    g.setTransform(DPR, 0, 0, DPR, 0, 0); g.clearRect(0, 0, W, H);
+    g.drawImage(shadeBall(0, CUE_REST, r * DPR), x - r, y - r, r * 2, r * 2);
+  }
+
+  // ---------- 3a · Sắp bàn: cả bàn, bi cái ở 1 diamond, ngắm theo diamond, nhãn 01 02 03 ----------
+  const setupSt = stage($('[data-stage="setup"]'), 'stop', {
+    decorate: v => {
+      const cb = RUNG_CB[1], guides = shotGuides(cb);
+      v.cue = null;
+      v.guides = (g, px) => {
+        guides(g, px);
+        g.setLineDash([2 * px, 3 * px]); g.strokeStyle = 'rgba(255,255,255,.4)'; g.lineWidth = px;
+        g.beginPath(); g.moveTo(OB.x, -SIGHT + 1.2); g.lineTo(OB.x, OB.y - R - .6); g.moveTo(-SIGHT + 1.2, OB.y); g.lineTo(OB.x - R - .6, OB.y); g.stroke();
+        g.setLineDash([]); g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 1.25 * px;
+        for (const [x, y] of [[OB.x, -SIGHT], [-SIGHT, OB.y]]) { disc(g, x, y, 1.15); g.stroke(); }
+      };
+      v.after = g => {
+        g.font = '500 9px ui-monospace, "SF Mono", Menlo, monospace'; g.textBaseline = 'middle';
+        const tag = (text, p, align) => {
+          const q = v.toPx(p), w = g.measureText(text).width + 8, x = align === 'right' ? q.x - w : q.x;
+          g.fillStyle = 'rgba(0,0,0,.62)'; g.beginPath(); g.roundRect(x, q.y - 8, w, 16, 4); g.fill();
+          g.fillStyle = 'rgba(236,234,238,.92)'; g.fillText(text, x + 4, q.y + .5);
+        };
+        tag('01', { x: OB.x + 2.4, y: OB.y - 3 });
+        tag('02', { x: cb.x + 2.4, y: cb.y + .6 });
+        tag('03', { x: ZONE.x + ZONE.r + 1, y: ZONE.y + 4 });
+      };
+    },
+  });
+  $$('.check').forEach(b => b.addEventListener('click', () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true')));
+
+  // ---------- 4a · Kết quả: chưa có set nào nên ladder Stop bắt đầu ở mức 1 ----------
+  function resultShow() {
+    state.rung = 1;
+    gauge($('#gResult'), 0, 120, '00 passed · Stop L1');
+  }
+  $('#start').addEventListener('click', () => { state.hist = ['home', 'workout']; show('workout', 1); });
+
+  // ---------- 3b · Demo: tự đánh 3 cú, tự chấm Pass, Pass, Miss ----------
+  const demoSt = stage($('[data-stage="demo"]'), 'stop');
+  const DEMO = ['pass', 'pass', 'miss'];
+  let demoRes = [], demoJob = 0;
+  function demoRender() {
+    const { rung } = ladderRung(demoRes), n = demoRes.length, passed = demoRes.filter(r => r === 'pass').length;
+    shotcard($('#scDemo'), { kind: 'Stun', tipY: STOP_TIP[rung], speed: 2.6, passed });
+    board($('#bdDemo'), demoRes, `${diamondLabel(rung)} · Shot ${n + 1} of 10`);
+    $('#liveDemo').textContent = n ? `Demo: ${passed} passed, ${n - passed} missed. Cue ball at ${diamondLabel(rung)}.` : '';
+  }
+  async function demoRun() {
+    const my = ++demoJob, wait = ms => new Promise(r => setTimeout(r, ms));
+    demoRes = []; demoSt.setRung(1, false); demoRender();
+    $('#gotIt').disabled = true;
+    if (state.reduced) {
+      demoRes = DEMO.slice(); demoSt.setRung(ladderRung(demoRes).rung, false); demoRender();
+      $('#gotIt').disabled = false;
+      return;
+    }
+    await wait(700);
+    for (const r of DEMO) {
+      if (my !== demoJob) return;
+      await demoSt.play(r);
+      if (my !== demoJob) return;
+      const btn = $(`[data-demo="${r}"]`);
+      btn.classList.add('press'); await wait(500); btn.classList.remove('press');
+      if (my !== demoJob) return;
+      demoRes.push(r); demoRender(); demoSt.setRung(ladderRung(demoRes).rung, true);
+      await wait(700);
+    }
+    if (my === demoJob) $('#gotIt').disabled = false;
+  }
+
+  // ---------- App · Home ----------
+  $('#homeDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  $('#dmUp').innerHTML = dotMatrix('01', 'xs', '#ECEAEE');
+  $('#dmCbc').innerHTML = dotMatrix('0%', 'md', '#FFFFFF', 'rgba(255,255,255,.4)');
+  $('#track').innerHTML = '<i></i>'.repeat(29);
+  $('#dmFund').innerHTML = dotMatrix('0/33', 'xs', '#ECEAEE');
+  const homeShow = () => gauge($('#gHome'), 0, 120, `00 passed · Stop L${state.rung}`);
+  $('#gear').addEventListener('click', () => go('settings'));
+
+  // ---------- App · Workout, khối 1 Stroke · Short ----------
+  const workSt = stage($('[data-stage="workout"]'), 'stroke');
+  shotcard($('#scWork'), { kind: 'Center', speed: .8, passed: 0 });
+  board($('#bdWork'), [], 'Short · Shot 1 of 10');
+  $('[data-play="workout"]').addEventListener('click', () => workSt.play());
+  $$('[data-wmark]').forEach(b => b.addEventListener('click', () => toast('Prototype ends here. In the app this records shot 1.')));
+
+  // ---------- Điều hướng: ngăn xếp lịch sử, hai lớp onboarding / app ----------
+  const screens = Object.fromEntries($$('.scr').map(s => [s.dataset.id, s]));
+  const TABLE_PATH = ['value', 'ask', 'setup', 'result'], DEMO_PATH = ['value', 'ask', 'demo'];
+  const ctl = {
+    value: { enter: () => valueSt.loop(), leave: () => valueSt.stop() },
+    ask: { enter: askArt },
+    setup: { enter: () => setupSt.redraw() },
+    result: { enter: resultShow },
+    demo: { enter: demoRun, leave: () => { demoJob++; demoSt.stop(); $$('[data-demo]').forEach(b => b.classList.remove('press')); } },
+    home: { enter: homeShow },
+    workout: { enter: () => workSt.redraw(), leave: () => workSt.stop() },
+    settings: {},
+  };
+  let cur = null;
+  function header() {
+    if (screens[cur].dataset.layer !== 'ob') return;
+    const path = ['setup', 'result'].includes(cur) ? TABLE_PATH : cur === 'demo' ? DEMO_PATH : state.pick === 'demo' ? DEMO_PATH : TABLE_PATH;
+    const i = path.indexOf(cur);
+    $('#progNum').textContent = `${pad(i + 1)} / ${pad(path.length)}`;
+    $('#prog').setAttribute('aria-label', `Step ${i + 1} of ${path.length}`);
+    $('#back').dataset.hidden = cur === 'value' || cur === 'result';
+    const skip = $('#skip');
+    skip.dataset.hidden = cur === 'result' || cur === 'demo';
+  }
+  function show(id, dir, force) {
+    if (cur === id && !force) return;
+    const to = screens[id], from = cur && cur !== id ? screens[cur] : null;
+    if (cur) ctl[cur].leave?.();
+    if (from) {
+      from.classList.remove('now'); from.inert = true;
+      if (!state.reduced && dir) { from.style.transform = `translateX(${-24 * dir}px)`; setTimeout(() => { from.style.transform = ''; }, 340); }
+    }
+    if (!state.reduced && dir && from) {
+      to.style.transition = 'none'; to.style.transform = `translateX(${24 * dir}px)`;
+      void to.offsetWidth;
+      to.style.transition = ''; to.style.transform = '';
+    }
+    phone.dataset.layer = to.dataset.layer;
+    to.classList.add('now'); to.inert = false;
+    $('.body', to).scrollTop = 0;
+    cur = id;
+    header();
+    ctl[id].enter?.(dir);
+    $('h1', to).focus({ preventScroll: true });
+  }
+  function go(id) { state.hist.push(id); show(id, 1); }
+  function back() {
+    if (state.hist.length < 2) return;
+    state.hist.pop();
+    show(state.hist[state.hist.length - 1], -1);
+  }
+  const toHome = () => { state.hist = ['home']; show('home', 1); };
+  $('#back').addEventListener('click', back);
+  $$('[data-back]').forEach(b => b.addEventListener('click', back));
+  addEventListener('keydown', e => { if (e.key === 'ArrowLeft' && state.hist.length > 1 && cur !== 'result') back(); });
+  $$('[data-go]').forEach(b => b.addEventListener('click', () => { if (b.dataset.go === 'setup') state.pick = 'table'; go(b.dataset.go); }));
+  $$('[data-pick]').forEach(b => b.addEventListener('click', () => { state.pick = b.dataset.pick; go(b.dataset.pick === 'table' ? 'setup' : 'demo'); }));
+  $('#skip').addEventListener('click', toHome);
+  $('#gotIt').addEventListener('click', toHome);
+  $('#showIntro').addEventListener('click', () => { state.hist = ['value']; state.pick = 'table'; show('value', 1); });
+
+  // Nhảy thẳng tới màn nào cũng dựng lại lịch sử đúng nhánh.
+  const JUMP = {
+    value: ['value'], ask: ['value', 'ask'], setup: ['value', 'ask', 'setup'],
+    result: ['value', 'ask', 'setup', 'result'], demo: ['value', 'ask', 'demo'],
+    home: ['home'], workout: ['home', 'workout'], settings: ['home', 'settings'],
+  };
+  function jump(id) {
+    state.hist = JUMP[id].slice();
+    if (id === 'demo') state.pick = 'demo';
+    else if (JUMP[id].includes('setup')) state.pick = 'table';
+    show(id, 0, true);
+  }
+  $('#jump').addEventListener('click', e => { const b = e.target.closest('button'); if (b) jump(b.dataset.v); });
+
+  // ---------- Thiết bị, cỡ chữ, reduce motion ----------
+  const DEVICES = {
+    max: { w: 440, h: 956, top: 62, bottom: 34, gutter: 20 },
+    se: { w: 375, h: 667, top: 20, bottom: 0, gutter: 16 },
+  };
+  function fit() {
+    const d = DEVICES[state.device], st = $('#stage');
+    const s = Math.min(1, (st.clientHeight - 40) / d.h, (st.clientWidth - 40) / d.w);
+    phone.style.transform = `scale(${s})`;
+    $('#fit').style.width = d.w * s + 'px';
+    $('#fit').style.height = d.h * s + 'px';
+  }
+  function applyDevice() {
+    const d = DEVICES[state.device];
+    phone.dataset.device = state.device;
+    phone.style.setProperty('--safe-top', d.top + 'px');
+    phone.style.setProperty('--safe-bottom', d.bottom + 'px');
+    phone.style.setProperty('--gutter', d.gutter + 'px');
+    fit();
+  }
+  addEventListener('resize', fit);
+  const stages = [valueSt, setupSt, demoSt, workSt];
+  $$('.seg[data-ctl]').forEach(seg => seg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    $$('button', seg).forEach(x => x.setAttribute('aria-pressed', x === b));
+    const v = b.dataset.v, which = seg.dataset.ctl;
+    if (which === 'device') { state.device = v; applyDevice(); }
+    if (which === 'ts') { state.ts = +v; phone.style.setProperty('--ts', v); phone.dataset.stacked = +v >= 1.6; }
+    if (which === 'motion') {
+      state.reduced = v === 'on';
+      document.body.classList.toggle('reduced', state.reduced);
+      if (cur) { ctl[cur].leave?.(); ctl[cur].enter?.('refresh'); }
+    }
+  }));
+  if (state.reduced) {
+    document.body.classList.add('reduced');
+    $$('[data-ctl="motion"] button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === 'on'));
+  }
+
+  // Canvas đổi cỡ (máy, cỡ chữ) thì vẽ lại đúng độ phân giải.
+  const ro = new ResizeObserver(entries => {
+    for (const { target } of entries) {
+      if (target.id === 'cvAsk') { askArt(); continue; }
+      stages.find(s => s.v && target.closest('.stagebox') === stageBoxOf(s))?.redraw();
+    }
+  });
+  const boxes = new Map();
+  const stageBoxOf = s => boxes.get(s);
+  [['value', valueSt], ['setup', setupSt], ['demo', demoSt], ['workout', workSt]].forEach(([k, s]) => {
+    const box = $(`[data-stage="${k}"]`);
+    boxes.set(s, box);
+    ro.observe($('.tbl canvas', box));
+  });
+  ro.observe($('#cvAsk'));
+
+  buildMask();
+  applyDevice();
+  stages.forEach(s => s.redraw());
+  show('value', 0, true);
+  document.fonts && document.fonts.ready.then(() => {
+    buildMask();
+    for (const s of stages) { s.v.balls.forEach(b => { b.key = ''; }); s.redraw(); }
+    fit();
+  });
+})();
+</script>
+</body>
+</html>

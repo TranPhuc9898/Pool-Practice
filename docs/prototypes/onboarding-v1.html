@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onboarding v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Doto:wght@900&display=swap" rel="stylesheet">
+<!--
+  Prototype onboarding 3 màn. Màu, chữ, bề mặt chép từ src/design-system/tokens (color, typography, material).
+  Dữ liệu khối tập chép từ src/pool-engine/workout.ts, bàn và bi từ src/pool-engine/drills/02-stop.ts.
+  Cỡ chữ mô phỏng Dynamic Type: mỗi style nhân min(scale, maxScale) như `maxScale` trong typography.ts.
+-->
+<style>
+:root{
+  --bg:#000;
+  --text:#FFFFFF; --text2:#BDBDBD; --text3:#8A8A8A;
+  --accent-gold:#C9A45C;          /* accentGold: large title Doto */
+  --gold:#D8B451;                 /* HOME_GOLD: vạch gauge, marker */
+  --ink-title:#ECEAEE; --ink-body:rgba(236,234,238,.55);
+  --tick-off:rgba(255,255,255,.12); --tick-past:rgba(236,234,238,.6);
+  --border-subtle:rgba(255,255,255,.06);
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --ts:1; --gutter:20px; --safe-top:62px; --safe-bottom:34px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0A0A0A;color:var(--text);font-family:'Be Vietnam Pro',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- Khung prototype (ngoài điện thoại) ---------- */
+.bench{display:flex;flex-direction:column;height:100%}
+.controls{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:center;padding:12px 16px;border-bottom:1px solid #1A1A1A;font-size:13px;color:#9A9A9A}
+.ctl{display:flex;align-items:center;gap:8px}
+.seg{display:flex;background:#151515;border-radius:9px;padding:2px}
+.seg button{padding:6px 10px;border-radius:7px;font-size:12px;font-weight:500;color:#9A9A9A}
+.seg button[aria-pressed="true"]{background:#2A2A2A;color:#fff}
+.stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden}
+.fit{position:relative}
+
+/* ---------- Điện thoại ---------- */
+.phone{position:absolute;left:0;top:0;transform-origin:0 0;background:var(--bg);overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 0 0 10px #161616,0 0 0 11px #2A2A2A,0 30px 80px rgba(0,0,0,.6)}
+.phone[data-device="max"]{width:440px;height:956px;border-radius:56px}
+.phone[data-device="se"]{width:375px;height:667px;border-radius:6px}
+.status{flex:0 0 var(--safe-top);display:flex;align-items:flex-end;justify-content:space-between;padding:0 30px 14px 46px;font:600 17px/1 -apple-system,system-ui,sans-serif}
+.phone[data-device="se"] .status{padding:0 8px 4px 8px;font-size:12px;align-items:center}
+.status .icons{display:flex;gap:6px;align-items:center}
+.home-ind{position:absolute;left:50%;bottom:8px;width:140px;height:5px;margin-left:-70px;border-radius:3px;background:#fff;pointer-events:none;z-index:5}
+.phone[data-device="se"] .home-ind{display:none}
+
+/* ---------- Chữ: token typography ---------- */
+.t{font-size:calc(var(--fs) * min(var(--ts), var(--mx)) * 1px);line-height:calc(var(--lh) * min(var(--ts), var(--mx)) * 1px);margin:0}
+.t-dotDisplay{--fs:44;--lh:46;--mx:1.2;font-family:Doto,monospace;font-weight:900;letter-spacing:.4px}
+.t-title1{--fs:28;--lh:32;--mx:1.4;font-weight:600;letter-spacing:-.6px}
+.t-bodyLarge{--fs:17;--lh:24;--mx:2;font-weight:400}
+.t-body{--fs:15;--lh:21;--mx:2;font-weight:400}
+.t-callout{--fs:14;--lh:19;--mx:2;font-weight:500}
+.t-caption{--fs:13;--lh:17;--mx:2;font-weight:400;letter-spacing:.1px}
+.t-eyebrow{--fs:12;--lh:16;--mx:1.6;font-weight:600;letter-spacing:1.2px;text-transform:uppercase}
+.t-label{--fs:11;--lh:14;--mx:1.6;font-weight:500;letter-spacing:1.5px;text-transform:uppercase}
+.t-mono{--fs:13;--lh:18;--mx:1.8;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-weight:500;letter-spacing:.2px}
+.t-monoSmall{--fs:11;--lh:14;--mx:1.6;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-weight:500;letter-spacing:.4px}
+.t-tileTitle{--fs:17;--lh:21;--mx:1.6;font-weight:500;letter-spacing:-.1px}
+.t-button{--fs:15;--lh:20;--mx:1.6;font-weight:600;letter-spacing:1.2px;text-transform:uppercase}
+.c2{color:var(--text2)}.c3{color:var(--text3)}.cg{color:var(--accent-gold)}
+/* Tên app một dòng, co theo bề ngang: bản native là numberOfLines={1} + adjustsFontSizeToFit. */
+.t.brand{font-size:min(calc(44px * min(var(--ts), 1.2)), 12.4cqi);line-height:1.05;white-space:nowrap}
+
+/* ---------- Header chung: back · chấm trang · Skip ---------- */
+.head{display:grid;grid-template-columns:minmax(44px,1fr) auto minmax(44px,1fr);align-items:center;min-height:44px;padding:0 calc(var(--gutter) - 10px)}
+.head .back,.head .skip{min-height:44px;min-width:44px;display:flex;align-items:center;transition:opacity .2s ease-out}
+.head .back{justify-content:flex-start;padding-left:4px}
+.head .skip{justify-content:flex-end;justify-self:end;padding:0 10px}
+.head [data-hidden="true"]{opacity:0;pointer-events:none}
+.dots{display:flex;gap:6px;align-items:center}
+.dots i{display:block;width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.24);transition:width .24s var(--ease-out),background-color .24s ease-out}
+.dots i.on{width:18px;background:var(--gold)}
+
+/* ---------- Pager ---------- */
+.pager{flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+.pager::-webkit-scrollbar{display:none}
+.page{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column}
+.body{container-type:inline-size;flex:1;min-height:0;overflow-y:auto;padding:8px var(--gutter) 20px;display:flex;flex-direction:column;gap:20px;scrollbar-width:none}
+.body::-webkit-scrollbar{display:none}
+/* Máy cao thì nội dung ra giữa, máy thấp hoặc chữ to thì margin auto về 0 và cuộn được. */
+.body>:first-child{margin-top:auto}.body>:last-child{margin-bottom:auto}
+.copy{display:flex;flex-direction:column;gap:8px}
+.foot{position:relative;padding:12px var(--gutter) max(calc(var(--safe-bottom) + 8px), 16px);display:flex;flex-direction:column;gap:4px;background:var(--bg)}
+.foot::before{content:"";position:absolute;left:0;right:0;top:-24px;height:24px;background:linear-gradient(rgba(0,0,0,0),#000);pointer-events:none}
+
+/* ---------- Bề mặt: homeSurfaces ---------- */
+.bevel-hero{box-shadow:inset 0 1.5px 1px rgba(255,255,255,.12),inset 0 -3px 10px rgba(0,0,0,.45),inset 0 0 28px rgba(255,255,255,.025),inset 0 0 0 .5px rgba(255,255,255,.035),0 18px 36px rgba(0,0,0,.6)}
+.hero{position:relative;border-radius:24px;padding:18px 20px 20px;display:flex;flex-direction:column;gap:6px;
+  background:radial-gradient(ellipse 320px 260px at 100% 100%,rgba(216,180,81,.30) 0%,rgba(216,180,81,.09) 42%,rgba(216,180,81,0) 100%),
+    radial-gradient(ellipse 240px 200px at 0% 0%,rgba(255,255,255,.06) 0%,rgba(255,255,255,0) 100%),
+    linear-gradient(170deg,#161616 0%,#0E0E0E 50%,#090909 100%)}
+.tile{position:relative;border-radius:20px;
+  background:radial-gradient(ellipse 170px 140px at 18% 8%,rgba(255,255,255,.07) 0%,rgba(255,255,255,0) 72%),linear-gradient(160deg,#1D1D1D 0%,#121212 55%,#0A0A0A 100%);
+  box-shadow:inset 0 1.5px 1px rgba(255,255,255,.13),inset 0 -3px 10px rgba(0,0,0,.45),inset 0 0 28px rgba(255,255,255,.03),inset 0 0 0 .5px rgba(255,255,255,.035),0 14px 28px rgba(0,0,0,.55)}
+
+/* Dải sáng quét card hero: 7s một vòng, quét 1.7s, nghỉ phần còn lại. */
+.sheen{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
+.sheen::before{content:"";position:absolute;top:-20%;bottom:-20%;left:0;width:55%;mix-blend-mode:screen;
+  background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.025) 30%,rgba(255,255,255,.09) 47%,rgba(216,180,81,.13) 51%,rgba(255,255,255,.03) 66%,rgba(255,255,255,0) 100%);
+  animation:sweep 7s ease-in-out .9s infinite both}
+@keyframes sweep{0%{transform:translateX(-120%) skewX(-14deg)}24.3%,100%{transform:translateX(202%) skewX(-14deg)}}
+.page:not(.now) .sheen::before{animation-play-state:paused}
+
+/* ---------- Nút ---------- */
+.btn{min-height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;transition:transform .12s var(--ease-out),filter .12s ease-out}
+.btn:active{transform:scale(.97)}
+.btn-gold{background:linear-gradient(180deg,#DDB955 0%,#C29C40 100%);color:#0A0A0A;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.32),inset 0 -1px 0 rgba(0,0,0,.18),0 10px 24px rgba(216,180,81,.10)}
+.btn-graphite{color:#fff;
+  background:radial-gradient(ellipse 120px 90px at 0% 0%,rgba(255,255,255,.06) 0%,rgba(255,255,255,0) 70%),linear-gradient(160deg,#171717 0%,#0F0F0F 55%,#0A0A0A 100%);
+  box-shadow:inset 0 1.5px 1px rgba(255,255,255,.11),inset 0 -3px 10px rgba(0,0,0,.45),inset 0 0 28px rgba(255,255,255,.025),inset 0 0 0 .5px rgba(255,255,255,.035),0 14px 28px rgba(0,0,0,.55)}
+.btn-text{min-height:44px;border-radius:12px;color:var(--text2)}
+.btn svg{flex:0 0 auto}
+
+/* ---------- Màn 1: bàn ---------- */
+.table{width:100%;aspect-ratio:111/61;display:block;margin:6px 0 4px}
+
+/* ---------- Màn 2: gauge + danh sách khối ---------- */
+.gauge{position:relative;width:100%;aspect-ratio:300/162}
+.gauge svg.arc{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.gauge .mid{position:absolute;left:0;right:0;bottom:3%;display:flex;flex-direction:column;align-items:center;gap:12px}
+.gauge .nums{display:flex;align-items:flex-end;gap:6px}
+.blocks{list-style:none;margin:0;padding:4px 16px}
+.blocks li{display:grid;grid-template-columns:auto 1fr auto;gap:2px 12px;align-items:baseline;padding:12px 0;border-top:.5px solid var(--border-subtle)}
+.blocks li:first-child{border-top:0}
+.blocks .n{grid-column:1;grid-row:1;color:var(--text3);transition:color .16s ease-out}
+.blocks li.now .n{color:var(--gold)}
+.blocks li.done .n{color:var(--text2)}
+.blocks .name{grid-column:2;grid-row:1}
+.blocks .goal{grid-column:2;grid-row:2}
+.blocks .count{grid-column:3;grid-row:1 / span 2;align-self:center;color:var(--text3)}
+.diamond-note{display:flex;gap:12px;align-items:center}
+.diamond-note svg{flex:0 0 auto}
+
+/* ---------- Màn 3: thử chấm ---------- */
+.demo{padding:18px 16px 16px;gap:14px}
+.score{display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0 2px}
+.score .nums{display:flex;align-items:flex-end;gap:6px}
+.demo-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.shots{display:flex;justify-content:space-between;gap:4px}
+.shot{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.shot i{display:block;border-radius:50%;transition:all .16s var(--ease-out)}
+.shot[data-s="todo"] i{width:6px;height:6px;background:var(--tick-off)}
+.shot[data-s="next"] i{width:14px;height:14px;box-shadow:inset 0 0 0 1.5px var(--gold)}
+.shot[data-s="pass"] i{width:14px;height:14px;background:var(--ink-title)}
+.shot[data-s="miss"] i{width:14px;height:14px;box-shadow:inset 0 0 0 1.5px var(--ink-title)}
+.row2{display:flex;gap:12px}
+.row2 .btn{flex:1}
+
+/* ---------- Màn kết của prototype ---------- */
+.end{position:absolute;inset:0;z-index:4;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:0 32px;text-align:center;opacity:0;pointer-events:none;transition:opacity .24s ease-out}
+.end.show{opacity:1;pointer-events:auto}
+.end .btn{min-width:200px}
+
+@media (prefers-reduced-motion: reduce){.sheen::before{animation:none;display:none}}
+.reduced .sheen::before{animation:none;display:none}
+.reduced *{transition-duration:0s!important}
+</style>
+</head>
+<body>
+<div class="bench">
+  <div class="controls" role="toolbar" aria-label="Prototype controls">
+    <div class="ctl">Máy
+      <div class="seg" data-ctl="device">
+        <button data-v="se">iPhone SE · 375×667</button>
+        <button data-v="max" aria-pressed="true">Pro Max · 440×956</button>
+      </div>
+    </div>
+    <div class="ctl">Cỡ chữ
+      <div class="seg" data-ctl="ts">
+        <button data-v="1" aria-pressed="true">Mặc định</button>
+        <button data-v="1.353">xxxL</button>
+        <button data-v="3.12">AX5</button>
+      </div>
+    </div>
+    <div class="ctl">Reduce Motion
+      <div class="seg" data-ctl="motion">
+        <button data-v="off" aria-pressed="true">Tắt</button>
+        <button data-v="on">Bật</button>
+      </div>
+    </div>
+    <div class="seg"><button id="restart">Chạy lại từ đầu</button></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="fit" id="fit">
+      <div class="phone" id="phone" data-device="max">
+        <div class="status" aria-hidden="true">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="#fff"><path d="M8 2.2c2.3 0 4.4.9 6 2.4l1.2-1.3A10.4 10.4 0 0 0 8 .4 10.4 10.4 0 0 0 .8 3.3L2 4.6a8.6 8.6 0 0 1 6-2.4Zm0 3.6c1.3 0 2.5.5 3.4 1.3l1.2-1.3A6.6 6.6 0 0 0 8 4a6.6 6.6 0 0 0-4.6 1.8l1.2 1.3c.9-.8 2.1-1.3 3.4-1.3Zm0 3.6c-.5 0-1 .2-1.3.5L8 11.3l1.3-1.4c-.3-.3-.8-.5-1.3-.5Z"/></svg>
+            <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="22" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".4"/><rect x="2" y="2" width="19" height="9" rx="2" fill="#fff"/><path d="M24.5 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2Z" fill="#fff" fill-opacity=".4"/></svg>
+          </span>
+        </div>
+
+        <header class="head">
+          <button class="back" id="back" data-hidden="true" aria-label="Back">
+            <svg width="13" height="21" viewBox="0 0 13 21" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 2 2.5 10.5l8 8.5"/></svg>
+          </button>
+          <div class="dots" id="dots" role="img" aria-label="Page 1 of 3"><i class="on"></i><i></i><i></i></div>
+          <button class="skip t t-callout c2" id="skip">Skip</button>
+        </header>
+
+        <main class="pager" id="pager">
+          <!-- 1 · Giá trị: bàn thật, cú Stop chạy thật -->
+          <section class="page now" aria-label="Welcome">
+            <div class="body">
+              <p class="t t-dotDisplay brand cg">Pool Training</p>
+              <div class="hero bevel-hero">
+                <p class="t t-eyebrow c3">Drill 02 · Stop shot</p>
+                <svg class="table" id="table" viewBox="0 0 111 61" role="img" aria-label="Stop shot: the cue ball pockets the 1-ball and stops in the zone."></svg>
+                <p class="t t-callout" style="color:var(--ink-body);font-weight:400">Pocket the 1-ball. The cue ball stops in the zone.</p>
+                <div class="sheen" aria-hidden="true"></div>
+              </div>
+              <div class="copy">
+                <h1 class="t t-title1">Train the cue ball.</h1>
+                <p class="t t-bodyLarge c2">A daily workout of 120 shots on your own table, and a drill library that shows where the cue ball should end up.</p>
+              </div>
+            </div>
+            <div class="foot">
+              <button class="btn btn-gold" data-next><span class="t t-button">Continue</span></button>
+            </div>
+          </section>
+
+          <!-- 2 · Bài tập ngày: gauge y như Home -->
+          <section class="page" aria-label="Daily workout" inert>
+            <div class="body">
+              <div class="hero bevel-hero">
+                <p class="t t-eyebrow c3">Daily · Fundamentals</p>
+                <div class="gauge" aria-hidden="true">
+                  <svg class="arc" id="arc" viewBox="0 0 300 162"></svg>
+                  <div class="mid">
+                    <div class="nums" id="nums"></div>
+                    <p class="t t-label c3" id="gcap">Shots today</p>
+                  </div>
+                </div>
+                <div class="sheen" aria-hidden="true"></div>
+              </div>
+              <div class="copy">
+                <h1 class="t t-title1">One workout a day.</h1>
+                <p class="t t-bodyLarge c2">Four blocks of 30 shots. The ring fills as you shoot and starts over at midnight.</p>
+              </div>
+              <ul class="blocks tile" id="blocks"></ul>
+              <div class="diamond-note">
+                <svg width="76" height="22" viewBox="0 0 76 22" aria-hidden="true">
+                  <rect x="0" y="12" width="76" height="8" rx="2" fill="#1C1C1C"/>
+                  <g fill="#E9E4D4"><path d="M10 16l2-2 2 2-2 2z"/><path d="M36 16l2-2 2 2-2 2z"/><path d="M62 16l2-2 2 2-2 2z"/></g>
+                  <path d="M12 7v-3h26v3" fill="none" stroke="#D8B451" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p class="t t-caption c3">Distances are counted in diamonds, the markers on the rail.</p>
+              </div>
+            </div>
+            <div class="foot">
+              <button class="btn btn-gold" data-next><span class="t t-button">Continue</span></button>
+            </div>
+          </section>
+
+          <!-- 3 · Tự chấm: bấm thử Pass / Miss -->
+          <section class="page" aria-label="You call every shot" inert>
+            <div class="body">
+              <div class="hero bevel-hero demo">
+                <div class="demo-head">
+                  <p class="t t-eyebrow c3">Try it</p>
+                  <p class="t t-monoSmall c3" id="demoCap">STOP · SET 1 · SHOT 1 OF 10</p>
+                </div>
+                <div class="score" aria-hidden="true">
+                  <div class="nums" id="scoreNums"></div>
+                  <p class="t t-label c3" id="scoreCap">Passed · need 7</p>
+                </div>
+                <div class="shots" id="shots" aria-hidden="true"></div>
+                <div class="row2">
+                  <button class="btn btn-gold" id="pass">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#0A0A0A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.5 6.2 12 13.5 4"/></svg>
+                    <span class="t t-button">Pass</span>
+                  </button>
+                  <button class="btn btn-graphite" id="miss">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#BDBDBD" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M2.5 2.5l9 9M11.5 2.5l-9 9"/></svg>
+                    <span class="t t-button">Miss</span>
+                  </button>
+                </div>
+                <p class="sr" aria-live="polite" id="demoLive"></p>
+                <div class="sheen" aria-hidden="true"></div>
+              </div>
+              <div class="copy">
+                <h1 class="t t-title1">You call every shot.</h1>
+                <p class="t t-bodyLarge c2">Shoot on your table, then tap Pass or Miss. Your streak and level come from these taps, so call them straight.</p>
+              </div>
+            </div>
+            <div class="foot">
+              <button class="btn btn-gold" id="start"><span class="t t-button">Start workout</span></button>
+              <button class="btn btn-text" id="explore"><span class="t t-callout">Explore first</span></button>
+            </div>
+          </section>
+        </main>
+
+        <div class="end" id="end" aria-live="polite">
+          <p class="t t-dotDisplay cg" id="endTitle">Home</p>
+          <p class="t t-body c2" id="endBody"></p>
+          <button class="btn btn-graphite" id="replay"><span class="t t-button">Replay intro</span></button>
+        </div>
+        <div class="home-ind" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const phone = $('#phone'), pager = $('#pager'), pages = $$('.page');
+  const mq = matchMedia('(prefers-reduced-motion: reduce)');
+  const state = { device: 'max', ts: 1, reduced: mq.matches, page: 0 };
+
+  // ---------- Thiết bị, cỡ chữ, reduce motion ----------
+  const DEVICES = {
+    max: { w: 440, h: 956, top: 62, bottom: 34, gutter: 20 },
+    se:  { w: 375, h: 667, top: 20, bottom: 0,  gutter: 16 },
+  };
+  function applyDevice() {
+    const d = DEVICES[state.device];
+    phone.dataset.device = state.device;
+    phone.style.setProperty('--safe-top', d.top + 'px');
+    phone.style.setProperty('--safe-bottom', d.bottom + 'px');
+    phone.style.setProperty('--gutter', d.gutter + 'px');
+    fit();
+    pager.scrollTo({ left: state.page * pager.clientWidth, behavior: 'auto' });
+  }
+  function fit() {
+    const d = DEVICES[state.device], stage = $('#stage');
+    const s = Math.min(1, (stage.clientHeight - 40) / d.h, (stage.clientWidth - 40) / d.w);
+    phone.style.transform = `scale(${s})`;
+    $('#fit').style.width = d.w * s + 'px';
+    $('#fit').style.height = d.h * s + 'px';
+    pager.scrollLeft = state.page * pager.clientWidth;
+  }
+  addEventListener('resize', fit);
+
+  $$('.seg[data-ctl]').forEach(seg => seg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    $$('button', seg).forEach(x => x.setAttribute('aria-pressed', x === b));
+    const v = b.dataset.v, ctl = seg.dataset.ctl;
+    if (ctl === 'device') { state.device = v; applyDevice(); }
+    if (ctl === 'ts') { state.ts = +v; phone.style.setProperty('--ts', v); }
+    if (ctl === 'motion') { state.reduced = v === 'on'; document.body.classList.toggle('reduced', state.reduced); onPage(true); }
+  }));
+  if (state.reduced) {
+    document.body.classList.add('reduced');
+    $$('[data-ctl="motion"] button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === 'on'));
+  }
+
+  // ---------- Pager ----------
+  function goTo(i) {
+    pager.scrollTo({ left: i * pager.clientWidth, behavior: state.reduced ? 'auto' : 'smooth' });
+  }
+  let raf = 0;
+  pager.addEventListener('scroll', () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      const i = Math.round(pager.scrollLeft / pager.clientWidth);
+      if (i !== state.page) { state.page = i; onPage(); }
+    });
+  });
+  function onPage(force) {
+    const i = state.page;
+    pages.forEach((p, k) => { p.classList.toggle('now', k === i); p.inert = k !== i; });
+    $$('#dots i').forEach((d, k) => d.classList.toggle('on', k === i));
+    $('#dots').setAttribute('aria-label', `Page ${i + 1} of 3`);
+    $('#back').dataset.hidden = i === 0;
+    $('#skip').dataset.hidden = i === 2;
+    i === 0 ? table.play() : table.stop();
+    if (i === 1) gauge.play(); else if (force) gauge.reset();
+  }
+  $$('[data-next]').forEach(b => b.addEventListener('click', () => goTo(state.page + 1)));
+  $('#back').addEventListener('click', () => goTo(state.page - 1));
+  addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' && state.page < 2) goTo(state.page + 1);
+    if (e.key === 'ArrowLeft' && state.page > 0) goTo(state.page - 1);
+  });
+
+  // Prototype dừng ở đây: app thật đóng modal, ghi `onboarding` vào kv-store, mở Home hoặc /workout.
+  function finish(title, body) {
+    table.stop();
+    $('#endTitle').textContent = title;
+    $('#endBody').textContent = body;
+    $('#end').classList.add('show');
+  }
+  $('#skip').addEventListener('click', () => finish('Home', 'Skipped. The app lands on Home. Settings › Show intro brings this back.'));
+  $('#explore').addEventListener('click', () => finish('Home', 'The app lands on Home with the Today workout on top.'));
+  $('#start').addEventListener('click', () => finish('Workout', 'The app opens the first block: Stroke, Short, shot 1 of 10.'));
+  function restart() {
+    $('#end').classList.remove('show');
+    demo.reset();
+    state.page = 0;
+    pager.scrollTo({ left: 0, behavior: 'auto' });
+    onPage(true);
+  }
+  $('#replay').addEventListener('click', restart);
+  $('#restart').addEventListener('click', restart);
+
+  // ---------- Màn 1: bàn bida, drill 02 ----------
+  // Toạ độ inch: bàn 100×50 + băng 5.5. Drill dùng toạ độ chuẩn hoá (x ngang bàn, y dọc bàn), footLeft ở góc trên trái.
+  const RAIL = 5.5, R = 1.125;
+  const P = (x, y) => [RAIL + y * 100, RAIL + x * 50];
+  const CB = P(0.518, 0.518), OB = P(0.25, 0.25), ZONE = P(0.27, 0.27), POCKET = [RAIL + 0.9, RAIL + 0.9];
+  const u = [CB[0] - OB[0], CB[1] - OB[1]], ul = Math.hypot(...u);
+  const CONTACT = [OB[0] + (u[0] / ul) * 2 * R, OB[1] + (u[1] / ul) * 2 * R];
+
+  const table = (() => {
+    const svg = $('#table');
+    const diamonds = [];
+    for (const k of [1, 2, 3, 5, 6, 7]) for (const y of [2.75, 58.25]) diamonds.push([RAIL + 12.5 * k, y]);
+    for (const k of [1, 2, 3]) for (const x of [2.75, 108.25]) diamonds.push([x, RAIL + 12.5 * k]);
+    const pockets = [[5.2, 5.2, 2.7], [105.8, 5.2, 2.7], [5.2, 55.8, 2.7], [105.8, 55.8, 2.7], [55.5, 4.6, 2.4], [55.5, 56.4, 2.4]];
+    svg.innerHTML = `
+      <defs>
+        <radialGradient id="cloth" cx="50%" cy="45%" r="65%"><stop offset="0" stop-color="#157553"/><stop offset="1" stop-color="#0E5A3A"/></radialGradient>
+        <radialGradient id="cbg" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#F4F1E8"/><stop offset="1" stop-color="#C9C4B6"/></radialGradient>
+        <radialGradient id="obg" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#FFE27A"/><stop offset=".55" stop-color="#F2C230"/><stop offset="1" stop-color="#B98F14"/></radialGradient>
+      </defs>
+      <rect x="0" y="0" width="111" height="61" rx="3" fill="#1C1C1C"/>
+      <rect x="0.4" y="0.4" width="110.2" height="60.2" rx="2.7" fill="none" stroke="rgba(255,255,255,.08)" stroke-width=".4"/>
+      <rect x="${RAIL}" y="${RAIL}" width="100" height="50" fill="url(#cloth)"/>
+      ${diamonds.map(([x, y]) => `<path d="M${x} ${y - 0.55}l.55 .55-.55 .55-.55-.55z" fill="#E9E4D4"/>`).join('')}
+      ${pockets.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#030303"/>`).join('')}
+      <circle cx="${ZONE[0]}" cy="${ZONE[1]}" r="4" fill="rgba(244,241,232,.07)" stroke="rgba(244,241,232,.45)" stroke-width=".3" stroke-dasharray=".8 .8"/>
+      <line x1="${OB[0]}" y1="${OB[1]}" x2="${POCKET[0]}" y2="${POCKET[1]}" stroke="rgba(244,241,232,.5)" stroke-width=".3" stroke-dasharray=".9 .9"/>
+      <line x1="${CB[0]}" y1="${CB[1]}" x2="${CONTACT[0]}" y2="${CONTACT[1]}" stroke="rgba(245,197,66,.9)" stroke-width=".35" stroke-dasharray="1.2 .9"/>
+      <g id="ob"><circle r="${R}" fill="url(#obg)"/><circle r=".55" fill="#F4F1E8"/><text y=".26" text-anchor="middle" font-size=".75" font-weight="700" fill="#111" font-family="Be Vietnam Pro, system-ui">1</text></g>
+      <g id="cb"><circle r="${R}" fill="url(#cbg)"/></g>`;
+    const cb = $('#cb', svg), ob = $('#ob', svg);
+    const put = (g, [x, y], o = 1, s = 1) => { g.setAttribute('transform', `translate(${x} ${y}) scale(${s})`); g.setAttribute('opacity', o); };
+    const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    const easeOut = t => 1 - Math.pow(1 - t, 2.2);
+    const clamp = t => Math.max(0, Math.min(1, t));
+    const LOOP = 4400;
+    let id = 0, t0 = 0;
+    function frame(now) {
+      const t = (now - t0) % LOOP;
+      // Bi cái lăn tới, chạm, đứng yên tại điểm chạm. Bi 1 chạy vào lỗ rồi rơi.
+      const cbT = easeOut(clamp((t - 500) / 600));
+      const obT = easeOut(clamp((t - 1100) / 800));
+      const fadeOut = 1 - clamp((t - 3700) / 300), fadeIn = clamp((t - 4000) / 400);
+      if (t < 4000) {
+        put(cb, lerp(CB, CONTACT, cbT), fadeOut);
+        const drop = clamp((obT - 0.82) / 0.18);
+        put(ob, lerp(OB, POCKET, obT), 1 - drop, 1 - drop * 0.35);
+      } else {
+        put(cb, CB, fadeIn);
+        put(ob, OB, fadeIn);
+      }
+      id = requestAnimationFrame(frame);
+    }
+    function still() { put(cb, CB); put(ob, OB); }
+    still();
+    return {
+      play() { this.stop(); if (state.reduced) return still(); t0 = performance.now(); id = requestAnimationFrame(frame); },
+      stop() { cancelAnimationFrame(id); id = 0; still(); },
+    };
+  })();
+
+  // ---------- Màn 2: gauge, chép hình học ProgramGauge ----------
+  const BLOCKS = [ // src/pool-engine/workout.ts · WORKOUT
+    { title: 'Stroke', goal: 'Cue ball returns to the tip' },
+    { title: 'Stop', goal: 'Cue ball stops in the zone' },
+    { title: 'Follow', goal: 'Cue ball rolls into the zone' },
+    { title: 'Draw', goal: 'Cue ball draws back into the zone' },
+  ];
+  const TOTAL = 120, PER_BLOCK = 30;
+  $('#blocks').innerHTML = BLOCKS.map((b, i) => `
+    <li><span class="n t t-monoSmall">0${i + 1}</span>
+      <span class="name t t-tileTitle">${b.title}</span>
+      <span class="count t t-monoSmall">${PER_BLOCK} SHOTS</span>
+      <span class="goal t t-caption c3">${b.goal}</span></li>`).join('');
+
+  const GLYPHS = {
+    '0': ['01110', '10001', '10011', '10101', '11001', '10001', '01110'],
+    '1': ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],
+    '2': ['01110', '10001', '00001', '00010', '00100', '01000', '11111'],
+    '3': ['11110', '00001', '00001', '01110', '00001', '00001', '11110'],
+    '4': ['00010', '00110', '01010', '10010', '11111', '00010', '00010'],
+    '5': ['11111', '10000', '11110', '00001', '00001', '10001', '01110'],
+    '6': ['00110', '01000', '10000', '11110', '10001', '10001', '01110'],
+    '7': ['11111', '00001', '00010', '00100', '01000', '01000', '01000'],
+    '8': ['01110', '10001', '10001', '01110', '10001', '10001', '01110'],
+    '9': ['01110', '10001', '10001', '01111', '00001', '00010', '01100'],
+    '/': ['00001', '00010', '00010', '00100', '01000', '01000', '10000'],
+  };
+  const DM = { lg: { d: 5, s: 2, g: 5 }, sm: { d: 2.5, s: 1.25, g: 2.5 } };
+  function dotMatrix(text, size, color, glow) {
+    const m = DM[size], pitch = m.d + m.s;
+    let x = 0, dots = '';
+    for (const ch of text) {
+      const g = GLYPHS[ch];
+      g.forEach((row, r) => [...row].forEach((b, c) => {
+        if (b === '1') dots += `<circle cx="${x + c * pitch + m.d / 2}" cy="${r * pitch + m.d / 2}" r="${m.d / 2}"/>`;
+      }));
+      x += 5 * m.d + 4 * m.s + m.g;
+    }
+    const w = x - m.g, h = 7 * m.d + 6 * m.s;
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="${color}"${glow ? ` style="filter:drop-shadow(0 0 3px ${glow})"` : ''}>${dots}</svg>`;
+  }
+  const pad = n => String(n).padStart(2, '0');
+
+  const gauge = (() => {
+    const CX = 150, CY = 156, R_OUT = 140, R_IN = 129, R_EDGE = 124, R_LABEL = 108, R_DASH = 114, TICKS = 44, GAP = 2, N = 4;
+    const ang = t => Math.PI - t * Math.PI;
+    const per = Math.round(TICKS / N), slots = N * per + (N - 1) * GAP;
+    const ticks = [], segAng = [];
+    for (let s = 0, slot = 0; s < N; s++, slot += GAP) {
+      segAng.push(ang((slot + per / 2) / slots));
+      for (let j = 0; j < per; j++, slot++) ticks.push({ seg: s, a: ang((slot + 0.5) / slots), edge: j === 0 || j === per - 1, j });
+    }
+    const svg = $('#arc');
+    svg.innerHTML = `
+      <path d="M${CX - R_DASH} ${CY} A${R_DASH} ${R_DASH} 0 0 1 ${CX + R_DASH} ${CY}" fill="none" stroke="rgba(255,255,255,.14)" stroke-width=".9" stroke-linecap="round" stroke-dasharray="0.01 2.4"/>
+      ${ticks.map(({ a, edge }) => {
+        const rIn = edge ? R_EDGE : R_IN;
+        return `<line x1="${CX + rIn * Math.cos(a)}" y1="${CY - rIn * Math.sin(a)}" x2="${CX + R_OUT * Math.cos(a)}" y2="${CY - R_OUT * Math.sin(a)}" stroke-linecap="round" style="transition:stroke .16s ease-out"/>`;
+      }).join('')}
+      ${segAng.map((a, s) => `<text x="${CX + R_LABEL * Math.cos(a)}" y="${CY - R_LABEL * Math.sin(a) + 4}" text-anchor="middle" font-size="11" font-weight="500" font-family="ui-monospace, SF Mono, Menlo, monospace">${s + 1}</text>`).join('')}
+      <g id="marker" style="transform-box:view-box;transform-origin:${CX}px ${CY}px;transition:transform .24s cubic-bezier(.23,1,.32,1),opacity .24s">
+        <polygon points="${CX - 4.5},${3.5} ${CX + 4.5},${3.5} ${CX},${10.5}" fill="#D8B451"/>
+      </g>`;
+    const lines = $$('line', svg), labels = $$('text', svg), marker = $('#marker', svg), rows = $$('#blocks li');
+
+    function render(fills, focus, value) {
+      ticks.forEach(({ seg, j }, i) => {
+        const lit = j < Math.round(fills[seg] * per), now = seg === focus;
+        lines[i].setAttribute('stroke', lit ? (now ? '#D8B451' : 'rgba(236,234,238,.6)') : 'rgba(255,255,255,.12)');
+        lines[i].setAttribute('stroke-width', now ? 1.8 : 1.4);
+      });
+      labels.forEach((l, s) => l.setAttribute('fill', s === focus ? '#D8B451' : fills[s] >= 1 ? '#BDBDBD' : '#8A8A8A'));
+      marker.style.opacity = focus >= 0 ? 1 : 0;
+      if (focus >= 0) marker.style.transform = `rotate(${(Math.PI / 2 - segAng[focus]) * 180 / Math.PI}deg)`;
+      rows.forEach((r, s) => { r.classList.toggle('now', s === focus); r.classList.toggle('done', fills[s] >= 1 && s !== focus); });
+      $('#nums').innerHTML = dotMatrix(pad(value), 'lg', '#FFFFFF', 'rgba(255,255,255,.45)') + dotMatrix('/' + TOTAL, 'sm', '#8A8A8A');
+    }
+    // Mỗi khối đổ đầy 650ms, nối nhau. Hết thì cả vòng sáng ngà, không còn khối đang tập nên không còn vàng.
+    const SEG_MS = 650;
+    let id = 0;
+    function at(p) {
+      const sp = p * N;
+      const fills = [0, 1, 2, 3].map(s => Math.max(0, Math.min(1, sp - s)));
+      render(fills, p < 1 ? Math.floor(sp) : -1, Math.round(p * TOTAL));
+    }
+    return {
+      reset() { cancelAnimationFrame(id); at(0); },
+      play() {
+        cancelAnimationFrame(id);
+        if (state.reduced) return at(1);
+        at(0);
+        const t0 = performance.now() + 250;
+        const step = now => { const p = Math.max(0, Math.min(1, (now - t0) / (SEG_MS * N))); at(p); if (p < 1) id = requestAnimationFrame(step); };
+        id = requestAnimationFrame(step);
+      },
+    };
+  })();
+
+  // ---------- Màn 3: bấm thử, không ghi gì ----------
+  const demo = (() => {
+    const box = $('#shots');
+    box.innerHTML = Array.from({ length: 10 }, () => '<span class="shot"><i></i></span>').join('');
+    const slots = $$('.shot', box);
+    let shots = [];
+    function render() {
+      slots.forEach((s, i) => s.dataset.s = i < shots.length ? shots[i] : i === shots.length ? 'next' : 'todo');
+      const passed = shots.filter(r => r === 'pass').length, done = shots.length === 10;
+      // Drill 02: passCondition inZone, required 7. Qua set thì số chuyển vàng.
+      const cleared = done && passed >= 7;
+      $('#scoreNums').innerHTML = dotMatrix(pad(passed), 'lg', cleared ? '#D8B451' : '#FFFFFF', cleared ? 'rgba(216,180,81,.5)' : 'rgba(255,255,255,.45)') + dotMatrix('/10', 'sm', '#8A8A8A');
+      $('#scoreCap').textContent = !done ? 'Passed · need 7' : cleared ? 'Set cleared' : 'Set missed · need 7';
+      $('#demoCap').textContent = !done ? `STOP · SET 1 · SHOT ${shots.length + 1} OF 10` : 'TAP TO GO AGAIN';
+      $('#demoLive').textContent = shots.length ? `${passed} passed, ${shots.length - passed} missed` : '';
+    }
+    function tap(r) { if (shots.length === 10) shots = []; shots.push(r); render(); }
+    $('#pass').addEventListener('click', () => tap('pass'));
+    $('#miss').addEventListener('click', () => tap('miss'));
+    render();
+    return { reset() { shots = []; render(); } };
+  })();
+
+  applyDevice();
+  onPage(true);
+  document.fonts && document.fonts.ready.then(fit);
+})();
+</script>
+</body>
+</html>

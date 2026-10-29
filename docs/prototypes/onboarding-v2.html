@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onboarding v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Doto:wght@900&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap" rel="stylesheet">
+<!--
+  Prototype onboarding v2, rẽ nhánh:
+    Value → Đang ở bàn? → (ở bàn) Sắp bàn → Set khởi động 10 cú → Kết quả
+                        → (chưa)  Demo chấm Pass/Miss
+  Hai kiểu trên cùng một luồng, cùng bảng màu app (nền đen, vàng): Minimal và Clay. Đổi ở nút "Kiểu".
+  Bàn, bi, cơ: hằng số chép từ modules/pool-table/ios (PoolTableGeometry, PoolTableTheme, PoolTableSurface,
+  PoolBallSphere, PoolCueRenderer). Thế bi, zone, khoảng cách theo diamond: src/pool-engine/drills/02-stop.ts.
+  Ladder 2-down-1-up: src/pool-engine/workout.ts.
+-->
+<style>
+:root{
+  --bg:#000;
+  --text:#FFFFFF; --text2:#BDBDBD; --text3:#8A8A8A;
+  --accent-gold:#C9A45C;          /* accentGold: chữ Doto */
+  --gold:#D8B451;                 /* HOME_GOLD: vạch tiến độ, marker gauge */
+  --ink:#ECEAEE;
+  --tick-off:rgba(255,255,255,.12);
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --ts:1; --gutter:20px; --safe-top:62px; --safe-bottom:34px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0A0A0A;color:var(--text);font-family:'Be Vietnam Pro',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+h1:focus{outline:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- Khung prototype (ngoài điện thoại) ---------- */
+.bench{display:flex;flex-direction:column;height:100%}
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:center;padding:10px 16px;border-bottom:1px solid #1A1A1A;font-size:13px;color:#9A9A9A}
+.ctl{display:flex;align-items:center;gap:8px}
+.seg{display:flex;background:#151515;border-radius:9px;padding:2px}
+.seg button{padding:6px 10px;border-radius:7px;font-size:12px;font-weight:500;color:#9A9A9A}
+.seg button[aria-pressed="true"]{background:#2A2A2A;color:#fff}
+.stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden}
+.fit{position:relative}
+
+/* ---------- Điện thoại ---------- */
+.phone{position:absolute;left:0;top:0;transform-origin:0 0;background:var(--bg);overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 0 0 10px #161616,0 0 0 11px #2A2A2A,0 30px 80px rgba(0,0,0,.6)}
+.phone[data-device="max"]{width:440px;height:956px;border-radius:56px}
+.phone[data-device="se"]{width:375px;height:667px;border-radius:6px}
+.status{flex:0 0 var(--safe-top);display:flex;align-items:flex-end;justify-content:space-between;padding:0 30px 14px 46px;font:600 17px/1 -apple-system,system-ui,sans-serif}
+.phone[data-device="se"] .status{padding:0 8px 4px 8px;font-size:12px;align-items:center}
+.status .icons{display:flex;gap:6px;align-items:center}
+.home-ind{position:absolute;left:50%;bottom:8px;width:140px;height:5px;margin-left:-70px;border-radius:3px;background:#fff;pointer-events:none;z-index:5}
+.phone[data-device="se"] .home-ind{display:none}
+
+/* ---------- Chữ: token typography, nhân min(cỡ chữ hệ thống, maxScale) ---------- */
+.t{font-size:calc(var(--fs) * min(var(--ts), var(--mx)) * 1px);line-height:calc(var(--lh) * min(var(--ts), var(--mx)) * 1px);margin:0}
+.t-brand{--fs:22;--lh:26;--mx:1.3;font-family:Doto,monospace;font-weight:900;letter-spacing:1px}
+.t-title{--fs:var(--title-fs);--lh:var(--title-lh);--mx:1.4;font-family:var(--title-font);font-weight:var(--title-weight);letter-spacing:var(--title-ls);text-wrap:balance}
+.t-bodyLarge{--fs:17;--lh:24;--mx:2;font-weight:400}
+.t-body{--fs:15;--lh:21;--mx:2;font-weight:400}
+.t-callout{--fs:14;--lh:19;--mx:2;font-weight:500}
+.t-caption{--fs:13;--lh:17;--mx:2;font-weight:400;letter-spacing:.1px}
+.t-eyebrow{--fs:12;--lh:16;--mx:1.6;font-weight:600;letter-spacing:.9px;text-transform:uppercase}
+.t-label{--fs:11;--lh:14;--mx:1.6;font-weight:500;letter-spacing:1.6px;text-transform:uppercase}
+.t-monoSmall{--fs:11;--lh:14;--mx:1.6;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-weight:500;letter-spacing:.4px}
+.t-tileTitle{--fs:17;--lh:21;--mx:1.6;font-weight:500;letter-spacing:-.1px}
+.t-button{--fs:15;--lh:20;--mx:1.6;font-weight:600;letter-spacing:1.2px;text-transform:uppercase}
+.c2{color:var(--text2)}.c3{color:var(--text3)}.cg{color:var(--accent-gold)}
+
+/* ---------- Hai kiểu. Chung: nền đen, chữ trắng ngà, vàng tối đa 3 chỗ mỗi màn ---------- */
+/* Minimal: tiêu đề serif, phẳng, kẻ mảnh, nút chữ nhật, lưới chấm, một khối lớn tràn mép. */
+.phone[data-style="minimal"]{--title-font:'Newsreader',Georgia,serif;--title-weight:500;--title-ls:-.2px;--title-fs:31;--title-lh:35;
+  --btn-r:2px;--line:rgba(255,255,255,.14)}
+/* Clay: khối phồng, bo lớn, sáng trong mép trên trái, tối trong mép dưới phải, nút viên thuốc. */
+.phone[data-style="clay"]{--title-font:'Be Vietnam Pro',system-ui,sans-serif;--title-weight:700;--title-ls:-.7px;--title-fs:28;--title-lh:32;
+  --btn-r:999px;--line:rgba(255,255,255,.07)}
+.phone[data-style="minimal"] .hl{font-style:italic}
+.phone[data-style="clay"] .hl{color:var(--accent-gold)}
+.phone[data-style="minimal"] .card{border:1px solid var(--line);border-radius:2px}
+.phone[data-style="clay"] .card{border-radius:28px;background:linear-gradient(155deg,#202020 0%,#161616 55%,#0F0F0F 100%);
+  box-shadow:inset 2px 3px 2px rgba(255,255,255,.10),inset -6px -10px 18px rgba(0,0,0,.6),inset 0 0 0 .5px rgba(255,255,255,.05),0 20px 34px rgba(0,0,0,.7)}
+.puff{background:linear-gradient(160deg,#2A2A2A 0%,#171717 60%,#101010 100%);
+  box-shadow:inset 1.5px 2px 1.5px rgba(255,255,255,.14),inset -3px -5px 10px rgba(0,0,0,.6),0 8px 16px rgba(0,0,0,.55)}
+
+/* ---------- Header: back · tiến độ · Skip ---------- */
+.head{display:grid;grid-template-columns:minmax(44px,1fr) auto minmax(44px,1fr);align-items:center;min-height:48px;padding:0 calc(var(--gutter) - 8px)}
+.head .back,.head .skip{min-height:44px;min-width:44px;display:flex;align-items:center;transition:opacity .2s ease-out}
+.head .back{justify-content:flex-start}
+.head .skip{justify-content:flex-end;justify-self:end;padding:0 8px;color:var(--text2)}
+.head [data-hidden="true"]{opacity:0;pointer-events:none;visibility:hidden}
+.back .disc{display:grid;place-items:center;width:40px;height:40px;border-radius:50%}
+.phone[data-style="minimal"] .back .disc{width:28px}
+.phone[data-style="minimal"] .back .disc.puff{background:none;box-shadow:none}
+.prog .bars{display:flex;gap:5px}
+.prog .bars i{width:20px;height:6px;border-radius:3px;background:rgba(255,255,255,.14);transition:background-color .24s ease-out}
+.prog .bars i.done{background:rgba(236,234,238,.55)}
+.prog .bars i.on{background:var(--gold)}
+.phone[data-style="clay"] .prog .bars i{box-shadow:inset 1px 1px 1px rgba(255,255,255,.18),inset -1px -1.5px 2px rgba(0,0,0,.5)}
+.prog .num{display:none;color:var(--text2)}
+.phone[data-style="minimal"] .prog .bars{display:none}
+.phone[data-style="minimal"] .prog .num{display:block}
+
+/* ---------- Màn ---------- */
+.screens{position:relative;flex:1;min-height:0}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;visibility:hidden;transform:translateX(24px);
+  transition:opacity .28s var(--ease-out),transform .32s var(--ease-out),visibility 0s linear .32s}
+.scr.now{opacity:1;visibility:visible;transform:none;transition:opacity .28s var(--ease-out),transform .32s var(--ease-out),visibility 0s}
+.body{container-type:inline-size;flex:1;min-height:0;overflow-y:auto;padding:8px var(--gutter) 16px;display:flex;flex-direction:column;gap:16px;scrollbar-width:none}
+.body::-webkit-scrollbar{display:none}
+.copy{display:flex;flex-direction:column;gap:8px}
+.foot{position:relative;padding:12px var(--gutter) max(calc(var(--safe-bottom) + 8px),16px);display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.foot::before{content:"";position:absolute;left:0;right:0;top:-24px;height:24px;background:linear-gradient(rgba(0,0,0,0),#000);pointer-events:none}
+.bleed{margin-left:calc(-1 * var(--gutter));margin-right:calc(-1 * var(--gutter))}
+/* Art lấy phần cao còn lại. Máy thấp hoặc chữ to thì art về --art-min và màn cuộn. */
+.art{position:relative;flex:1 0 var(--art-min,170px)}
+.art canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.row-between{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap}
+
+/* ---------- Nút ---------- */
+.btn{min-height:56px;border-radius:var(--btn-r);display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 18px;transition:transform .12s var(--ease-out),opacity .2s ease-out}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.3;pointer-events:none}
+.btn-text{min-height:44px;color:var(--text2)}
+.phone[data-style="minimal"] .btn-primary{background:var(--ink);color:#000}
+.phone[data-style="minimal"] .btn-gold{background:var(--gold);color:#000}
+.phone[data-style="minimal"] .btn-line{box-shadow:inset 0 0 0 1px rgba(236,234,238,.45);color:var(--text)}
+.phone[data-style="clay"] .btn-primary,.phone[data-style="clay"] .btn-line{color:#fff;background:linear-gradient(160deg,#2B2B2B 0%,#171717 60%,#101010 100%);
+  box-shadow:inset 2px 3px 2px rgba(255,255,255,.13),inset -4px -6px 12px rgba(0,0,0,.6),0 14px 26px rgba(0,0,0,.65)}
+.phone[data-style="clay"] .btn-gold{color:#1A1305;background:linear-gradient(160deg,#E4C15E 0%,#CFAB4B 55%,#B8903A 100%);
+  box-shadow:inset 2px 3px 2px rgba(255,255,255,.45),inset -4px -6px 12px rgba(110,72,0,.45),0 14px 30px rgba(216,180,81,.2)}
+.row2{display:flex;gap:12px}
+.row2 .btn{flex:1}
+/* Pass và Miss nặng ngang nhau để giao diện không lái người chấm. Khác nhau ở hình: chấm đặc, vòng rỗng. */
+.pm .ic{width:14px;height:14px;border-radius:50%;flex:0 0 auto}
+.pm .ic.fill{background:var(--ink)}
+.pm .ic.ring{box-shadow:inset 0 0 0 1.75px var(--ink)}
+.phone[data-style="clay"] .pm{flex-direction:column;gap:8px;min-height:88px;border-radius:28px}
+.phone[data-style="clay"] .pm .ic{width:26px;height:26px}
+.phone[data-style="clay"] .pm .ic.fill{background:radial-gradient(circle at 35% 30%,#FFFFFF,#D3D1D6 60%,#9C9AA0);box-shadow:0 4px 8px rgba(0,0,0,.5)}
+.phone[data-style="clay"] .pm .ic.ring{box-shadow:inset 0 0 0 2.5px var(--ink),0 4px 8px rgba(0,0,0,.4)}
+
+/* ---------- Điểm, dải 10 cú ---------- */
+.score{display:flex;align-items:flex-end;justify-content:space-between;gap:8px 12px;flex-wrap:wrap}
+.nums{display:flex;align-items:flex-end;gap:6px}
+.shots{display:flex;justify-content:space-between;gap:4px}
+.shot{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.shot i{display:block;border-radius:50%;transition:all .16s var(--ease-out)}
+.shot[data-s="todo"] i{width:6px;height:6px;background:var(--tick-off)}
+.shot[data-s="next"] i{width:14px;height:14px;box-shadow:inset 0 0 0 1.5px var(--gold)}
+.shot[data-s="pass"] i{width:14px;height:14px;background:var(--ink)}
+.shot[data-s="miss"] i{width:14px;height:14px;box-shadow:inset 0 0 0 1.5px var(--ink)}
+
+/* ---------- 1 · Value ---------- */
+.scr[data-id="value"] .body{padding-top:0}
+.art-value{--art-min:190px}
+.art-value canvas{-webkit-mask-image:linear-gradient(#000 80%,transparent);mask-image:linear-gradient(#000 80%,transparent)}
+.art-cap{position:absolute;left:var(--gutter);bottom:6px;margin:0}
+
+/* ---------- 2 · Đang ở bàn? ---------- */
+.art-ask{--art-min:140px}
+.art-ask::before{content:"";position:absolute;inset:0;pointer-events:none}
+.phone[data-style="minimal"] .art-ask::before{background-image:radial-gradient(circle,rgba(255,255,255,.17) .9px,transparent 1.3px);background-size:11px 11px;
+  -webkit-mask-image:radial-gradient(ellipse 70% 70% at 70% 50%,#000 30%,transparent 75%);mask-image:radial-gradient(ellipse 70% 70% at 70% 50%,#000 30%,transparent 75%)}
+.phone[data-style="clay"] .art-ask::before{background:radial-gradient(ellipse 55% 55% at 50% 55%,rgba(216,180,81,.14),rgba(216,180,81,0) 70%)}
+.choices{display:flex;flex-direction:column;gap:12px}
+.choice{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;text-align:left;padding:14px 16px;min-height:72px;transition:transform .12s var(--ease-out)}
+.choice:active{transform:scale(.98)}
+.choice .txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.choice .ic{display:grid;place-items:center}
+.phone[data-style="minimal"] .choices{gap:0}
+.phone[data-style="minimal"] .choice{padding:16px 0;border:0;border-top:1px solid var(--line);border-radius:0}
+.phone[data-style="minimal"] .choice:last-child{border-bottom:1px solid var(--line)}
+.phone[data-style="minimal"] .choice .ic{width:12px;height:12px;border-radius:50%;background:var(--ink)}
+.phone[data-style="minimal"] .choice .ic.ring{background:none;box-shadow:inset 0 0 0 1.5px var(--ink)}
+.phone[data-style="minimal"] .choice .ic svg{display:none}
+.phone[data-style="clay"] .choice{border-radius:26px}
+.phone[data-style="clay"] .choice .ic{width:48px;height:48px;border-radius:16px;background:linear-gradient(160deg,#2C2C2C,#151515);
+  box-shadow:inset 1.5px 2px 1.5px rgba(255,255,255,.14),inset -3px -5px 10px rgba(0,0,0,.6),0 8px 14px rgba(0,0,0,.5)}
+
+/* ---------- 3a · Sắp bàn ---------- */
+.art-crop{--art-min:170px}
+.checks{list-style:none;margin:0;padding:0 16px}
+.phone[data-style="minimal"] .checks{padding:0;border:0}
+.check{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;text-align:left;padding:12px 0;min-height:56px}
+.checks li+li .check{border-top:1px solid var(--line)}
+.phone[data-style="minimal"] .checks li:first-child .check{border-top:1px solid var(--line)}
+.phone[data-style="minimal"] .checks li:last-child .check{border-bottom:1px solid var(--line)}
+.check .txt{display:flex;flex-direction:column;gap:2px}
+.check .num{color:var(--text3);align-self:start;padding-top:3px}
+.box{width:24px;height:24px;display:grid;place-items:center}
+.box svg{opacity:0;transition:opacity .16s ease-out}
+.check[aria-pressed="true"] .box svg{opacity:1}
+.phone[data-style="minimal"] .box{box-shadow:inset 0 0 0 1.5px rgba(236,234,238,.6)}
+.phone[data-style="minimal"] .check[aria-pressed="true"] .box{background:var(--ink);box-shadow:none}
+.phone[data-style="clay"] .box{width:30px;height:30px;border-radius:50%;background:linear-gradient(160deg,#262626,#121212);
+  box-shadow:inset 1.5px 2px 1.5px rgba(255,255,255,.12),inset -3px -4px 8px rgba(0,0,0,.6)}
+.phone[data-style="clay"] .check[aria-pressed="true"] .box{background:radial-gradient(circle at 35% 30%,#FFFFFF,#D8D6DB 60%,#A9A7AD);box-shadow:0 4px 10px rgba(0,0,0,.5)}
+
+/* ---------- 4a · Set khởi động ---------- */
+.tag{position:absolute;top:10px;right:var(--gutter);margin:0;padding:4px 8px;border-radius:4px;background:rgba(0,0,0,.6);color:var(--text2);transition:color .3s ease-out,box-shadow .3s ease-out}
+.phone[data-style="clay"] .tag{border-radius:999px;padding:5px 10px}
+.tag.bump{color:var(--gold);box-shadow:inset 0 0 0 1px rgba(216,180,81,.7)}
+
+/* ---------- 5a · Kết quả ---------- */
+.res-score{display:flex;flex-direction:column;gap:10px;padding-top:4px}
+.gauge-card{padding:16px 16px 14px;display:flex;flex-direction:column;gap:10px}
+.gauge{position:relative;width:100%;max-width:300px;margin:0 auto;aspect-ratio:300/162}
+.gauge > svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.gauge .mid{position:absolute;left:0;right:0;bottom:2%;display:flex;flex-direction:column;align-items:center;gap:8px}
+.legend{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center;color:var(--text3)}
+.legend .now{color:var(--text)}
+.notif{padding:16px;display:flex;flex-direction:column;gap:12px}
+.notif .row2 .btn{min-height:48px}
+.notif[data-s] .row2{display:none}
+
+/* ---------- 3b · Demo ---------- */
+.demo-card{display:flex;flex-direction:column;overflow:hidden;flex:1 0 auto}
+.demo-card .art{--art-min:130px}
+.demo-in{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}
+
+/* ---------- Màn kết của prototype ---------- */
+.end{position:absolute;inset:0;z-index:4;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:0 32px;text-align:center;opacity:0;pointer-events:none;transition:opacity .24s ease-out}
+.end.show{opacity:1;pointer-events:auto}
+.end .btn{min-width:200px}
+.end .t-brand{--fs:44;--lh:46;--mx:1.2}
+
+.reduced *{transition-duration:0s!important}
+.reduced .scr{transition:none!important;transform:none!important}
+</style>
+</head>
+<body>
+<div class="bench">
+  <div class="controls" role="toolbar" aria-label="Prototype controls">
+    <div class="ctl">Kiểu
+      <div class="seg" data-ctl="style">
+        <button data-v="minimal" aria-pressed="true">Minimal</button>
+        <button data-v="clay">Clay</button>
+      </div>
+    </div>
+    <div class="ctl">Máy
+      <div class="seg" data-ctl="device">
+        <button data-v="se">SE · 375×667</button>
+        <button data-v="max" aria-pressed="true">Pro Max · 440×956</button>
+      </div>
+    </div>
+    <div class="ctl">Cỡ chữ
+      <div class="seg" data-ctl="ts">
+        <button data-v="1" aria-pressed="true">Mặc định</button>
+        <button data-v="1.353">xxxL</button>
+        <button data-v="3.12">AX5</button>
+      </div>
+    </div>
+    <div class="ctl">Reduce Motion
+      <div class="seg" data-ctl="motion">
+        <button data-v="off" aria-pressed="true">Tắt</button>
+        <button data-v="on">Bật</button>
+      </div>
+    </div>
+    <div class="ctl">Nhảy tới
+      <div class="seg" id="jump">
+        <button data-v="value">1</button>
+        <button data-v="ask">2</button>
+        <button data-v="setup">3a</button>
+        <button data-v="set">4a</button>
+        <button data-v="result">5a</button>
+        <button data-v="demo">3b</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="fit" id="fit">
+      <div class="phone" id="phone" data-device="max" data-style="minimal">
+        <div class="status" aria-hidden="true">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="#fff"><path d="M8 2.2c2.3 0 4.4.9 6 2.4l1.2-1.3A10.4 10.4 0 0 0 8 .4 10.4 10.4 0 0 0 .8 3.3L2 4.6a8.6 8.6 0 0 1 6-2.4Zm0 3.6c1.3 0 2.5.5 3.4 1.3l1.2-1.3A6.6 6.6 0 0 0 8 4a6.6 6.6 0 0 0-4.6 1.8l1.2 1.3c.9-.8 2.1-1.3 3.4-1.3Zm0 3.6c-.5 0-1 .2-1.3.5L8 11.3l1.3-1.4c-.3-.3-.8-.5-1.3-.5Z"/></svg>
+            <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="22" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity=".4"/><rect x="2" y="2" width="19" height="9" rx="2" fill="#fff"/><path d="M24.5 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2Z" fill="#fff" fill-opacity=".4"/></svg>
+          </span>
+        </div>
+
+        <header class="head">
+          <button class="back" id="back" data-hidden="true" aria-label="Back">
+            <span class="disc puff"><svg width="11" height="18" viewBox="0 0 11 18" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 1.8 2 9l7 7.2"/></svg></span>
+          </button>
+          <div class="prog" id="prog" role="img" aria-label="Step 1 of 5"><span class="bars" id="bars"></span><span class="num t t-monoSmall" id="progNum"></span></div>
+          <button class="skip t t-callout" id="skip">Skip</button>
+        </header>
+
+        <main class="screens">
+          <!-- 1 · Value: bàn kiểu native, cú Stop chạy lặp -->
+          <section class="scr" data-id="value" aria-labelledby="h-value" inert>
+            <div class="body">
+              <div class="art art-value bleed">
+                <canvas id="cvValue" role="img" aria-label="Drill 02, Stop shot. The cue strikes, the 1-ball drops in the corner pocket and the cue ball stops dead in the chalk ring."></canvas>
+                <p class="art-cap t t-monoSmall c3" aria-hidden="true">DRILL 02 · STOP SHOT</p>
+              </div>
+              <div class="copy">
+                <p class="t t-brand cg">Pool Training</p>
+                <h1 class="t t-title" id="h-value" tabindex="-1">Put the cue ball <span class="hl">where you want it.</span></h1>
+                <p class="t t-bodyLarge c2">A 120-shot workout on your own table. You shoot, tap Pass or Miss, and the app keeps score.</p>
+              </div>
+            </div>
+            <div class="foot">
+              <button class="btn btn-primary" data-go="ask"><span class="t t-button">Continue</span></button>
+            </div>
+          </section>
+
+          <!-- 2 · Rẽ nhánh -->
+          <section class="scr" data-id="ask" aria-labelledby="h-ask" inert>
+            <div class="body">
+              <div class="art art-ask bleed" aria-hidden="true"><canvas id="cvAsk"></canvas></div>
+              <div class="copy">
+                <p class="t t-eyebrow c3">Your first set</p>
+                <h1 class="t t-title" id="h-ask" tabindex="-1">Are you at a table <span class="hl">right now?</span></h1>
+                <p class="t t-body c2">Ten Stop shots tell the app where your Stop block should start.</p>
+              </div>
+            </div>
+            <div class="foot">
+              <div class="choices">
+                <button class="choice card" data-pick="table">
+                  <span class="ic"><svg width="22" height="26" viewBox="0 0 22 26" fill="none" aria-hidden="true"><rect x="2" y="2" width="18" height="22" rx="3" stroke="#ECEAEE" stroke-width="1.8"/><circle cx="8" cy="9" r="2" fill="#ECEAEE"/><circle cx="13.5" cy="16" r="2" fill="#ECEAEE" fill-opacity=".55"/></svg></span>
+                  <span class="txt"><span class="t t-tileTitle">I'm at the table</span><span class="t t-caption c3">Two balls, ten shots, about five minutes</span></span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#8A8A8A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                </button>
+                <button class="choice card" data-pick="demo">
+                  <span class="ic ring"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="none" stroke="#ECEAEE" stroke-width="1.8"/><path d="M9 7.5v7l5.5-3.5z" fill="#ECEAEE"/></svg></span>
+                  <span class="txt"><span class="t t-tileTitle">Not yet</span><span class="t t-caption c3">See how scoring works first</span></span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#8A8A8A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3a · Sắp bàn: drill 02 ở mức 1 diamond -->
+          <section class="scr" data-id="setup" aria-labelledby="h-setup" inert>
+            <div class="body">
+              <div class="copy">
+                <p class="t t-eyebrow c3">Set up · Drill 02</p>
+                <h1 class="t t-title" id="h-setup" tabindex="-1">Two balls, <span class="hl">one chalk ring.</span></h1>
+              </div>
+              <div class="art art-crop bleed">
+                <canvas id="cvSetup" role="img" aria-label="Corner of the table. The 1-ball sits one diamond off the side rail and two off the end rail. The cue ball sits one diamond behind it, in line with the corner pocket. A chalk ring sits just in front of the 1-ball."></canvas>
+              </div>
+              <ol class="checks card">
+                <li><button class="check" aria-pressed="false"><span class="num t t-monoSmall">01</span><span class="txt"><span class="t t-callout">1-ball</span><span class="t t-caption c3">One diamond off the side rail, two off the end rail.</span></span><span class="box"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.6 10.5 11.5 3.5"/></svg></span></button></li>
+                <li><button class="check" aria-pressed="false"><span class="num t t-monoSmall">02</span><span class="txt"><span class="t t-callout">Cue ball</span><span class="t t-caption c3">One diamond behind the 1-ball, in line with the corner pocket.</span></span><span class="box"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.6 10.5 11.5 3.5"/></svg></span></button></li>
+                <li><button class="check" aria-pressed="false"><span class="num t t-monoSmall">03</span><span class="txt"><span class="t t-callout">Chalk ring</span><span class="t t-caption c3">About 8 in. across, one ball in front of the 1-ball. Stop inside it to pass.</span></span><span class="box"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 5.6 10.5 11.5 3.5"/></svg></span></button></li>
+              </ol>
+            </div>
+            <div class="foot">
+              <button class="btn btn-primary" data-go="set"><span class="t t-button">Ready</span></button>
+            </div>
+          </section>
+
+          <!-- 4a · Set khởi động: 10 cú thật, ladder chạy thật -->
+          <section class="scr" data-id="set" aria-labelledby="h-set" inert>
+            <div class="body">
+              <div class="row-between">
+                <h1 class="t t-eyebrow c3" id="h-set" tabindex="-1">Warm-up · Stop</h1>
+                <p class="t t-monoSmall c3" id="setShot">SHOT 1 OF 10</p>
+              </div>
+              <div class="art art-crop bleed">
+                <canvas id="cvSet" role="img" aria-label="The cue ball, the 1-ball and the chalk ring. Dots mark where earlier shots stopped: filled for a pass, hollow for a miss."></canvas>
+                <p class="tag t t-monoSmall" id="setTag" aria-hidden="true">1 DIAMOND</p>
+              </div>
+              <div class="score"><div class="nums" id="setNums" aria-hidden="true"></div><p class="t t-label c3" id="setCap">Passed · need 7</p></div>
+              <div class="shots" id="setStrip" aria-hidden="true"></div>
+              <p class="t t-caption c3">Hit just below center. The cue ball must still be sliding when it reaches the 1-ball.</p>
+              <p class="sr" aria-live="polite" id="setLive"></p>
+            </div>
+            <div class="foot">
+              <div class="row2">
+                <button class="btn btn-line pm" id="setPass"><span class="ic fill"></span><span class="t t-button">Pass</span></button>
+                <button class="btn btn-line pm" id="setMiss"><span class="ic ring"></span><span class="t t-button">Miss</span></button>
+              </div>
+              <button class="btn btn-text" id="setUndo"><span class="t t-callout">Undo last shot</span></button>
+            </div>
+          </section>
+
+          <!-- 5a · Kết quả: mức Stop khởi điểm, giới thiệu gauge, xin quyền nhắc -->
+          <section class="scr" data-id="result" aria-labelledby="h-result" inert>
+            <div class="body">
+              <div class="res-score"><div class="nums" id="resNums" aria-hidden="true"></div><p class="t t-label c3" id="resCap">Set cleared · warm-up</p></div>
+              <div class="copy">
+                <h1 class="t t-title" id="h-result" tabindex="-1">Your Stop block starts at <span class="hl" id="resHl">2 diamonds.</span></h1>
+                <p class="t t-body c2">Pass two in a row and the cue ball moves back a diamond. Miss and it moves in one. Warm-up shots don't count toward today's 120.</p>
+              </div>
+              <div class="card gauge-card">
+                <div class="row-between"><p class="t t-eyebrow c3">Today's workout</p><p class="t t-monoSmall c3">4 × 30 SHOTS</p></div>
+                <div class="gauge" aria-hidden="true">
+                  <svg id="arc" viewBox="0 0 300 162"></svg>
+                  <div class="mid"><div class="nums" id="gNums"></div><p class="t t-label c3">Shots today</p></div>
+                </div>
+                <div class="legend"><span class="t t-monoSmall now">STROKE</span><span class="t t-monoSmall">STOP</span><span class="t t-monoSmall">FOLLOW</span><span class="t t-monoSmall">DRAW</span></div>
+              </div>
+              <div class="card notif" id="notif">
+                <div class="copy">
+                  <p class="t t-tileTitle">Want a reminder to train?</p>
+                  <p class="t t-caption c3" id="nMsg">One nudge a day, at a time you pick. Change it in Settings.</p>
+                </div>
+                <div class="row2">
+                  <button class="btn btn-line" id="nAllow"><span class="t t-button">Allow</span></button>
+                  <button class="btn btn-text" id="nLater"><span class="t t-callout">Not now</span></button>
+                </div>
+              </div>
+            </div>
+            <div class="foot">
+              <button class="btn btn-gold" id="start"><span class="t t-button">Start workout</span></button>
+            </div>
+          </section>
+
+          <!-- 3b · Demo: chưa ở bàn, bấm thử, không ghi gì -->
+          <section class="scr" data-id="demo" aria-labelledby="h-demo" inert>
+            <div class="body">
+              <div class="copy">
+                <p class="t t-eyebrow c3">Try it · nothing is saved</p>
+                <h1 class="t t-title" id="h-demo" tabindex="-1">You call <span class="hl">every shot.</span></h1>
+                <p class="t t-body c2">Shoot on your table, then tap Pass or Miss. Seven of ten clears the set.</p>
+              </div>
+              <div class="card demo-card">
+                <div class="art art-crop"><canvas id="cvDemo" role="img" aria-label="The cue ball, the 1-ball and the chalk ring. Each tap plays the shot and marks where the cue ball stopped."></canvas></div>
+                <div class="demo-in">
+                  <div class="score"><div class="nums" id="demoNums" aria-hidden="true"></div><p class="t t-label c3" id="demoCap">Passed · need 7</p></div>
+                  <div class="shots" id="demoStrip" aria-hidden="true"></div>
+                  <div class="row2">
+                    <button class="btn btn-line pm" id="demoPass"><span class="ic fill"></span><span class="t t-button">Pass</span></button>
+                    <button class="btn btn-line pm" id="demoMiss"><span class="ic ring"></span><span class="t t-button">Miss</span></button>
+                  </div>
+                </div>
+                <p class="sr" aria-live="polite" id="demoLive"></p>
+              </div>
+            </div>
+            <div class="foot">
+              <button class="btn btn-primary" id="home"><span class="t t-button">Go to Home</span></button>
+              <button class="btn btn-text" data-go="setup"><span class="t t-callout">I'm at a table now</span></button>
+            </div>
+          </section>
+        </main>
+
+        <div class="end" id="end" aria-live="polite">
+          <p class="t t-brand cg" id="endTitle">Home</p>
+          <p class="t t-body c2" id="endBody"></p>
+          <button class="btn btn-primary" id="replay"><span class="t t-button">Replay intro</span></button>
+        </div>
+        <div class="home-ind" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const phone = $('#phone');
+  const state = { device: 'max', ts: 1, reduced: matchMedia('(prefers-reduced-motion: reduce)').matches, style: 'minimal', pick: 'table', hist: ['value'], rung: 1 };
+  const DPR = Math.min(2, window.devicePixelRatio || 1);
+
+  // ---------- Toán nhỏ ----------
+  const clamp01 = t => Math.max(0, Math.min(1, t));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const mixP = (p, q, t) => ({ x: lerp(p.x, q.x, t), y: lerp(p.y, q.y, t) });
+  const easeOut = (t, k = 3) => 1 - Math.pow(1 - clamp01(t), k);
+  const easeIn = (t, k = 2) => Math.pow(clamp01(t), k);
+  const easeInOut = t => (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+  const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+  const norm3 = (x, y, z) => { const l = Math.hypot(x, y, z); return [x / l, y / l, z / l]; };
+  const unit = (a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy); return { x: dx / l, y: dy / l }; };
+  const pad = n => String(n).padStart(2, '0');
+
+  // Một vòng rAF chung; hàm tick trả false là tự gỡ.
+  const ticks = new Set();
+  let looping = false;
+  function loop(now) {
+    for (const f of [...ticks]) if (f(now) === false) ticks.delete(f);
+    if (ticks.size) requestAnimationFrame(loop); else looping = false;
+  }
+  function addTick(f) { ticks.add(f); if (!looping) { looping = true; requestAnimationFrame(loop); } }
+
+  // ---------- Bàn: inch, dọc, băng đầu ở trên (PoolTableGeometry, PoolTableSurface) ----------
+  const PW = 50, PL = 100, RAIL = 5.5, CUSHION = 2, R = 1.125, SIGHT = 3.6875;
+  const at = (x, y) => ({ x: x * PW, y: y * PL });
+  // Drill 02 · Stop: bi 1 ở (0.25, 0.25), lỗ footLeft, zone tròn (0.27, 0.27) bán kính 0.08 bề ngang.
+  const OB = at(0.25, 0.25);
+  const ZONE = { ...at(0.27, 0.27), r: 0.08 * PW };
+  // `distances` của drill: bi cái cách bi 1 đúng 1, 2, 3 diamond trên đường ra lỗ góc.
+  const RUNG_CB = [null, at(0.362, 0.362), at(0.474, 0.474), at(0.585, 0.585)];
+  const VALUE_CB = RUNG_CB[2];
+  const LIP = { x: 0.3, y: 0.6 }, DROP = { x: -0.9, y: -0.9 };
+  const POCKETS = [[-0.9, -0.9, 2.25], [PW + 0.9, -0.9, 2.25], [-0.9, PL + 0.9, 2.25], [PW + 0.9, PL + 0.9, 2.25], [-1.6, PL / 2, 2.5], [PW + 1.6, PL / 2, 2.5]];
+  const DIAMONDS = [];
+  for (let i = 1; i <= 3; i++) DIAMONDS.push([12.5 * i, -SIGHT], [12.5 * i, PL + SIGHT]);
+  for (let i = 1; i <= 7; i++) if (i !== 4) DIAMONDS.push([-SIGHT, 12.5 * i], [PW + SIGHT, 12.5 * i]);
+  const contactFor = cb => { const u = unit(OB, cb); return { x: OB.x + u.x * 2 * R, y: OB.y + u.y * 2 * R }; };
+
+  // src/pool-engine/workout.ts · ladderRung: vào 2 cú liền thì lùi bi cái 1 diamond, trượt 1 cú thì tiến lại 1.
+  function ladderRung(results, min = 1, max = 3) {
+    let rung = min, streak = 0;
+    for (const r of results) {
+      if (r === 'miss') { rung = Math.max(min, rung - 1); streak = 0; }
+      else if (++streak === 2) { rung = Math.min(max, rung + 1); streak = 0; }
+    }
+    return { rung, streak };
+  }
+  const diamondLabel = d => `${d} diamond${d > 1 ? 's' : ''}`;
+
+  // ---------- Xoay bi: ma trận 3×3 hàng-trước, toạ độ shader (x phải, y lên, z ra phía người nhìn) ----------
+  const M3 = {
+    id: () => [1, 0, 0, 0, 1, 0, 0, 0, 1],
+    mul(a, b) {
+      const r = new Array(9);
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) r[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j];
+      return r;
+    },
+    rot([x, y, z], th) {
+      const c = Math.cos(th), s = Math.sin(th), t = 1 - c;
+      return [t * x * x + c, t * x * y - s * z, t * x * z + s * y, t * x * y + s * z, t * y * y + c, t * y * z - s * x, t * x * z - s * y, t * y * z + s * x, t * z * z + c];
+    },
+  };
+  // Tư thế nghỉ của bi cái: norm(1,1,1) quay về phía người nhìn, ba chấm lộ đều.
+  const CUE_REST = M3.rot(norm3(1, -1, 0), Math.acos(1 / Math.sqrt(3)));
+  // Lăn không trượt trên mặt bàn: trục = ẑ × hướng đi, góc = quãng / R. dy của màn hình hướng xuống.
+  function roll(q, dx, dy) {
+    const l = Math.hypot(dx, dy);
+    return l < 1e-6 ? q : M3.mul(M3.rot([dy / l, dx / l, 0], l / R), q);
+  }
+
+  // ---------- PoolBallSphere, port sang JS: tô từng pixel ----------
+  const LIGHT = norm3(-.35, .5, .8), HALF = norm3(LIGHT[0], LIGHT[1], LIGHT[2] + 1);
+  const hex = h => [(h >> 16 & 255) / 255, (h >> 8 & 255) / 255, (h & 255) / 255];
+  const IVORY = hex(0xF0EDE3), DOT_BLUE = [.10, .27, .66], DOT_RED = [.78, .09, .11], INK = hex(0x111111), FACE = [.95, .95, .95];
+  const SOLID = { 1: hex(0xE99C00) };
+  let mask = null;
+  function buildMask() {
+    const n = 128, c = document.createElement('canvas');
+    c.width = c.height = n;
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = `800 ${Math.round(n * .55)}px "Be Vietnam Pro", system-ui, sans-serif`;
+    g.fillText('1', n / 2, n / 2 + n * .04);
+    mask = { a: g.getImageData(0, 0, n, n).data, n };
+  }
+  function maskAt(u, v) {
+    if (!mask || u <= 0 || u >= 1 || v <= 0 || v >= 1) return 0;
+    const n = mask.n, x = u * n - .5, y = v * n - .5, x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0;
+    const A = (i, j) => (i < 0 || j < 0 || i >= n || j >= n ? 0 : mask.a[(j * n + i) * 4 + 3] / 255);
+    return lerp(lerp(A(x0, y0), A(x0 + 1, y0), fx), lerp(A(x0, y0 + 1), A(x0 + 1, y0 + 1), fx), fy);
+  }
+  /** `kind` 0 là bi cái, số khác là bi số. `rpx`: bán kính theo pixel thiết bị. */
+  function shadeBall(kind, q, rpx, into) {
+    const size = Math.max(2, Math.ceil(rpx * 2)), r = size / 2;
+    const c = into && into.width === size ? into : Object.assign(document.createElement('canvas'), { width: size, height: size });
+    const g = c.getContext('2d'), img = g.createImageData(size, size), d = img.data;
+    const e = Math.max(.003, .25 / r), rim = 1 - 1.5 / r, base = SOLID[kind];
+    const a = [0, 0, 0];
+    for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) {
+      const x = (i + .5 - r) / r, y = (r - j - .5) / r, rr = x * x + y * y;
+      if (rr >= 1) continue;
+      const z = Math.sqrt(1 - rr);
+      const bx = q[0] * x + q[3] * y + q[6] * z, by = q[1] * x + q[4] * y + q[7] * z, bz = q[2] * x + q[5] * y + q[8] * z;
+      if (!kind) {
+        const k = smooth(.957 - e, .957 + e, Math.max(Math.abs(bx), Math.abs(by), Math.abs(bz)));
+        const dot = bx > .9 ? DOT_BLUE : DOT_RED;
+        for (let n = 0; n < 3; n++) a[n] = lerp(IVORY[n], dot[n], k);
+      } else {
+        const az = Math.abs(bz), kr = smooth(.882 - e, .882 + e, az), kf = smooth(.899 - e, .899 + e, az);
+        const m = kf > 0 ? maskAt(.5 + bx * Math.sign(bz) / .94, .5 - by / .94) * kf : 0;
+        for (let n = 0; n < 3; n++) a[n] = lerp(lerp(lerp(base[n], INK[n], kr), FACE[n], kf), INK[n], m);
+      }
+      const nl = Math.max(0, x * LIGHT[0] + y * LIGHT[1] + z * LIGHT[2]), nh = Math.max(0, x * HALF[0] + y * HALF[1] + z * HALF[2]);
+      const diff = (.27 + .8 * nl) * (.7 + .3 * z), spec = Math.pow(nh, 90) * .55;
+      const bounce = .22 * (1 - z) * (1 - z) * Math.max(0, .6 * x - .8 * y);
+      const o = (j * size + i) * 4;
+      d[o] = 255 * Math.min(1, a[0] * diff + spec + .62 * bounce);
+      d[o + 1] = 255 * Math.min(1, a[1] * diff + spec + .76 * bounce);
+      d[o + 2] = 255 * Math.min(1, a[2] * diff + spec + .86 * bounce);
+      d[o + 3] = 255 * (1 - smooth(rim, 1, Math.sqrt(rr)));
+    }
+    g.putImageData(img, 0, 0);
+    return c;
+  }
+
+  // ---------- Vẽ bàn (PoolTableTheme), đơn vị inch ----------
+  const disc = (g, x, y, r) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); };
+  function drawTable(g, px) {
+    const rg = g.createLinearGradient(-RAIL, -RAIL, PW + RAIL, PL + RAIL);
+    rg.addColorStop(0, '#262626'); rg.addColorStop(1, '#0E0E0E');
+    g.fillStyle = rg; g.beginPath(); g.roundRect(-RAIL, -RAIL, PW + 2 * RAIL, PL + 2 * RAIL, 2.5); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = px;
+    g.beginPath(); g.roundRect(-RAIL + px / 2, -RAIL + px / 2, PW + 2 * RAIL - px, PL + 2 * RAIL - px, 2.5); g.stroke();
+    g.fillStyle = '#1B3040'; g.fillRect(-CUSHION, -CUSHION, PW + 2 * CUSHION, PL + 2 * CUSHION);
+    const cg = g.createRadialGradient(PW / 2, PL / 2, 0, PW / 2, PL / 2, .62 * PL);
+    cg.addColorStop(0, '#2F4E64'); cg.addColorStop(1, '#223A4C');
+    g.fillStyle = cg; g.fillRect(0, 0, PW, PL);
+    g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 2 * px; g.strokeRect(px, px, PW - 2 * px, PL - 2 * px);
+    g.fillStyle = 'rgba(201,196,180,.45)';
+    for (const y of [25, 50, 75]) { disc(g, 25, y, .35); g.fill(); }
+    g.fillStyle = '#C9C4B4';
+    for (const [x, y] of DIAMONDS) { g.beginPath(); g.moveTo(x, y - .55); g.lineTo(x + .385, y); g.lineTo(x, y + .55); g.lineTo(x - .385, y); g.closePath(); g.fill(); }
+    g.fillStyle = '#000';
+    for (const [x, y, r] of POCKETS) { disc(g, x, y, r); g.fill(); }
+  }
+
+  // Cơ nhìn từ trên: màu khúc của PoolCueRenderer, chiều dài thật 58".
+  const CUE_LEN = 58;
+  const CUE_PARTS = [[0, .4, '#3F6DA8'], [.4, 1.4, '#ECE7DA'], [1.4, 29, '#D6B584'], [29, 30.2, '#C4C8CE'], [30.2, CUE_LEN, '#16100D'], [31.6, 31.9, '#C4C8CE']];
+  function drawCue(g, { tip, u, a }) {
+    const w = t => .5 + .7 * t / CUE_LEN;
+    const band = (t0, t1, a0 = 0, a1 = 1) => {
+      const w0 = w(t0), w1 = w(t1);
+      g.beginPath(); g.moveTo(t0, -w0 / 2 + w0 * a0); g.lineTo(t0, -w0 / 2 + w0 * a1); g.lineTo(t1, -w1 / 2 + w1 * a1); g.lineTo(t1, -w1 / 2 + w1 * a0); g.closePath();
+    };
+    g.save();
+    g.globalAlpha = a;
+    g.translate(tip.x, tip.y); g.rotate(Math.atan2(u.y, u.x));
+    g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 6 * DPR; g.shadowOffsetX = 3 * DPR; g.shadowOffsetY = 5 * DPR;
+    g.fillStyle = '#000'; band(.2, CUE_LEN); g.fill();
+    g.shadowColor = 'transparent';
+    band(0, CUE_LEN); g.clip();
+    for (const [t0, t1, c] of CUE_PARTS) { g.fillStyle = c; band(t0, t1); g.fill(); }
+    g.fillStyle = '#9C4A33';
+    for (const c of [.5, 0, 1]) {
+      const wa = w(37), wb = w(CUE_LEN);
+      g.beginPath(); g.moveTo(37, -wa / 2 + wa * c); g.lineTo(CUE_LEN, -wb / 2 + wb * (c + .17)); g.lineTo(CUE_LEN, -wb / 2 + wb * (c - .17)); g.closePath(); g.fill();
+    }
+    g.fillStyle = 'rgba(0,0,0,.35)'; band(0, CUE_LEN, 0, .14); g.fill();
+    g.fillStyle = 'rgba(0,0,0,.45)'; band(0, CUE_LEN, .86, 1); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.22)'; band(0, CUE_LEN, .26, .38); g.fill();
+    g.restore();
+  }
+
+  // Đường bi mục tiêu trắng .9, đường bi cái trắng .6 gạch [4,4] (PoolGuideRenderer).
+  const shotGuides = cb => (g, px) => {
+    const C = contactFor(cb);
+    g.lineWidth = 1.25 * px; g.strokeStyle = 'rgba(255,255,255,.9)';
+    g.beginPath(); g.moveTo(OB.x, OB.y); g.lineTo(LIP.x, LIP.y); g.stroke();
+    g.setLineDash([4 * px, 4 * px]); g.strokeStyle = 'rgba(255,255,255,.6)';
+    g.beginPath(); g.moveTo(cb.x, cb.y); g.lineTo(C.x, C.y); g.stroke();
+    g.setLineDash([]);
+  };
+
+  /** Một mặt bàn trên canvas. `fit(W, H)` trả {s: px mỗi inch, ox, oy: vị trí góc mặt vải}. */
+  function tableView(canvas, fit) {
+    const g = canvas.getContext('2d');
+    const v = { s: 1, ox: 0, oy: 0, W: 0, H: 0, balls: [], zone: null, pulse: 0, marks: [], guides: null, cue: null, flash: -1, after: null };
+    v.resize = () => {
+      const W = canvas.clientWidth, H = canvas.clientHeight;
+      if (!W || !H) return false;
+      v.W = W; v.H = H;
+      canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+      v.refit();
+      return true;
+    };
+    v.refit = () => Object.assign(v, fit(v.W, v.H));
+    v.ball = (kind, p) => { const b = { kind, x: p.x, y: p.y, q: kind ? M3.id() : CUE_REST.slice(), a: 1, sc: 1, spr: null, key: '' }; v.balls.push(b); return b; };
+    v.put = (b, p, rolling) => { if (rolling) { b.q = roll(b.q, p.x - b.x, p.y - b.y); b.key = ''; } b.x = p.x; b.y = p.y; };
+    v.toPx = p => ({ x: v.ox + p.x * v.s, y: v.oy + p.y * v.s });
+    v.draw = () => {
+      if (!v.W && !v.resize()) return;
+      const k = DPR * v.s, px = 1 / v.s;
+      const inch = () => g.setTransform(k, 0, 0, k, DPR * v.ox, DPR * v.oy);
+      g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, canvas.width, canvas.height);
+      inch();
+      drawTable(g, px);
+      if (v.zone) { // PoolTargetRenderer: nền trắng .12, viền trắng .9 dày 1.25
+        disc(g, v.zone.x, v.zone.y, v.zone.r * (1 + .05 * v.pulse));
+        g.fillStyle = `rgba(255,255,255,${.12 + .12 * v.pulse})`; g.fill();
+        g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = (1.25 + v.pulse) * px; g.stroke();
+      }
+      for (const m of v.marks) {
+        disc(g, m.x, m.y, .5);
+        if (m.pass) { g.fillStyle = 'rgba(236,234,238,.92)'; g.fill(); }
+        else { g.strokeStyle = 'rgba(236,234,238,.92)'; g.lineWidth = 1.5 * px; g.stroke(); }
+      }
+      if (v.guides) v.guides(g, px);
+      for (const b of v.balls) if (b.a > 0) {
+        const sx = b.x + .2 * R, sy = b.y + .3 * R, sr = 1.15 * R * b.sc;
+        const sg = g.createRadialGradient(sx, sy, 0, sx, sy, sr);
+        sg.addColorStop(0, `rgba(0,0,0,${.5 * b.a})`); sg.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = sg; disc(g, sx, sy, sr); g.fill();
+      }
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      const rpx = R * v.s * DPR, key = rpx.toFixed(1);
+      for (const b of v.balls) if (b.a > 0) {
+        if (b.key !== key) { b.spr = shadeBall(b.kind, b.q, rpx, b.spr); b.key = key; }
+        const X = DPR * (v.ox + b.x * v.s), Y = DPR * (v.oy + b.y * v.s), sz = b.spr.width * b.sc;
+        g.globalAlpha = b.a; g.drawImage(b.spr, X - sz / 2, Y - sz / 2, sz, sz); g.globalAlpha = 1;
+      }
+      inch();
+      if (v.cue) drawCue(g, v.cue);
+      if (v.flash >= 0) { // một lần lóe vàng duy nhất: lúc bi rơi lỗ
+        disc(g, DROP.x, DROP.y, 2.25 + 4.5 * easeOut(v.flash, 2));
+        g.strokeStyle = `rgba(216,180,81,${.95 * (1 - v.flash)})`; g.lineWidth = 1.6 * px; g.stroke();
+      }
+      if (v.after) { g.setTransform(DPR, 0, 0, DPR, 0, 0); v.after(g); }
+    };
+    return v;
+  }
+
+  // Bàn đủ bề ngang, đầu bàn ở trên; bi cái nằm trong 80% chiều cao để không lọt vào vùng mờ.
+  const TABLE_W = PW + 2 * RAIL;
+  const fitValue = (W, H) => {
+    const s = Math.min(W / TABLE_W, .8 * H / (RAIL + VALUE_CB.y + R));
+    return { s, ox: (W - TABLE_W * s) / 2 + RAIL * s, oy: RAIL * s };
+  };
+  // Crop góc bàn: lỗ góc, bi 1, bi cái, zone. Dư chỗ thì lộ thêm bàn về bên phải và phía dưới, tràn mép.
+  const fitCrop = cbAt => (W, H) => {
+    const cb = cbAt(), cw = Math.max(cb.x + 8, 31) + RAIL, ch = cb.y + 6 + RAIL, s = Math.min(W / cw, H / ch);
+    return { s, ox: RAIL * s, oy: RAIL * s };
+  };
+
+  // ---------- Chữ chấm (DotMatrixDisplay) ----------
+  const GLYPHS = {
+    '0': ['01110', '10001', '10011', '10101', '11001', '10001', '01110'],
+    '1': ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],
+    '2': ['01110', '10001', '00001', '00010', '00100', '01000', '11111'],
+    '3': ['11110', '00001', '00001', '01110', '00001', '00001', '11110'],
+    '4': ['00010', '00110', '01010', '10010', '11111', '00010', '00010'],
+    '5': ['11111', '10000', '11110', '00001', '00001', '10001', '01110'],
+    '6': ['00110', '01000', '10000', '11110', '10001', '10001', '01110'],
+    '7': ['11111', '00001', '00010', '00100', '01000', '01000', '01000'],
+    '8': ['01110', '10001', '10001', '01110', '10001', '10001', '01110'],
+    '9': ['01110', '10001', '10001', '01111', '00001', '00010', '01100'],
+    '/': ['00001', '00010', '00010', '00100', '01000', '01000', '10000'],
+  };
+  const DM = { lg: { d: 5, s: 2, g: 5 }, sm: { d: 2.5, s: 1.25, g: 2.5 } };
+  function dotMatrix(text, size, color, glow) {
+    const m = DM[size], pitch = m.d + m.s;
+    let x = 0, dots = '';
+    for (const ch of text) {
+      GLYPHS[ch].forEach((row, r) => [...row].forEach((b, c) => {
+        if (b === '1') dots += `<circle cx="${x + c * pitch + m.d / 2}" cy="${r * pitch + m.d / 2}" r="${m.d / 2}"/>`;
+      }));
+      x += 5 * m.d + 4 * m.s + m.g;
+    }
+    const w = x - m.g, h = 7 * m.d + 6 * m.s;
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="${color}"${glow ? ` style="filter:drop-shadow(0 0 3px ${glow})"` : ''}>${dots}</svg>`;
+  }
+  const score = (passed, of) => dotMatrix(pad(passed), 'lg', '#FFFFFF', 'rgba(255,255,255,.4)') + dotMatrix('/' + of, 'sm', '#8A8A8A');
+
+  // ---------- 1 · Value: cú Stop lặp 5,6 s ----------
+  const value = (() => {
+    const CB0 = VALUE_CB, C = contactFor(CB0), u = unit(OB, CB0);
+    const v = tableView($('#cvValue'), fitValue);
+    v.zone = ZONE;
+    const ob = v.ball(1, OB), cb = v.ball(0, CB0);
+    const LOOP = 5600;
+    let on = false, t0 = 0;
+    const tipAt = gap => ({ x: CB0.x + u.x * (R + gap), y: CB0.y + u.y * (R + gap) });
+    function home() { v.put(cb, CB0); v.put(ob, OB); ob.q = M3.id(); ob.key = ''; ob.sc = 1; }
+    function pose(t) {
+      // Cơ: hiện, hai nhịp thử, kéo về, ra cơ, theo cơ.
+      let gap = 2.5, ca = 1;
+      if (t < 400) ca = t / 400;
+      else if (t < 2200) gap = 2.5 + 1.6 * (1 - Math.cos(4 * Math.PI * (t - 400) / 1800)) / 2;
+      else if (t < 2750) gap = 2.5 + 5.5 * easeInOut((t - 2200) / 550);
+      else if (t < 2900) gap = 8;
+      else if (t < 3050) gap = 8 * (1 - easeIn((t - 2900) / 150));
+      else if (t < 3300) gap = -3.5 * easeOut((t - 3050) / 250, 2);
+      else { gap = -3.5; ca = 1 - clamp01((t - 3500) / 400); }
+      v.cue = ca > 0 ? { tip: tipAt(gap), u, a: ca } : null;
+      // Bi cái trượt tới điểm chạm rồi đứng chết: stun, không lăn.
+      v.put(cb, t < 3050 ? CB0 : mixP(CB0, C, easeOut((t - 3050) / 380, 1.6)));
+      // Bi 1 lăn vào lỗ góc rồi rơi.
+      if (t >= 3430 && t < 4230) v.put(ob, mixP(OB, LIP, easeOut((t - 3430) / 800, 1.8)), true);
+      else if (t >= 4230) { const e = clamp01((t - 4230) / 170); v.put(ob, mixP(LIP, DROP, e)); ob.sc = 1 - .4 * e; }
+      v.flash = t >= 4230 && t < 4900 ? (t - 4230) / 670 : -1;
+      v.pulse = t >= 3430 && t < 4300 ? Math.sin(Math.PI * (t - 3430) / 870) : 0;
+      // Hết vòng: bi cái mờ đi, cả hai về chỗ rồi hiện lại.
+      cb.a = t < 5000 ? 1 : t < 5250 ? 1 - (t - 5000) / 250 : (t - 5250) / 350;
+      ob.a = t < 4230 ? 1 : t < 4400 ? 1 - (t - 4230) / 170 : t < 5250 ? 0 : (t - 5250) / 350;
+      if (t >= 5250) home();
+    }
+    const tick = now => { if (!on) return false; pose((now - t0) % LOOP); v.draw(); };
+    return {
+      v,
+      enter() {
+        on = true; v.resize(); home();
+        if (state.reduced) { // khung tĩnh: thế bi, đường đi, cơ đang ngắm
+          v.cue = { tip: tipAt(2.5), u, a: 1 }; v.guides = shotGuides(CB0); v.flash = -1; v.pulse = 0; cb.a = ob.a = 1; v.draw();
+          return;
+        }
+        v.guides = null; t0 = performance.now(); addTick(tick);
+      },
+      leave() { on = false; },
+    };
+  })();
+
+  // ---------- 2 · Đang ở bàn? Minimal: một bi cái khổng lồ tràn mép. Clay: hai bi phồng lơ lửng. ----------
+  const askArt = (() => {
+    const c = $('#cvAsk'), g = c.getContext('2d');
+    let items = [], on = false;
+    function build() {
+      const W = c.clientWidth, H = c.clientHeight;
+      if (!W || !H) return false;
+      c.width = Math.round(W * DPR); c.height = Math.round(H * DPR);
+      if (state.style === 'minimal') {
+        const r = H * .47;
+        items = [{ spr: shadeBall(0, CUE_REST, r * DPR), x: W - r * .42, y: H * .5, r, ph: 0 }];
+      } else {
+        const r1 = Math.min(H * .27, W * .2), r2 = r1 * .82;
+        items = [
+          { spr: shadeBall(0, M3.mul(M3.rot([0, 1, 0], -.5), CUE_REST), r1 * DPR), x: W * .41, y: H * .44, r: r1, ph: 0 },
+          { spr: shadeBall(1, M3.mul(M3.rot([1, 0, 0], .4), M3.rot([0, 1, 0], -.35)), r2 * DPR), x: W * .63, y: H * .58, r: r2, ph: 2.1 },
+        ];
+      }
+      return true;
+    }
+    function draw(now) {
+      g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height);
+      g.setTransform(DPR, 0, 0, DPR, 0, 0);
+      const clay = state.style === 'clay', bobbing = clay && !state.reduced;
+      for (const it of items) {
+        const bob = bobbing ? Math.sin(now / 950 + it.ph) * it.r * .07 : 0;
+        if (clay) { // bóng mềm dưới bi, đậm lên khi bi hạ xuống
+          g.save(); g.translate(it.x, it.y + it.r * 1.22); g.scale(1, .26);
+          const sg = g.createRadialGradient(0, 0, 0, 0, 0, it.r * .95);
+          sg.addColorStop(0, `rgba(0,0,0,${.75 + bob / it.r})`); sg.addColorStop(1, 'rgba(0,0,0,0)');
+          g.fillStyle = sg; disc(g, 0, 0, it.r * .95); g.fill(); g.restore();
+        }
+        g.drawImage(it.spr, it.x - it.r, it.y - it.r + bob, it.r * 2, it.r * 2);
+      }
+    }
+    const tick = now => { if (!on) return false; draw(now); };
+    return {
+      enter() {
+        on = true;
+        if (!build()) return;
+        draw(performance.now());
+        if (state.style === 'clay' && !state.reduced) addTick(tick);
+      },
+      leave() { on = false; },
+      refresh() { if (on) { this.leave(); this.enter(); } },
+    };
+  })();
+
+  // ---------- 3a · Sắp bàn: crop góc bàn ở mức 1 diamond ----------
+  const setup = (() => {
+    const cb = RUNG_CB[1];
+    const v = tableView($('#cvSetup'), fitCrop(() => cb));
+    v.zone = ZONE; v.ball(1, OB); v.ball(0, cb);
+    const guides = shotGuides(cb);
+    v.guides = (g, px) => {
+      guides(g, px);
+      // Ngắm theo diamond: diamond 1 băng dọc và diamond 2 băng đầu cùng chỉ vào bi 1.
+      g.setLineDash([2 * px, 3 * px]); g.strokeStyle = 'rgba(255,255,255,.4)'; g.lineWidth = px;
+      g.beginPath(); g.moveTo(OB.x, -SIGHT + 1.2); g.lineTo(OB.x, OB.y - R - .6); g.moveTo(-SIGHT + 1.2, OB.y); g.lineTo(OB.x - R - .6, OB.y); g.stroke();
+      g.setLineDash([]); g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 1.25 * px;
+      for (const [x, y] of [[OB.x, -SIGHT], [-SIGHT, OB.y]]) { disc(g, x, y, 1.15); g.stroke(); }
+    };
+    v.after = g => {
+      g.font = '500 10px ui-monospace, "SF Mono", Menlo, monospace'; g.textBaseline = 'middle';
+      const tag = (text, p, align) => {
+        const q = v.toPx(p), w = g.measureText(text).width + 10, x = align === 'right' ? q.x - w : q.x;
+        g.fillStyle = 'rgba(0,0,0,.62)'; g.beginPath(); g.roundRect(x, q.y - 9, w, 18, 4); g.fill();
+        g.fillStyle = 'rgba(236,234,238,.92)'; g.fillText(text, x + 5, q.y + .5);
+      };
+      tag('01', { x: OB.x + 2.4, y: OB.y - 2.6 });
+      tag('02 · 1 DIAMOND', { x: cb.x + 2.2, y: cb.y + .6 });
+      tag('03', { x: ZONE.x - ZONE.r - 1, y: ZONE.y + 2.5 }, 'right');
+    };
+    return v;
+  })();
+  $$('.check').forEach(b => b.addEventListener('click', () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true')));
+
+  // ---------- Bộ chấm Pass/Miss dùng chung cho set khởi động và demo ----------
+  function scorer(o) {
+    let results = [], rung = 1, anim = null, fullTimer = 0;
+    const cbAt = () => RUNG_CB[rung];
+    const v = tableView(o.canvas, fitCrop(cbAt));
+    v.zone = ZONE;
+    const ob = v.ball(1, OB), cb = v.ball(0, cbAt());
+    o.strip.innerHTML = Array.from({ length: 10 }, () => '<span class="shot"><i></i></span>').join('');
+    const slots = $$('.shot', o.strip);
+
+    function home() {
+      v.put(ob, OB); ob.q = M3.id(); ob.key = ''; ob.a = 1; ob.sc = 1;
+      v.put(cb, cbAt()); cb.q = CUE_REST.slice(); cb.key = ''; cb.a = 1;
+    }
+    function render() {
+      const n = results.length, passed = results.filter(r => r === 'pass').length, full = n === 10;
+      slots.forEach((s, i) => { s.dataset.s = i < n ? results[i] : i === n ? 'next' : 'todo'; });
+      o.nums.innerHTML = score(passed, 10);
+      o.cap.textContent = !full ? 'Passed · need 7' : passed >= 7 ? 'Set cleared' : 'Set missed · need 7';
+      if (o.shot) o.shot.textContent = full ? 'SET DONE' : `SHOT ${n + 1} OF 10`;
+      if (o.undo) o.undo.disabled = !n;
+      if (o.tag) {
+        const label = diamondLabel(rung).toUpperCase();
+        if (o.tag.textContent !== label && !state.reduced) { o.tag.classList.add('bump'); setTimeout(() => o.tag.classList.remove('bump'), 1400); }
+        o.tag.textContent = label;
+      }
+      o.live.textContent = n ? `${passed} passed, ${n - passed} missed. Cue ball at ${diamondLabel(rung)}.` : '';
+    }
+    // Chỗ bi cái dừng, chỉ để minh hoạ: vào thì trong zone, trượt thì trôi theo hoặc giật về quá mép zone.
+    function endPoint(pass) {
+      const C = contactFor(cbAt()), u = unit(OB, cbAt()), side = (Math.random() - .5) * 3;
+      if (pass) { const a = Math.random() * Math.PI * 2, d = Math.random() * ZONE.r * .55; return { x: ZONE.x + Math.cos(a) * d, y: ZONE.y + Math.sin(a) * d }; }
+      const along = (Math.random() < .5 ? -1 : 1) * (ZONE.r + 1.5 + Math.random() * 4);
+      return { x: C.x + u.x * along - u.y * side, y: C.y + u.y * along + u.x * side };
+    }
+    function shoot(r) {
+      if (anim) anim.finish();
+      if (results.length === 10) { if (!o.loop) return; reset(); }
+      results.push(r);
+      const pass = r === 'pass', from = cbAt(), C = contactFor(from), end = endPoint(pass);
+      const next = ladderRung(results).rung, changed = next !== rung;
+      render();
+      let landed = false, tw = null, fadeAt = 0;
+      const land = () => {
+        landed = true; v.marks.push({ x: end.x, y: end.y, pass });
+        rung = next; home(); v.refit(); render();
+        if (results.length === 10 && o.onFull) fullTimer = setTimeout(() => o.onFull(results.slice()), 700);
+      };
+      if (state.reduced) { land(); v.draw(); return; }
+      const a = {
+        finish() { if (anim !== a) return; anim = null; if (!landed) land(); else if (tw) v.refit(); cb.a = ob.a = 1; v.draw(); },
+      };
+      anim = a;
+      const t0 = performance.now();
+      addTick(now => {
+        if (anim !== a) return false;
+        const t = now - t0;
+        if (t < 1250) {
+          v.put(cb, t < 300 ? mixP(from, C, easeOut(t / 300, 1.5)) : mixP(C, end, easeOut((t - 300) / (pass ? 220 : 460), 2)), t >= 300);
+          if (t >= 300 && t < 950) v.put(ob, mixP(OB, LIP, easeOut((t - 300) / 650, 1.8)), true);
+          else if (t >= 950) { const e = clamp01((t - 950) / 130); v.put(ob, mixP(LIP, DROP, e)); ob.sc = 1 - .4 * e; ob.a = 1 - e; }
+        } else {
+          if (!fadeAt) { // về chỗ cho cú kế; đổi mức thì bàn zoom theo khoảng cách mới
+            fadeAt = now;
+            const old = { s: v.s, ox: v.ox, oy: v.oy };
+            land();
+            if (changed) { tw = { from: old, to: { s: v.s, ox: v.ox, oy: v.oy } }; Object.assign(v, old); }
+          }
+          const e = clamp01((now - fadeAt) / 320);
+          cb.a = ob.a = e;
+          if (tw) { const k = easeInOut(e); v.s = lerp(tw.from.s, tw.to.s, k); v.ox = lerp(tw.from.ox, tw.to.ox, k); v.oy = lerp(tw.from.oy, tw.to.oy, k); }
+          if (e >= 1) { anim = null; v.draw(); return false; }
+        }
+        v.draw();
+      });
+    }
+    function settle() { if (anim) anim.finish(); clearTimeout(fullTimer); }
+    function reset() { settle(); results = []; v.marks = []; rung = 1; home(); v.refit(); v.draw(); render(); }
+    function undo() {
+      settle();
+      if (!results.length) return;
+      results.pop(); v.marks.pop();
+      rung = ladderRung(results).rung; home(); v.refit(); v.draw(); render();
+    }
+    function load(sample) {
+      settle(); results = []; v.marks = [];
+      for (const r of sample) { results.push(r); v.marks.push({ ...endPoint(r === 'pass'), pass: r === 'pass' }); rung = ladderRung(results).rung; }
+      home(); v.refit(); v.draw(); render();
+    }
+    o.pass.addEventListener('click', () => shoot('pass'));
+    o.miss.addEventListener('click', () => shoot('miss'));
+    if (o.undo) o.undo.addEventListener('click', undo);
+    render();
+    return { v, reset, load, settle, results: () => results.slice() };
+  }
+
+  const setS = scorer({
+    canvas: $('#cvSet'), nums: $('#setNums'), cap: $('#setCap'), strip: $('#setStrip'), shot: $('#setShot'), tag: $('#setTag'),
+    pass: $('#setPass'), miss: $('#setMiss'), undo: $('#setUndo'), live: $('#setLive'),
+    onFull: () => go('result'),
+  });
+  const demoS = scorer({
+    canvas: $('#cvDemo'), nums: $('#demoNums'), cap: $('#demoCap'), strip: $('#demoStrip'),
+    pass: $('#demoPass'), miss: $('#demoMiss'), live: $('#demoLive'), loop: true,
+  });
+
+  // ---------- 5a · Kết quả ----------
+  const result = (() => {
+    // Hình học ProgramGauge, đứng yên ở 0/120, khối đang tới là Stroke.
+    const CX = 150, CY = 156, R_OUT = 140, R_IN = 129, R_EDGE = 124, R_LABEL = 108, R_DASH = 114, TICKS = 44, GAP = 2, N = 4;
+    const ang = t => Math.PI - t * Math.PI;
+    const per = Math.round(TICKS / N), slots = N * per + (N - 1) * GAP;
+    const ticksG = [], segAng = [];
+    for (let s = 0, slot = 0; s < N; s++, slot += GAP) {
+      segAng.push(ang((slot + per / 2) / slots));
+      for (let j = 0; j < per; j++, slot++) ticksG.push({ a: ang((slot + 0.5) / slots), edge: j === 0 || j === per - 1, now: s === 0 });
+    }
+    $('#arc').innerHTML = `
+      <path d="M${CX - R_DASH} ${CY} A${R_DASH} ${R_DASH} 0 0 1 ${CX + R_DASH} ${CY}" fill="none" stroke="rgba(255,255,255,.14)" stroke-width=".9" stroke-linecap="round" stroke-dasharray="0.01 2.4"/>
+      ${ticksG.map(({ a, edge, now }) => {
+        const rIn = edge ? R_EDGE : R_IN;
+        return `<line x1="${CX + rIn * Math.cos(a)}" y1="${CY - rIn * Math.sin(a)}" x2="${CX + R_OUT * Math.cos(a)}" y2="${CY - R_OUT * Math.sin(a)}" stroke="rgba(255,255,255,.12)" stroke-width="${now ? 1.8 : 1.4}" stroke-linecap="round"/>`;
+      }).join('')}
+      ${segAng.map((a, s) => `<text x="${CX + R_LABEL * Math.cos(a)}" y="${CY - R_LABEL * Math.sin(a) + 4}" text-anchor="middle" font-size="11" font-weight="500" font-family="ui-monospace, SF Mono, Menlo, monospace" fill="${s === 0 ? '#D8B451' : '#8A8A8A'}">${s + 1}</text>`).join('')}
+      <g style="transform-box:view-box;transform-origin:${CX}px ${CY}px;transform:rotate(${(Math.PI / 2 - segAng[0]) * 180 / Math.PI}deg)">
+        <polygon points="${CX - 4.5},3.5 ${CX + 4.5},3.5 ${CX},10.5" fill="#D8B451"/>
+      </g>`;
+    $('#gNums').innerHTML = score(0, 120);
+    $('#nAllow').addEventListener('click', () => { $('#notif').dataset.s = 'on'; $('#nMsg').textContent = 'Reminder on. iOS asks you to confirm next.'; });
+    $('#nLater').addEventListener('click', () => { $('#notif').dataset.s = 'off'; $('#nMsg').textContent = 'No reminders. Turn them on any time in Settings.'; });
+    return {
+      show(results) {
+        const passed = results.filter(r => r === 'pass').length, rung = ladderRung(results).rung;
+        state.rung = rung;
+        $('#resNums').innerHTML = score(passed, 10);
+        $('#resCap').textContent = `${passed >= 7 ? 'Set cleared' : 'Set missed'} · warm-up`;
+        $('#resHl').textContent = diamondLabel(rung) + '.';
+        delete $('#notif').dataset.s;
+        $('#nMsg').textContent = 'One nudge a day, at a time you pick. Change it in Settings.';
+      },
+    };
+  })();
+
+  // ---------- Điều hướng: ngăn xếp lịch sử, hai nhánh ----------
+  const screens = Object.fromEntries($$('.scr').map(s => [s.dataset.id, s]));
+  const TABLE_PATH = ['value', 'ask', 'setup', 'set', 'result'], DEMO_PATH = ['value', 'ask', 'demo'];
+  const ctl = {
+    value: { enter: () => value.enter(), leave: () => value.leave() },
+    ask: { enter: () => askArt.enter(), leave: () => askArt.leave() },
+    setup: { enter: () => { setup.resize(); setup.draw(); } },
+    set: { enter: dir => { if (dir !== -1) setS.reset(); else { setS.v.resize(); setS.v.draw(); } }, leave: () => setS.settle() },
+    result: { enter: () => result.show(setS.results()) },
+    demo: { enter: () => demoS.reset(), leave: () => demoS.settle() },
+  };
+  let cur = null;
+  function header() {
+    const path = ['setup', 'set', 'result'].includes(cur) ? TABLE_PATH : cur === 'demo' ? DEMO_PATH : state.pick === 'demo' ? DEMO_PATH : TABLE_PATH;
+    const i = path.indexOf(cur);
+    $('#bars').innerHTML = path.map((_, k) => `<i class="${k < i ? 'done' : k === i ? 'on' : ''}"></i>`).join('');
+    $('#progNum').textContent = `${pad(i + 1)} / ${pad(path.length)}`;
+    $('#prog').setAttribute('aria-label', `Step ${i + 1} of ${path.length}`);
+    $('#back').dataset.hidden = cur === 'value' || cur === 'result';
+    const skip = $('#skip');
+    skip.dataset.hidden = cur === 'result' || cur === 'demo';
+    skip.textContent = cur === 'set' ? 'End set' : 'Skip';
+  }
+  function show(id, dir, force) {
+    if (cur === id && !force) return;
+    const to = screens[id], from = cur && cur !== id ? screens[cur] : null;
+    if (cur) ctl[cur].leave?.();
+    if (from) {
+      from.classList.remove('now'); from.inert = true;
+      if (!state.reduced && dir) { from.style.transform = `translateX(${-24 * dir}px)`; setTimeout(() => { from.style.transform = ''; }, 340); }
+    }
+    if (!state.reduced && dir && from) {
+      to.style.transition = 'none'; to.style.transform = `translateX(${24 * dir}px)`;
+      void to.offsetWidth;
+      to.style.transition = ''; to.style.transform = '';
+    }
+    to.classList.add('now'); to.inert = false;
+    $('.body', to).scrollTop = 0;
+    cur = id;
+    header();
+    ctl[id].enter?.(dir);
+    $('h1', to).focus({ preventScroll: true });
+  }
+  function go(id) { state.hist.push(id); show(id, 1); }
+  function back() {
+    if (state.hist.length < 2) return;
+    state.hist.pop();
+    show(state.hist[state.hist.length - 1], -1);
+  }
+  $('#back').addEventListener('click', back);
+  addEventListener('keydown', e => { if (e.key === 'ArrowLeft' && $('#back').dataset.hidden !== 'true' && !$('#end').classList.contains('show')) back(); });
+  $$('[data-go]').forEach(b => b.addEventListener('click', () => { if (b.dataset.go === 'setup') state.pick = 'table'; go(b.dataset.go); }));
+  $$('[data-pick]').forEach(b => b.addEventListener('click', () => { state.pick = b.dataset.pick; go(b.dataset.pick === 'table' ? 'setup' : 'demo'); }));
+
+  // Prototype dừng ở đây: app thật đóng modal, ghi cờ onboarding, mở Home hoặc /workout.
+  function finish(title, body) {
+    if (cur) ctl[cur].leave?.();
+    $('#endTitle').textContent = title;
+    $('#endBody').textContent = body;
+    $('#end').classList.add('show');
+  }
+  $('#skip').addEventListener('click', () => (cur === 'set'
+    ? finish('Home', 'Set ended early. Nothing is saved, and Stop starts at 1 diamond.')
+    : finish('Home', 'Skipped. The app opens on Home. Settings › Show intro brings this back.')));
+  $('#start').addEventListener('click', () => finish('Workout', `Opens Stroke · Short · shot 1 of 10. Stop starts at ${diamondLabel(state.rung)}.`));
+  $('#home').addEventListener('click', () => finish('Home', 'The app opens on Home with Today on top.'));
+
+  // Nhảy thẳng tới màn nào cũng dựng lại lịch sử đúng nhánh. 5a dùng một set mẫu 7/10 kết ở 2 diamond.
+  const JUMP = { value: ['value'], ask: ['value', 'ask'], setup: ['value', 'ask', 'setup'], set: ['value', 'ask', 'setup', 'set'], result: ['value', 'ask', 'setup', 'set', 'result'], demo: ['value', 'ask', 'demo'] };
+  const SAMPLE = ['miss', 'pass', 'pass', 'pass', 'pass', 'miss', 'pass', 'pass', 'miss', 'pass'];
+  function jump(id) {
+    $('#end').classList.remove('show');
+    state.hist = JUMP[id].slice();
+    if (id === 'demo') state.pick = 'demo';
+    else if (JUMP[id].includes('setup')) state.pick = 'table';
+    if (id === 'result') setS.load(SAMPLE);
+    if (cur === 'set' && id === 'result') { // giữ set mẫu, không để màn set reset nó khi rời
+      screens.set.classList.remove('now'); screens.set.inert = true; cur = null;
+    }
+    show(id, 0, true);
+  }
+  $('#jump').addEventListener('click', e => { const b = e.target.closest('button'); if (b) jump(b.dataset.v); });
+  $('#replay').addEventListener('click', () => { state.pick = 'table'; jump('value'); });
+
+  // ---------- Thiết bị, cỡ chữ, kiểu, reduce motion ----------
+  const DEVICES = {
+    max: { w: 440, h: 956, top: 62, bottom: 34, gutter: 20 },
+    se: { w: 375, h: 667, top: 20, bottom: 0, gutter: 16 },
+  };
+  function fit() {
+    const d = DEVICES[state.device], stage = $('#stage');
+    const s = Math.min(1, (stage.clientHeight - 40) / d.h, (stage.clientWidth - 40) / d.w);
+    phone.style.transform = `scale(${s})`;
+    $('#fit').style.width = d.w * s + 'px';
+    $('#fit').style.height = d.h * s + 'px';
+  }
+  function applyDevice() {
+    const d = DEVICES[state.device];
+    phone.dataset.device = state.device;
+    phone.style.setProperty('--safe-top', d.top + 'px');
+    phone.style.setProperty('--safe-bottom', d.bottom + 'px');
+    phone.style.setProperty('--gutter', d.gutter + 'px');
+    fit();
+  }
+  addEventListener('resize', fit);
+  $$('.seg[data-ctl]').forEach(seg => seg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    $$('button', seg).forEach(x => x.setAttribute('aria-pressed', x === b));
+    const v = b.dataset.v, which = seg.dataset.ctl;
+    if (which === 'device') { state.device = v; applyDevice(); }
+    if (which === 'ts') { state.ts = +v; phone.style.setProperty('--ts', v); }
+    if (which === 'style') { state.style = v; phone.dataset.style = v; askArt.refresh(); }
+    if (which === 'motion') {
+      state.reduced = v === 'on';
+      document.body.classList.toggle('reduced', state.reduced);
+      if (cur) { ctl[cur].leave?.(); ctl[cur].enter?.(0); }
+    }
+  }));
+  if (state.reduced) {
+    document.body.classList.add('reduced');
+    $$('[data-ctl="motion"] button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === 'on'));
+  }
+
+  // Canvas đổi cỡ (máy, cỡ chữ, kiểu) thì vẽ lại đúng độ phân giải.
+  const views = [[$('#cvValue'), value.v], [$('#cvSetup'), setup], [$('#cvSet'), setS.v], [$('#cvDemo'), demoS.v]];
+  const ro = new ResizeObserver(entries => {
+    for (const { target } of entries) {
+      if (target.id === 'cvAsk') { askArt.refresh(); continue; }
+      const v = views.find(([c]) => c === target)?.[1];
+      if (v && v.resize()) v.draw();
+    }
+  });
+  views.forEach(([c]) => ro.observe(c));
+  ro.observe($('#cvAsk'));
+
+  buildMask();
+  applyDevice();
+  show('value', 0, true);
+  // Font về thì vẽ lại số trên bi 1 bằng Be Vietnam Pro thật.
+  document.fonts && document.fonts.ready.then(() => {
+    buildMask();
+    for (const [, v] of views) { v.balls.forEach(b => { b.key = ''; }); v.draw(); }
+    askArt.refresh();
+    fit();
+  });
+})();
+</script>
+</body>
+</html>

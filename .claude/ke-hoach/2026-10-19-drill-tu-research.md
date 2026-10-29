@@ -66,3 +66,4 @@
 - Drill 29, 30: thẻ Shot hiện "Firm · 2.6 m/s" theo `speedMs`, thấp xa tốc độ break (18–24 mph là NEEDS CALIBRATION ở research 09). Chưa đè `speed` vì không có số đã kiểm.
 - Drill 30: tip theo research (giữa bi, còn chút topspin lúc tới bi 1, VERIFIED), không theo harness (tipY −0.2). Engine chưa hiệu chỉnh khối lượng hiệu dụng rack nên harness chọn trô.
 - Drill 29: lỗ giữa phía đối diện bi cái (`sideRight`) và ba vị trí 8", 5", 2" trong box 9" là của em, chưa có harness; drill 29 không có case trong `scripts/position-harness/`.
+- 25/10: phần `ORDER` và `topics` của bước 8 (24–30) đã làm trong `plans/261025-1420-chuoi-ep-phe/plan.md` bước 8. Cue Ball Control giờ có cả chuỗi phê, topics thành "Stop · Follow · Draw · English". Phần brainstorm drill đo số vẫn còn.
