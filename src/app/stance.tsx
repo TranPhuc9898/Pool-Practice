@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useState } from "react";
 import { Linking, View } from "react-native";
 
@@ -14,35 +14,24 @@ import {
 
 import {
   PoseCoachView,
-  type PoseFault,
   type PoseStatus,
-  type PoseStroke,
   type PoseVoiceMode,
 } from "../../modules/pool-table";
 
-const VERDICT: Record<PoseFault, string> = {
-  good: "Good stroke",
-  forearmForward: "Forearm forward at contact",
-  forearmBack: "Forearm back at contact",
-  elbow: "Elbow moved before contact",
-  head: "Head came up",
-  pause: "No pause at the back",
-};
-
 const signed = (n: number) => `${n > 0 ? "+" : ""}${Math.round(n)}°`;
 
-function statusLine(st: PoseStatus | null): string {
+function statusLine(st: PoseStatus | null, camera: "front" | "back"): string {
   if (!st) return "Starting camera…";
   const arm = st.forearm === undefined ? "" : ` · forearm ${signed(st.forearm)}`;
   switch (st.state) {
     case "denied":
       return "Camera access is off.";
     case "unavailable":
-      return "No back camera on this device.";
+      return `No ${camera} camera on this device.`;
     case "searching":
       return "Looking for your cue arm. Whole body side-on in frame.";
     case "tilted":
-      return `Phone tilted ${st.tilt}°. Stand it upright.`;
+      return `Phone tilted ${st.tilt}°. Stand it upright at elbow height.`;
     case "ready":
       return `Arm found. Get down on the shot${arm}.`;
     case "address":
@@ -53,17 +42,16 @@ function statusLine(st: PoseStatus | null): string {
 }
 
 /**
- * Soi tư thế từ bên hông: camera sau đặt phía tay cơ, Vision bắt vai, khuỷu, cổ tay, báo bằng tiếng sau mỗi cú.
+ * Soi tư thế từ bên hông: máy đặt phía tay cơ, camera trước hoặc sau, Vision bắt vai, khuỷu, cổ tay, báo bằng tiếng sau mỗi cú.
  * Ngưỡng là tạm, chưa hiệu chuẩn trên clip thật (`modules/pool-table/ios/Pose/PoseStroke.swift`).
  */
 export default function StanceScreen() {
   const s = useStyles();
   const [hand, setHand] = useState<"right" | "left">("right");
+  const [camera, setCamera] = useState<"front" | "back">("front");
   const [voice, setVoice] = useState<PoseVoiceMode>("vi");
   const [status, setStatus] = useState<PoseStatus | null>(null);
-  const [strokes, setStrokes] = useState<PoseStroke[]>([]);
-  const last = strokes.at(-1);
-  const good = strokes.filter((r) => r.fault === "good").length;
+  const [sets, setSets] = useState(0);
 
   return (
     <Screen gap="xl">
@@ -73,14 +61,15 @@ export default function StanceScreen() {
         <PoseCoachView
           style={s.fill}
           hand={hand}
+          camera={camera}
           voice={voice}
           onStatus={(e) => setStatus(e.nativeEvent)}
-          onStroke={(e) => setStrokes((list) => [...list, e.nativeEvent])}
+          onSet={(e) => setSets(e.nativeEvent.count)}
         />
       </View>
       <View style={s.status}>
         <AppText variant="callout" color="textSecondary">
-          {statusLine(status)}
+          {statusLine(status, camera)}
         </AppText>
         {status?.state === "denied" && (
           <GhostButton title="Open Settings" icon="gearshape" onPress={() => Linking.openSettings()} />
@@ -88,18 +77,10 @@ export default function StanceScreen() {
       </View>
 
       <Scoreboard
-        label="Strokes"
-        value={strokes.length}
+        label="Straight arm"
+        value={sets}
         pad={2}
-        caption={last ? `${good} good · ${VERDICT[last.fault]}` : "Waiting for a stroke"}
-        stats={
-          last && [
-            { label: "Forearm", value: Math.round(last.forearmContact), suffix: "°" },
-            { label: "Elbow", value: Math.round(last.elbowDrift), suffix: "°" },
-            { label: "Head", value: Math.round(last.headLift ?? 0), suffix: "cm" },
-            { label: "Pause", value: Number(last.backPause.toFixed(1)), suffix: "s" },
-          ]
-        }
+        caption={sets ? "Set counted. Swing, then set again." : "Hold the forearm vertical and still"}
       />
 
       <Section title="Setup" gap="md">
@@ -111,9 +92,21 @@ export default function StanceScreen() {
           value={hand}
           onChange={(v) => {
             setHand(v);
-            setStrokes([]);
+            setSets(0);
           }}
           accessibilityLabel="Cue hand"
+        />
+        <AppSegmentedControl
+          segments={[
+            { value: "front", label: "Front camera" },
+            { value: "back", label: "Back camera" },
+          ]}
+          value={camera}
+          onChange={(v) => {
+            setCamera(v);
+            setSets(0);
+          }}
+          accessibilityLabel="Camera"
         />
         <AppSegmentedControl
           segments={[
@@ -126,6 +119,7 @@ export default function StanceScreen() {
           onChange={setVoice}
           accessibilityLabel="Feedback"
         />
+        <GhostButton title="Analyze a clip" icon="film" onPress={() => router.push("/clip")} />
       </Section>
 
       <Section title="Phone placement">

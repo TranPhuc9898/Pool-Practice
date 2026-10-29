@@ -16,8 +16,12 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
+  # Stance Check dò khớp bằng PoseLandmarker: Vision không ra cổ tay khi đứng sát camera trước, tay buông dọc.
+  s.dependency 'MediaPipeTasksVision', '1.0.0'
 
   s.source_files = "**/*.{h,m,swift}"
+  # Model lite float16, cùng file demo web. Nằm thẳng trong bundle app.
+  s.resources = "Pose/Models/*.task"
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'SWIFT_COMPILATION_MODE' => 'wholemodule',

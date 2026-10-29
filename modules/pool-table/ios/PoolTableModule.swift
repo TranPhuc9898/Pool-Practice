@@ -8,5 +8,7 @@ public final class PoolTableModule: Module {
     View(PoolAimView.self)
     View(PoolEditorView.self)
     View(PoseCoachView.self)
+    View(PoseClipView.self)
+    View(PoseTrendView.self)
   }
 }

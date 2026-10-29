@@ -22,6 +22,94 @@ struct PoseLimits {
   var backswing: Double = 0.25
   /// Cổ tay vượt address `followThrough · L` thì cú đã đi qua bi.
   var followThrough: Double = 0.3
+  /// Đường cẳng tay trên overlay vẫn tô màu tới mức ngả này, riêng với `maxTilt` của phần bắt cú. Khung có `lens` thì
+  /// góc đo theo dây dọi tại khuỷu nên phối cảnh không làm lệch. Khung không có `lens` thì sát mép khung ở 20° trở lên
+  /// lệch tới cỡ 8° (tính hình học, chưa đo). Gần nằm phẳng thì dây dọi suy biến nên vẫn chặn. Mới kiểm khi máy đứng
+  /// dọc, ngả lớn chỉ dựa vào hình học. Độ.
+  var maxLineTilt: Double = 60
+
+  /// Màu đường cẳng tay: true xanh, false đỏ, nil khi không chấm vì thiếu khớp hoặc máy ngả quá `maxLineTilt`.
+  func lineOk(_ f: PoseFrame, tilt: Double) -> Bool? {
+    guard tilt <= maxLineTilt, let lean = f.forearmLean else { return nil }
+    return abs(lean) <= forearm
+  }
+}
+
+/// Màu đường cẳng tay qua nhiều khung. Khớp Vision rung vài độ mỗi khung nên chấm từng khung thì màu nhảy xanh ↔ đỏ
+/// quanh ngưỡng, và một khung mất khuỷu là đường trắng: lấy trung vị một khoảng ngắn, đã xanh thì phải lệch quá `exit`
+/// mới đỏ, mất khớp ngắn hơn `hold` thì giữ màu cũ.
+struct PoseLineColor {
+  /// Giây lấy trung vị độ ngả cẳng tay.
+  var window: Double = 0.3
+  /// Mất khuỷu hoặc cổ tay quá ngần này giây mới thôi tô màu.
+  var hold: Double = 0.5
+  /// Đang xanh thì lệch quá mức này mới đổi đỏ. Độ, lớn hơn `PoseLimits.forearm`.
+  var exit: Double = 13
+  private var leans: [(t: Double, lean: Double)] = []
+  private var ok: Bool?
+  private var seen = -Double.infinity
+
+  mutating func push(_ f: PoseFrame, tilt: Double, limits: PoseLimits) -> Bool? {
+    guard tilt <= limits.maxLineTilt else {
+      leans.removeAll()
+      ok = nil
+      return nil
+    }
+    guard let lean = f.forearmLean else {
+      if f.t - seen > hold {
+        leans.removeAll()
+        ok = nil
+      }
+      return ok
+    }
+    seen = f.t
+    leans.removeAll { $0.t < f.t - window }
+    leans.append((f.t, lean))
+    let m = abs(median(leans.map(\.lean)))
+    ok = m <= (ok == true ? exit : limits.forearm)
+    return ok
+  }
+}
+
+/// Đếm "set": khoảnh khắc đầu cơ dừng sát bi, cẳng tay buông dọc và cổ tay đứng yên, trước khi lùi cơ đánh. Lúc nhấp
+/// cơ tay không dừng nên không đếm. Không cần vai hay tư thế cúi như `StrokeTracker`, chỉ cần khuỷu và cổ tay, nên đứng
+/// thẳng buông tay cũng được tính.
+struct SetCounter {
+  /// Cổ tay đứng yên ngần này giây thì tính một set. SPFF đếm 2–3 s, lấy thấp hơn để khỏi chờ.
+  var hold: Double = 0.5
+  private(set) var count = 0
+  private var recent: [(t: Double, p: CGPoint, lean: Double, length: Double)] = []
+  /// Sau mỗi set phải đi xa chỗ đó quá `backswing · L` (vung đánh hoặc nhấp) mới đếm set tiếp.
+  private var anchor: (p: CGPoint, length: Double)?
+
+  mutating func reset() {
+    count = 0
+    recent = []
+    anchor = nil
+  }
+
+  /// True đúng khung vừa đếm thêm một set.
+  mutating func push(_ f: PoseFrame, limits: PoseLimits) -> Bool {
+    guard let el = f.elbow, let wr = f.wrist, let lean = f.forearmLean else { return false }
+    let length = Double(hypot(wr.x - el.x, wr.y - el.y))
+    if let a = anchor, distance(wr, a.p) > limits.backswing * a.length { anchor = nil }
+    recent.append((f.t, wr, lean, length))
+    recent.removeAll { f.t - $0.t > hold + 0.2 }
+    guard anchor == nil, let first = recent.first, f.t - first.t >= hold else { return false }
+    let window = recent.filter { f.t - $0.t <= hold }
+    let n = Double(window.count)
+    let c = CGPoint(x: window.reduce(0) { $0 + $1.p.x } / n, y: window.reduce(0) { $0 + $1.p.y } / n)
+    let l = window.reduce(0) { $0 + $1.length } / n
+    guard
+      window.allSatisfy({ distance($0.p, c) <= limits.stillRadius * l }),
+      abs(median(window.map(\.lean))) <= limits.forearm
+    else { return false }
+    count += 1
+    anchor = (c, l)
+    return true
+  }
+
+  private func distance(_ a: CGPoint, _ b: CGPoint) -> Double { Double(hypot(a.x - b.x, a.y - b.y)) }
 }
 
 enum StrokeFault: String {
@@ -29,6 +117,8 @@ enum StrokeFault: String {
 }
 
 struct StrokeReport {
+  /// Giây theo đồng hồ của khung lúc chạm, để tìm lại đúng khung đó trong clip.
+  var contact: Double
   /// Góc cẳng tay so với phương dọc, dương là cổ tay ra trước khuỷu (về phía đầu).
   var forearmAddress: Double
   var forearmContact: Double
@@ -270,6 +360,7 @@ final class StrokeTracker {
       fault = .good
     }
     return StrokeReport(
+      contact: c,
       forearmAddress: a.forearm,
       forearmContact: at.forearm,
       elbowDrift: drift,

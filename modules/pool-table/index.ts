@@ -19,3 +19,15 @@ export type {
   PoseStroke,
   PoseVoiceMode,
 } from './src/PoseCoachView';
+export { PoseClipView, PoseTrendView } from './src/PoseClipView';
+export type {
+  ClipAnalyzed,
+  ClipAxis,
+  ClipFrame,
+  ClipInfo,
+  ClipPhase,
+  ClipStroke,
+  PoseClipViewProps,
+  PoseTrendViewProps,
+  TrendPoint,
+} from './src/PoseClipView';

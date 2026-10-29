@@ -38,9 +38,13 @@ export type PoseVoiceMode = 'vi' | 'en' | 'beep' | 'off';
 export type PoseCoachViewProps = ViewProps & {
   /** Tay cầm cơ. Máy đặt bên hông phía tay này. */
   hand?: 'right' | 'left';
+  /** Camera soi, mặc định `front`: màn quay về người chơi. Đổi giữa chừng thì tracker bắt lại từ đầu. */
+  camera?: 'front' | 'back';
   voice?: PoseVoiceMode;
   onStatus?: (event: { nativeEvent: PoseStatus }) => void;
   onStroke?: (event: { nativeEvent: PoseStroke }) => void;
+  /** Cẳng tay dọc và cổ tay đứng yên nửa giây. `count` đếm từ lúc mở màn, về 0 khi đổi tay hoặc camera. */
+  onSet?: (event: { nativeEvent: { count: number } }) => void;
 };
 
 export const PoseCoachView = requireNativeView<PoseCoachViewProps>('PoolTable', 'PoseCoachView');
