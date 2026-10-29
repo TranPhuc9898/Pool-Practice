@@ -2,9 +2,10 @@ import { router } from 'expo-router';
 import { View } from 'react-native';
 
 import { numberIn } from '@/components/home/training-areas';
-import { AppChip, AppIcon, AppText, makeStyles, MaterialCard, type ChipTone } from '@/design-system';
+import { AppChip, AppIcon, AppText, makeStyles, MaterialCard, rankTone, type ChipTone } from '@/design-system';
+import { groupOf, SKILL_GROUPS } from '@/pool-engine/groups';
+import { levelOf } from '@/pool-engine/levels';
 import { drillStatus, type DrillProgress, type DrillStatus } from '@/pool-engine/progress';
-import { stageOf } from '@/pool-engine/stages';
 import type { PoolDrill } from '@/pool-engine/types';
 
 const statusMeta: Record<DrillStatus, { label: string; tone: ChipTone }> = {
@@ -15,15 +16,26 @@ const statusMeta: Record<DrillStatus, { label: string; tone: ChipTone }> = {
 };
 
 /**
- * Một dòng drill: số (mặc định số trong nhóm, `number` để màn gọi tự đánh), tên, kỹ năng · giai đoạn kèm hạng SABO tham
- * khảo · điểm, chip trạng thái. Bấm mở `/drill/[id]`.
+ * Một dòng drill: số (mặc định số trong nhóm, `number` để màn gọi tự đánh), tên, hạng · nhóm kỹ năng · điểm, chip
+ * trạng thái. Card không mang màu hạng, hạng chỉ là chữ. `compact` cho trang một hạng, nơi hạng và nhóm đã nằm ở
+ * header: dòng phụ chỉ còn kỹ năng · điểm. Bấm mở `/drill/[id]`.
  */
-export function DrillCard({ drill, progress, number }: { drill: PoolDrill; progress?: DrillProgress; number?: string }) {
+export function DrillCard({
+  drill,
+  progress,
+  number,
+  compact = false,
+}: {
+  drill: PoolDrill;
+  progress?: DrillProgress;
+  number?: string;
+  compact?: boolean;
+}) {
   const s = useStyles();
   const key = progress ? drillStatus(drill, progress) : 'notStarted';
   const status = statusMeta[key];
   const n = number ?? numberIn(drill);
-  const stage = stageOf(drill);
+  const group = SKILL_GROUPS.find((g) => g.id === groupOf(drill))?.title ?? drill.skillLabel;
   const best = progress?.best
     ? `Best ${progress.best}/${drill.attemptCount}`
     : `Pass ${drill.passCondition.required}/${drill.attemptCount}`;
@@ -41,7 +53,7 @@ export function DrillCard({ drill, progress, number }: { drill: PoolDrill; progr
         <View style={s.flex}>
           <AppText variant="headline">{drill.title}</AppText>
           <AppText variant="caption" color="textTertiary">
-            {drill.skillLabel} · Stage {stage.stage} ~{stage.sabo} · {best}
+            {compact ? `${drill.skillLabel} · ${best}` : `Rank ${rankTone[levelOf(drill)].label} · ${group} · ${best}`}
           </AppText>
         </View>
         <AppChip label={status.label} tone={status.tone} />

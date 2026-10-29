@@ -62,6 +62,10 @@ export type DrillSkill =
   | 'masse'
   | 'test';
 export type Difficulty = 1 | 2 | 3 | 4 | 5;
+/** Hạng giáo trình H → PRO, thấp đến cao. Trùng thứ tự `RANKS` của design system để truyền thẳng vào `RankBadge`. */
+export type TrainingLevel = 'H' | 'G' | 'F' | 'E' | 'D' | 'C-' | 'C+' | 'B-' | 'B+' | 'A-' | 'A+' | 'PRO';
+/** Bảy nhóm kỹ năng của tab Drills, gom từ `DrillSkill` trong `groups.ts`. */
+export type SkillGroup = 'fundamentals' | 'cueBallControl' | 'positionPlay' | 'kick' | 'bank' | 'spin' | 'advanced';
 export type Spin = 'center' | 'stun' | 'follow' | 'draw';
 export type Speed = 'soft' | 'medium' | 'firm';
 

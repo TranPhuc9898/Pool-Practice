@@ -47,6 +47,16 @@ export default function RootLayout() {
               <Stack.Screen name="editor" />
               <Stack.Screen name="drill/[id]" />
               <Stack.Screen name="area/[id]" />
+              <Stack.Screen
+                name="rank/[id]"
+                options={{
+                  headerShown: false,
+                  presentation: 'transparentModal',
+                  animation: 'none',
+                  gestureEnabled: false,
+                  contentStyle: { backgroundColor: 'transparent' },
+                }}
+              />
             </Stack.Protected>
           </Stack>
           {outroPlaying && <LogoOutro />}

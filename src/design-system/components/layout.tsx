@@ -44,18 +44,21 @@ export function Screen({ children, gap = 'xxl', contentStyle, ...rest }: ScreenP
 type SectionProps = {
   title?: string;
   caption?: string;
+  /** Phần tử nhỏ trước tiêu đề, ví dụ `RankBadge`. */
+  leading?: ReactNode;
   action?: { label: string; onPress: () => void };
   children: ReactNode;
   gap?: SpacingToken;
 };
 
-export function Section({ title, caption, action, children, gap = 'sm' }: SectionProps) {
+export function Section({ title, caption, leading, action, children, gap = 'sm' }: SectionProps) {
   const t = useTheme();
   const s = useStyles();
   return (
     <View style={{ gap: t.space[gap] }}>
       {(title || action) && (
         <View style={s.sectionHeader}>
+          {leading}
           <View style={s.flex}>
             {title && (
               <AppText variant="title3" accessibilityRole="header">
@@ -127,7 +130,7 @@ const useStyles = makeStyles((t) => ({
   scroll: { flex: 1, backgroundColor: t.color.backgroundPrimary },
   content: { paddingTop: t.space.xs, paddingBottom: t.space.section, alignItems: 'center' },
   inner: { width: '100%', maxWidth: t.layout.maxContentWidth },
-  sectionHeader: { flexDirection: 'row', alignItems: 'flex-end', gap: t.space.sm },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: t.space.sm },
   action: { minHeight: t.layout.minTouchTarget, justifyContent: 'center' },
   group: {
     borderRadius: t.radius.large,

@@ -91,7 +91,12 @@ function RankSection() {
   const [rank, setRank] = useState<Rank | null>(null);
   return (
     <Section title="Rank" caption="Tap a rank: the pill opens into its hero. Gradients only on badges, selection and progress.">
-      <RankSelector value={rank} onChange={setRank} caption={(r) => `${rankTone[r].stops.join(' → ')}`} />
+      <RankSelector
+        value={rank}
+        onChange={setRank}
+        suggested="E"
+        info={(r) => ({ caption: rankTone[r].stops.join(' → '), passed: 2, total: 6 })}
+      />
       <View style={s.rankRow}>
         {RANKS.map((r) => (
           <RankBadge key={r} rank={r} />
