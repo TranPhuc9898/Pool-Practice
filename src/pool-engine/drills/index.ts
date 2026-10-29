@@ -81,6 +81,49 @@ import { rdsLevels10To12 } from './78-rds-levels-10-12';
 import { equalOffense } from './79-equal-offense';
 import { tenBallGhost } from './80-ten-ball-ghost';
 import { rdsLevels13To16 } from './81-rds-levels-13-16';
+import { nplGate } from './82-npl-gate';
+import { oneDiamondSquirt } from './83-one-diamond-squirt';
+import { throwCheck } from './84-throw-check';
+import { oneTipOneDiamond } from './85-one-tip-one-diamond';
+import { outsideDrawInsideFollow } from './86-outside-draw-inside-follow';
+import { lastThreeManyPockets } from './87-last-three-many-pockets';
+import { problemBallFirst } from './88-problem-ball-first';
+import { kickOneAndTwoRails } from './89-kick-one-and-two-rails';
+import { pressureLine } from './90-pressure-line';
+import { nineBallScatter } from './91-nine-ball-scatter';
+import { tenBallCalledRunout } from './92-ten-ball-called-runout';
+import { safetyExchange } from './93-safety-exchange';
+import { pushOutChoice } from './94-push-out-choice';
+import { controlledBreak } from './95-controlled-break';
+import { pressureNineBall } from './96-pressure-nine-ball';
+import { wideZoneThreePositions } from './97-wide-zone-three-positions';
+import { stunToSecondBall } from './98-stun-to-second-ball';
+import { stopAndGo } from './99-stop-and-go';
+import { drawToNarrowZone } from './100-draw-to-narrow-zone';
+import { softFollowShortStop } from './101-soft-follow-short-stop';
+import { naturalRollToTheTwo } from './102-natural-roll-to-the-two';
+import { threeBallRollingPosition } from './103-three-ball-rolling-position';
+import { followToAThinCut } from './104-follow-to-a-thin-cut';
+import { calledSideBank } from './105-called-side-bank';
+import { centerBallPace } from './106-center-ball-pace';
+import { softSidePocketStop } from './107-soft-side-pocket-stop';
+import { threeBallFollowPattern } from './108-three-ball-follow-pattern';
+import { bankNoDoubleKiss } from './109-bank-no-double-kiss';
+import { ppcLayoutOne } from './114-ppc-layout-1';
+import { ppcLayoutFour } from './117-ppc-layout-4';
+import { ppcLayoutFive } from './118-ppc-layout-5';
+import { ppcLayoutSix } from './119-ppc-layout-6';
+import { twicePlusTenthsBank } from './110-twice-plus-tenths-bank';
+import { twoRailKickSubtraction } from './111-two-rail-kick-subtraction';
+import { lineOfBallsVepp } from './123-line-of-balls-vepp';
+import { landMine } from './130-land-mine';
+import { englishSpeedCheck } from './113-english-speed-check';
+import { oneLayoutThreeAnswers } from './112-one-layout-three-answers';
+import { railRowReturn } from './120-rail-row-return';
+import { halfBallFourDiamonds } from './121-half-ball-four-diamonds';
+import { compactPlay } from './122-compact-play';
+import { shortSide } from './124-short-side';
+import { rockAroundTheClock } from './129-rock-around-the-clock';
 
 /** Thứ tự là lộ trình: đánh trúng → kiểm soát bi cái → đi bài. */
 export const DRILLS: readonly PoolDrill[] = [
@@ -165,6 +208,49 @@ export const DRILLS: readonly PoolDrill[] = [
   equalOffense,
   tenBallGhost,
   rdsLevels13To16,
+  nplGate,
+  oneDiamondSquirt,
+  throwCheck,
+  oneTipOneDiamond,
+  outsideDrawInsideFollow,
+  lastThreeManyPockets,
+  problemBallFirst,
+  kickOneAndTwoRails,
+  pressureLine,
+  nineBallScatter,
+  tenBallCalledRunout,
+  safetyExchange,
+  pushOutChoice,
+  controlledBreak,
+  pressureNineBall,
+  wideZoneThreePositions,
+  stunToSecondBall,
+  stopAndGo,
+  drawToNarrowZone,
+  softFollowShortStop,
+  naturalRollToTheTwo,
+  threeBallRollingPosition,
+  followToAThinCut,
+  calledSideBank,
+  centerBallPace,
+  softSidePocketStop,
+  threeBallFollowPattern,
+  bankNoDoubleKiss,
+  ppcLayoutOne,
+  ppcLayoutFour,
+  ppcLayoutFive,
+  ppcLayoutSix,
+  twicePlusTenthsBank,
+  twoRailKickSubtraction,
+  lineOfBallsVepp,
+  landMine,
+  englishSpeedCheck,
+  oneLayoutThreeAnswers,
+  railRowReturn,
+  halfBallFourDiamonds,
+  compactPlay,
+  shortSide,
+  rockAroundTheClock,
 ];
 
 export function drillByNumber(n: number): PoolDrill | undefined {

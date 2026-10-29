@@ -5,6 +5,8 @@ import type { PoolDrill } from '../types';
  * Shot 2. Bi cái lăn đều (tipY 0.4), bốn round cắt 10/30/60/75° vào lỗ giữa trái, mỗi round một zone ở chỗ bi cái dừng.
  * Tip chỉ lấy claim APPROXIMATION và VERIFIED của #3. Toạ độ, lực, zone chép từ `sh scripts/position-harness/run.sh`
  * trên ShotPhysics ddf3049: góc engine lệch Shepard +4.3 / +0.1 / −2.1 / −0.9°, rate 45 / 42 / 39 / 20 trên 45.
+ * Round 75° dời bi và bi cái 8" về phía lỗ giữa trái, giữ góc, và lấy tip 0.4, lực 1.4 từ quét tip × lực (2026-10-29): ở chỗ
+ * cũ bi 1 chỉ vào khi lực ≥ 1.5 và mọi cú sạch đều làm bi cái chạm từ 3 băng, sai luật 3. Rate 20 của round này là số cũ.
  */
 export const naturalAngle = {
   id: '24',
@@ -24,7 +26,7 @@ export const naturalAngle = {
     { kind: 'circle', center: { x: 0.1163, y: 0.4699 }, radius: 0.07, label: '10°' },
     { kind: 'circle', center: { x: 0.1401, y: 0.366 }, radius: 0.07, label: '30°' },
     { kind: 'circle', center: { x: 0.1158, y: 0.0713 }, radius: 0.07, label: '60°' },
-    { kind: 'circle', center: { x: 0.8328, y: 0.0582 }, radius: 0.07, label: '75°' },
+    { kind: 'circle', center: { x: 0.505, y: 0.596 }, radius: 0.07, label: '75°' },
   ],
   guideLines: [
     { kind: 'objectBallPath', ball: 1, pocket: 'sideLeft' },
@@ -48,8 +50,8 @@ export const naturalAngle = {
   ],
   rounds: [
     { title: '10°', zone: 0, spin: 'follow', speed: 0.4, cueBall: { x: 0.2292, y: 0.3857 }, objectBalls: [{ number: 1, x: 0.0919, y: 0.4614 }] },
-    { title: '30°', zone: 1, spin: 'follow', speed: 0.9, cueBall: { x: 0.284, y: 0.4331 }, objectBalls: [{ number: 1, x: 0.0919, y: 0.4614 }] },
-    { title: '60°', zone: 2, spin: 'follow', speed: 0.9, cueBall: { x: 0.3047, y: 0.5435 }, objectBalls: [{ number: 1, x: 0.1576, y: 0.4861 }] },
-    { title: '75°', zone: 3, spin: 'follow', speed: 2.5, cueBall: { x: 0.4128, y: 0.3851 }, objectBalls: [{ number: 1, x: 0.3545, y: 0.4687 }] },
+    { title: '30°', zone: 1, spin: 'follow', contactPoint: { x: 0, y: 0.2 }, speed: 0.65, cueBall: { x: 0.284, y: 0.4331 }, objectBalls: [{ number: 1, x: 0.0919, y: 0.4614 }] },
+    { title: '60°', zone: 2, spin: 'follow', contactPoint: { x: 0, y: 0.15 }, speed: 0.7, cueBall: { x: 0.3047, y: 0.5435 }, objectBalls: [{ number: 1, x: 0.1576, y: 0.4861 }] },
+    { title: '75°', zone: 3, spin: 'follow', contactPoint: { x: 0, y: 0.4 }, speed: 1.4, cueBall: { x: 0.2552, y: 0.399 }, objectBalls: [{ number: 1, x: 0.197, y: 0.4826 }] },
   ],
 } satisfies PoolDrill;

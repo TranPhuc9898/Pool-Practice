@@ -137,38 +137,31 @@ export function ProgramGauge({ total, focus, fill, value, of, caption }: Program
               );
             })}
 
-          {/* Marker: điểm xoay đặt đúng tâm cung, tam giác treo ở đỉnh. */}
+          {/* Marker: tam giác treo ở đỉnh, xoay quanh tâm cung bằng transformOrigin.
+              Phải là view lá: view có CSS transition mà chứa view con thì Fabric văng khi home unmount. */}
           <Animated.View
             pointerEvents="none"
             style={{
               position: 'absolute',
-              left: CX * k,
-              top: CY * k,
+              left: (CX - 4.5) * k,
+              top: 3.5 * k,
               width: 0,
               height: 0,
+              borderLeftWidth: 4.5 * k,
+              borderRightWidth: 4.5 * k,
+              borderTopWidth: 7 * k,
+              borderLeftColor: 'transparent',
+              borderRightColor: 'transparent',
+              borderTopColor: ink.gold,
               // Program 1 drill: cả cung đã là drill đang tập, marker chỉ vào giữa cung không mang thông tin.
               opacity: focus >= 0 && total > 1 ? 1 : 0,
+              transformOrigin: [4.5 * k, (CY - 3.5) * k, 0],
               transform: [{ rotate: `${markDeg}deg` }],
               transitionProperty: ['transform', 'opacity'],
               transitionDuration: reduced ? 0 : 240,
               transitionTimingFunction: t.motion.curve.easeOut,
-            }}>
-            <View
-              style={{
-                position: 'absolute',
-                left: -4.5 * k,
-                top: (3.5 - CY) * k,
-                width: 0,
-                height: 0,
-                borderLeftWidth: 4.5 * k,
-                borderRightWidth: 4.5 * k,
-                borderTopWidth: 7 * k,
-                borderLeftColor: 'transparent',
-                borderRightColor: 'transparent',
-                borderTopColor: ink.gold,
-              }}
-            />
-          </Animated.View>
+            }}
+          />
         </>
       )}
 

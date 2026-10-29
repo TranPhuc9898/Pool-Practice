@@ -48,7 +48,8 @@ enum DrillShotPlanner {
     var spread = 4 * deg, step = 0.25 * deg
     /// Lực và độ dựng cơ thử lần lượt; lực của drill luôn thử trước.
     var tries: [(speed: CGFloat, theta: CGFloat)] = []
-    var rail = false, kick = false, noRail = false, banked = false, clear = true
+    var rail = false, kick = false, noRail = false, banked = false, clear = true, slop = false
+    var ghostAim: CGPoint?
     let railAim = aimPocket.map { !ShotPhysics.isPocket($0) } ?? false
 
     if skill == "break" || racked(balls) {
@@ -60,6 +61,7 @@ enum DrillShotPlanner {
       goal = nil
       spread = 1 * deg
       clear = false
+      slop = true
     } else if skill == "combo", let g = goal, let t = obs[g.ball], let P = ShotPhysics.target(g.pocket),
               let a = nearest(g.ball) {
       // Combo: bi cái vào bi A, A đẩy bi đích vào lỗ. Ngắm ghost của A về ghost của bi đích.
@@ -77,6 +79,7 @@ enum DrillShotPlanner {
       if guides.cuePath.count >= 2 {
         let first = gap(guides.cuePath[0], c) < 1.5 ? guides.cuePath[1] : guides.cuePath[0]
         a0 = toward(first)
+        if gap(first, o) < ShotPhysics.ballDiameter + 0.5 { ghostAim = first }
       } else if railAim, let P = aimPocket.flatMap(ShotPhysics.target), gap(P, o) > 1 {
         a0 = toward(ShotPhysics.ghost(o, P).g)
       } else if railAim, let v = via {
@@ -111,8 +114,24 @@ enum DrillShotPlanner {
     let others = obs.filter { $0.key != ball }.map { ShotPhysics.Obstacle(n: $0.key, p: $0.value) }.sorted { $0.n < $1.n }
     let ms = ShotPhysics.Setup(c: c, o: obs[ball]!, pocket: goal?.pocket ?? aimPocket ?? "footLeft", others: others, ball: ball)
 
+    // Phê ngang làm bi cái lệch (squirt, swerve): xoay hướng ngắm tới khi tâm bi cái lúc chạm trùng ghost vẽ trong guide.
+    if let g = ghostAim, tipX != 0 {
+      for _ in 0..<4 {
+        let r = ShotPhysics.runWith(ms, tipX: tipX, tipY: tipY, theta: theta, speed: speed, aim: a0)
+        guard r.short != .cue else { break }
+        a0 += toward(g) - toward(r.ghost)
+      }
+    }
+
+    // Push out: đường bi cái vẽ không tới gần bi nào, nên cú đạt là bi cái không chạm bi, không rơi lỗ.
+    let push = skill == "safety" && guides.cuePath.count >= 2 &&
+      !guides.cuePath.contains { p in obs.values.contains { gap($0, p) < 3 } }
+
     func ok(_ a: CGFloat) -> Bool {
       let r = ShotPhysics.runWith(ms, tipX: tipX, tipY: tipY, theta: theta, speed: speed, aim: a)
+      if push {
+        return r.short == .cue && r.scratch == nil && r.pre.pts.allSatisfy { p in obs.values.allSatisfy { gap($0, p) >= ShotPhysics.ballDiameter - 0.05 } }
+      }
       guard r.short != .cue, r.scratch == nil else { return false }
       if kick && r.pre.bounces == 0 { return false }
       if (noRail || banked) && r.pre.bounces > 0 { return false }
@@ -120,6 +139,9 @@ enum DrillShotPlanner {
       if clear, r.pre.pts.contains(where: { p in others.contains { gap($0.p, p) < ShotPhysics.ballDiameter - 0.05 } }) { return false }
       if let g = goal, (g.ball == ball ? r.ob : r.moved[g.ball])?.pocket != g.pocket { return false }
       if rail && r.ob.bounces == 0 && r.ob.pocket == nil { return false }
+      // Không ăn bừa: ngoài bi đích của bài (không có thì bi cái đánh vào) không bi nào được rơi. Phá bàn thì miễn.
+      let keep = goal?.ball ?? ball
+      if !slop, (r.ob.pocket != nil && ball != keep) || r.moved.contains(where: { $0.key != keep && $0.value.pocket != nil }) { return false }
       return true
     }
 

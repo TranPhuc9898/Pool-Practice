@@ -108,16 +108,23 @@ struct PoolDrillPickLayer: View {
   let replay: ShotReplay
   let geometry: PoolTableGeometry
   var trails = true
+  /// Vòng ghost ở chỗ bi cái chạm bi mục tiêu, thay ghost vẽ tay khi vệt này là cú của round.
+  var ghost = false
 
   var body: some View {
     Canvas { ctx, _ in
       guard trails else { return }
       PoolShotReplayLayer.trails(&ctx, replay, replay.end, geometry)
+      let r = geometry.ballDiameter * PoolEditorModel.ballZoom / 2
       if let e = replay.cue.pts.last {
-        let q = geometry.point(inchesX: e.x, inchesY: e.y), r = geometry.ballDiameter * PoolEditorModel.ballZoom / 2
+        let q = geometry.point(inchesX: e.x, inchesY: e.y)
         let ring = Path(ellipseIn: CGRect(x: q.x - r, y: q.y - r, width: 2 * r, height: 2 * r))
         ctx.fill(ring, with: .color(.white.opacity(0.12)))
         ctx.stroke(ring, with: .color(.white.opacity(0.9)), style: StrokeStyle(lineWidth: 1.2, dash: [3, 2]))
+      }
+      if ghost, let t = replay.contact {
+        let g = replay.cue.at(t), q = geometry.point(inchesX: g.x, inchesY: g.y)
+        ctx.stroke(Path(ellipseIn: CGRect(x: q.x - r, y: q.y - r, width: 2 * r, height: 2 * r)), with: .color(PoolGuidePalette.ghost), lineWidth: 1.2)
       }
     }
     .allowsHitTesting(false)

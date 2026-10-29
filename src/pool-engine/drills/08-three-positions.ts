@@ -31,8 +31,8 @@ export const threePositions = {
   passCondition: { kind: 'inZone', required: 6 },
   tips: ['The tangent is the stun line. Draw bends back from it, follow bends forward.'],
   rounds: [
-    { title: 'A · Draw', zone: 0, spin: 'draw' },
-    { title: 'B · Stun', zone: 1, spin: 'stun' },
-    { title: 'C · Follow', zone: 2, spin: 'follow' },
+    { title: 'A · Draw', zone: 0, spin: 'draw', contactPoint: { x: 0, y: -0.5 }, speed: 1.8 },
+    { title: 'B · Stun', zone: 1, spin: 'stun', contactPoint: { x: 0, y: -0.3 }, speed: 1.8 },
+    { title: 'C · Follow', zone: 2, spin: 'follow', contactPoint: { x: 0, y: 0.2 }, speed: 0.8 },
   ],
 } satisfies PoolDrill;

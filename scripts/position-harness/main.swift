@@ -8,6 +8,7 @@ import Foundation
 // Cú cuối không có zone, K là số mẫu bi cuối vào lỗ. Cú sau bắt đầu từ chỗ bi cái dừng sau cú trước danh nghĩa, như app
 // chơi lại. Toạ độ chép từ file drill trong src/pool-engine/drills/, đổi sang inch (x·50, y·100, r·50).
 // Drill 24, 25, 30 cùng kiểu 45 mẫu, mỗi round một dòng. Toạ độ ở đây là nguồn để chép sang data drill (x/50, y/100).
+// Drill 34, 35, 46 đặt lại bi cái mỗi cú, drill 49 một cú: quét tip × lực, in số chép sang `rounds` hoặc `shots`.
 
 typealias SP = ShotPhysics
 func inch(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x * 50, y: y * 100) }
@@ -68,7 +69,7 @@ func drill12() {
   chain("12", cue: inch(0.66, 0.43), balls: [1: inch(0.5, 0.45), 2: inch(0.5, 0.36), 3: inch(0.5, 0.27), 4: inch(0.5, 0.18)], shots: [
     Shot(ball: 1, pocket: "sideLeft", tipY: 0.6, speed: 0.8, zone: (inch(0.3, 0.5), 0.1 * 50)),
     Shot(ball: 2, pocket: "footRight", tipY: 0, speed: 1.4, zone: (inch(0.63, 0.24), 0.1 * 50)),
-    Shot(ball: 3, pocket: "sideLeft", tipY: 0.4, speed: 1.4, zone: (inch(0.32, 0.05), 0.1 * 50)),
+    Shot(ball: 3, pocket: "sideLeft", tipY: 0.2, speed: 1, zone: (inch(0.32, 0.05), 0.1 * 50)),
     Shot(ball: 4, pocket: "sideRight", tipY: -0.2, speed: 1.6, zone: nil),
   ])
 }
@@ -87,7 +88,7 @@ func drill23() {
   chain("23", cue: inch(0.47, 0.588), balls: [1: inch(0.69, 0.568), 2: inch(0.896, 0.79), 3: inch(0.852, 0.859)], shots: [
     // Z2: bi 1 cắt 17° vào lỗ giữa phải, follow cho bi cái theo đà bi 1 rồi bẻ lên, dừng dưới bi 2 chừng 9" với góc 13°
     // vào lỗ góc đầu bàn. Dừng thấp quá hay sát băng quá thì bi 2 thành cắt mỏng dọc băng.
-    Shot(ball: 1, pocket: "sideRight", tipY: 0.3, speed: 1.4, zone: (inch(0.88, 0.699), 0.07 * 50)),
+    Shot(ball: 1, pocket: "sideRight", tipY: 0.3, speed: 1, zone: (inch(0.88, 0.699), 0.07 * 50)),
     // Z3: bi 2 vào lỗ góc phải đầu bàn, draw để bi cái lùi lại 7" thay vì lăn theo về góc; từ đó bi 3 cách chừng 9",
     // cắt 21° vào cùng lỗ.
     Shot(ball: 2, pocket: "headRight", tipY: -0.4, speed: 1.2, zone: (inch(0.816, 0.765), 0.07 * 50)),
@@ -126,11 +127,13 @@ func settledDir(_ r: SP.Run) -> CGPoint? {
   }
   return nil
 }
+/// Hướng cơ của cú danh nghĩa. `nom.a` là hướng bi cái sau squirt, cộng lại squirt để mẫu có tipX không bị squirt hai lần.
+func aimOf(_ nom: SP.Run) -> CGFloat { atan2(nom.a.y, nom.a.x) + nom.squirtDeg * .pi / 180 }
 /// 45 mẫu lệch tay như drill 23, hướng cơ giữ như cú danh nghĩa. Trả về số mẫu theo từng nhãn của `judge`.
-func sample(_ ms: SP.Setup, tipY: CGFloat, speed: CGFloat, aim: CGFloat, _ judge: (SP.Run) -> String) -> [String: Int] {
+func sample(_ ms: SP.Setup, tipX: CGFloat = 0, tipY: CGFloat, speed: CGFloat, aim: CGFloat, _ judge: (SP.Run) -> String) -> [String: Int] {
   var n = [String: Int]()
   for m in [0.9, 0.95, 1, 1.05, 1.1] as [CGFloat] { for dx in [-0.1, 0, 0.1] as [CGFloat] { for dy in [-0.1, 0, 0.1] as [CGFloat] {
-    n[judge(SP.runWith(ms, tipX: dx, tipY: tipY + dy, speed: speed * m, aim: aim)), default: 0] += 1
+    n[judge(SP.runWith(ms, tipX: tipX + dx, tipY: tipY + dy, speed: speed * m, aim: aim)), default: 0] += 1
   } } }
   return n
 }
@@ -243,12 +246,520 @@ func drill28() {
   }
 }
 
+// MARK: drill 109, 110
+/// Bank off băng phải sang lỗ bất kỳ: quét đích `railRight@y` từng 0.1" quanh điểm bank vẽ tay, bi cái thẳng sau bi 1
+/// theo hướng điểm vẽ. In cửa sổ y engine cho bi 1 vào `pocket` và độ lệch so với điểm vẽ.
+func bankTo(_ label: String, ob o: CGPoint, drawnY y0: CGFloat, pocket: String, cueBack: CGFloat, tipY: CGFloat, speeds: [CGFloat]) {
+  let c = behind(o, toward: CGPoint(x: bankRail, y: y0), by: cueBack)
+  for v in speeds {
+    func run(_ y: CGFloat) -> SP.Run { SP.runWith(SP.Setup(c: c, o: o, pocket: "railRight@\(y)", others: []), tipX: 0, tipY: tipY, speed: v) }
+    let ys = stride(from: max(y0 - 15, 1), through: min(y0 + 15, 99), by: 0.1).filter { run($0).ob.pocket == pocket }
+    let at0 = run(y0)
+    let line = String(format: "%@ ob %@ cue %@ v%.1f · vẽ tay y %.2f (%@) · ", label, norm(o), norm(c), v, y0, at0.ob.pocket ?? "trượt")
+    guard let lo = ys.first, let hi = ys.last else { print(line + "engine: không y nào vào \(pocket)"); continue }
+    print(line + String(format: "engine y %.2f (cửa sổ %.1f–%.1f) · lệch %+.2f\"", (lo + hi) / 2, lo, hi, (lo + hi) / 2 - y0))
+  }
+}
+func drill109() {
+  bankTo("109", ob: CGPoint(x: 36, y: 38), drawnY: 40.5, pocket: "sideLeft", cueBack: 14, tipY: -0.2, speeds: [1.2, 1.6, 2.2])
+}
+/// Drill 110: bi 1 ở 42% đường O → B, O cách góc head 2.1 b diamond trên băng trái, B cách góc b diamond trên băng phải.
+func drill110() {
+  for b in [1, 1.5, 2, 2.5, 3] as [CGFloat] {
+    let o = CGPoint(x: 1.125, y: 100 - 12.5 * 2.1 * b), bp = CGPoint(x: bankRail, y: 100 - 12.5 * b)
+    let ob = CGPoint(x: o.x + 0.42 * (bp.x - o.x), y: o.y + 0.42 * (bp.y - o.y))
+    bankTo("110 b\(b)", ob: ob, drawnY: bp.y, pocket: "headLeft", cueBack: 12, tipY: -0.2, speeds: [1.6, 2.4])
+  }
+}
+
+/// Drill 113, English Speed Check: cắt 27° vào footLeft từ 40", phê ngoài +0.4 ở ba bậc lực, thêm round tip giữa làm gốc.
+/// Mỗi round in squirt, throw và độ lệch hướng cơ so với round gốc để `why` ghi bù bao nhiêu ở từng lực.
+func drill113() {
+  let pk = "footLeft", cue = inch(0.3, 0.7), one = inch(0.3, 0.3)
+  let ms = setup(cue, Shot(ball: 1, pocket: pk, tipY: 0, speed: 0, zone: nil), [1: one])
+  var baseAim: CGFloat?
+  for (x, lo, hi) in [(0, 1.5, 2.0), (0.4, 0.8, 1.2), (0.4, 1.5, 2.0), (0.4, 2.5, 3.2)] as [(CGFloat, CGFloat, CGFloat)] {
+    guard let b = pick(ms, tipX: x, tips: [0], speeds: grid(lo, hi, 0.05), keep: { clean($0, pk) }, { clean($0, pk) ? "ok" : "miss" }) else {
+      print(String(format: "113 tipX %+.2f lực %.1f–%.1f: không cú danh nghĩa nào đạt", x, lo, hi)); continue
+    }
+    let aim = aimOf(b.nom) * 180 / .pi
+    if x == 0 { baseAim = aim }
+    print(String(format: "113 tipX %+.2f cắt %.0f° speed %.2f rate=%d/45 squirtDeg %+.2f throwDeg %+.2f · hướng cơ lệch gốc %+.2f° · dừng %@",
+                 x, cutDeg(cue, one, SP.pockets[pk]!), b.speed, b.rate, b.nom.squirtDeg, b.nom.throwDeg, aim - (baseAim ?? aim), norm(b.nom.stop)))
+  }
+}
+
+/// Bi `n` từ `c` có cú vào lỗ nào trong `pks` không: cắt tối đa 50°, cách bi ít nhất 6", một trong ba lực tip giữa vào sạch.
+/// App cho đánh cú này: `shotOf` không chặn (lỗ giữa quá dốc, bi chắn, bi sát băng).
+func legal(_ c: CGPoint, _ n: Int, _ pk: String, _ left: [Int: CGPoint]) -> Bool {
+  SP.shotOf(ball: n, pocket: pk, balls: left.merging([0: c]) { a, _ in a })?.level != .bad
+}
+
+func playable(_ c: CGPoint, _ n: Int, _ left: [Int: CGPoint], _ pks: [String]) -> String? {
+  for pk in pks where cutDeg(c, left[n]!, SP.pockets[pk]!) <= 50 && dist(c, left[n]!) >= 6 && legal(c, n, pk, left) {
+    let ms = setup(c, Shot(ball: n, pocket: pk, tipY: 0, speed: 0, zone: nil), left)
+    for v in [0.8, 1.2, 1.8] as [CGFloat] where clean(SP.runWith(ms, tipX: 0, tipY: 0, speed: v), pk) { return pk }
+  }
+  return nil
+}
+
+/// Drill 120, Rail Row Return (#29 Fedor, bài của Tyler Styer): 5 bi cách băng dài phải 7.5", bi 9 cách băng đầu một bi.
+/// Cách 5" thì bi hàng sang lỗ giữa dốc quá 60°, app chặn (`legal`), mà đi lỗ góc thì bi cái về không tới bi 9.
+/// Đi row 1 → 9 → row 2 → 9 … → row 5, bi 9 vào lỗ thì đặt lại chỗ cũ. Mỗi cú phải để cú kế đánh được (`playable`) và
+/// bi cái không dừng lên chỗ đặt bi 9. Tìm theo beam rộng 10, mỗi nhánh là một lỗ và một tip; xếp nhánh theo rate thấp
+/// nhất của chuỗi rồi tổng rate, beam 40. Zone là chỗ dừng danh nghĩa, bán kính 4".
+func drill120() {
+  let nine = 9, spot = inch(0.25, 0.966)
+  var start: [Int: CGPoint] = [nine: spot]
+  for (i, y) in ([0.55, 0.62, 0.69, 0.76, 0.83] as [CGFloat]).enumerated() { start[i + 1] = inch(0.85, y) }
+  let rowPk = ["footRight", "sideRight"], ninePk = ["headLeft", "headRight"]
+  var seq = [Int]()
+  for i in 1...5 { seq.append(i); if i < 5 { seq.append(nine) } }
+  typealias Step = (n: Int, pk: String, from: CGPoint, tipY: CGFloat, speed: CGFloat, rate: Int, stop: CGPoint)
+  var beam: [(c: CGPoint, left: [Int: CGPoint], steps: [Step])] = [(inch(0.7, 0.72), start, [])]
+  for (k, n) in seq.enumerated() {
+    let nx: Int? = k + 1 < seq.count ? seq[k + 1] : nil
+    let pks = nx == nine ? ninePk : rowPk
+    var next = [(c: CGPoint, left: [Int: CGPoint], steps: [Step])]()
+    for st in beam {
+      var after = st.left
+      if n != nine { after[n] = nil }
+      for pk in n == nine ? ninePk : rowPk where cutDeg(st.c, st.left[n]!, SP.pockets[pk]!) <= 55 && dist(st.c, st.left[n]!) >= 6 && legal(st.c, n, pk, st.left) {
+        let ms = setup(st.c, Shot(ball: n, pocket: pk, tipY: 0, speed: 0, zone: nil), st.left)
+        let keep = { (r: SP.Run) -> Bool in
+          guard clean(r, pk), nearestPocket(r.stop) > 4 else { return false }
+          guard let nx else { return true }
+          return dist(r.stop, spot) > 3 && playable(r.stop, nx, after, pks) != nil
+        }
+        for t in [-0.4, -0.2, 0, 0.2, 0.4] as [CGFloat] {
+          guard let b = pick(ms, tips: [t], speeds: grid(0.6, 3, 0.15), keep: keep, { clean($0, pk) ? "ok" : "miss" }) else { continue }
+          next.append((b.nom.stop, after, st.steps + [(n, pk, st.c, b.tipY, b.speed, b.rate, b.nom.stop)]))
+        }
+      }
+    }
+    let score = { (s: [Step]) in (s.map(\.rate).min() ?? 0) * 1000 + s.map(\.rate).reduce(0, +) }
+    // Giữ một nhánh tốt nhất mỗi ô 5" chỗ dừng, để beam không dồn hết vào một chỗ.
+    var seen = Set<String>()
+    beam = Array(next.sorted { score($0.steps) > score($1.steps) }.filter { seen.insert("\(Int($0.c.x / 5)),\(Int($0.c.y / 5))").inserted }.prefix(40))
+    guard !beam.isEmpty else { print("120 cú \(k + 1) bi \(n): không nhánh nào đi tiếp được"); exit(1) }
+  }
+  for (k, s) in beam[0].steps.enumerated() {
+    let left = k == 0 ? start : beam[0].steps[..<k].reduce(into: start) { if $1.n != nine { $0[$1.n] = nil } }
+    print(String(format: "120 cú %d bi %d→%@ từ %@ cắt %.0f° tipY %+.2f speed %.2f rate=%d/45 dừng %@",
+                 k + 1, s.n, s.pk, norm(s.from), cutDeg(s.from, left[s.n]!, SP.pockets[s.pk]!), s.tipY, s.speed, s.rate, norm(s.stop)))
+  }
+}
+
+/// Drill 121, Half-Ball 4 Diamonds (#31 Dr. Dave): bi 1 ở (15", 30"), cắt ½ bi (30°) vào lỗ góc chân trái. In chỗ
+/// bi cái chạm băng đầu tiên sau va chạm và chỗ dừng cho từng tip, để so với hệ "½ bi đưa bi cái 4 diamond".
+func drill121() {
+  let pk = "footLeft", P = SP.pockets[pk]!, o = inch(0.3, 0.3)
+  let d = CGPoint(x: (P.x - o.x) / dist(P, o), y: (P.y - o.y) / dist(P, o))
+  let g = SP.ghost(o, P).g, a = atan2(d.y, d.x) - .pi / 6
+  let cue = CGPoint(x: g.x - 22 * cos(a), y: g.y - 22 * sin(a))
+  let ms = SP.Setup(c: cue, o: o, pocket: pk, others: [])
+  print(String(format: "121 cue %@ ob %@ cắt %.1f°", norm(cue), norm(o), cutDeg(cue, o, P)))
+  for t in [0, 0.4, -0.4, 0.2] as [CGFloat] {
+    guard let b = pick(ms, tips: [t], speeds: grid(1, 3, 0.1), keep: { clean($0, pk) && nearestPocket($0.stop) > 4 }, { clean($0, pk) ? "ok" : "miss" }) else {
+      print("121 tipY \(t): không cú nào đạt"); continue
+    }
+    let rails = b.nom.pts.enumerated().filter { $0.offset > 0 && ($0.element.x < 1.2 || $0.element.x > 48.8 || $0.element.y < 1.2 || $0.element.y > 98.8) }
+    let first = rails.first.map { norm($0.element) } ?? "-"
+    let far = b.nom.pts.filter { $0.y > 98.8 || $0.x < 1.2 || $0.x > 48.8 }.first.map { norm($0) } ?? "-"
+    print(String(format: "121 tipY %+.2f speed %.2f rate=%d/45 · băng đầu tiên %@ · băng dài/đầu đầu tiên %@ · dừng %@",
+                 b.tipY, b.speed, b.rate, first, far, norm(b.nom.stop)))
+  }
+}
+
+// MARK: drill 34, 35, 46, 49
+
+func grid(_ a: CGFloat, _ b: CGFloat, _ step: CGFloat) -> [CGFloat] { Array(stride(from: a, through: b + 1e-6, by: step)) }
+/// Số gọn để chép sang TS: 0.70 → 0.7, 1.00 → 1.
+func num(_ v: CGFloat) -> String {
+  var s = String(format: "%.2f", v)
+  while s.hasSuffix("0") { s.removeLast() }
+  if s.hasSuffix(".") { s.removeLast() }
+  return s
+}
+func nearestPocket(_ p: CGPoint) -> CGFloat { SP.pockets.values.map { dist(p, $0) }.min()! }
+func tipWord(_ t: CGFloat) -> String { t > 0.1 ? "Follow" : t < -0.1 ? "Draw" : "Center ball" }
+
+/// Cú danh nghĩa tốt nhất trên lưới tip × lực, chỉ xét cú danh nghĩa `keep` nhận, rate là số mẫu `judge` trả "ok". Mỗi
+/// tip lấy rate cao nhất, nhiều lực cùng rate thì lấy lực giữa; tip đứng trước được giữ trừ khi tip sau rate cao hơn.
+func pick(_ ms: SP.Setup, tipX: CGFloat = 0, tips: [CGFloat], speeds: [CGFloat], keep: (SP.Run) -> Bool,
+          _ judge: (SP.Run) -> String) -> (tipY: CGFloat, speed: CGFloat, rate: Int, nom: SP.Run)? {
+  var best: (tipY: CGFloat, speed: CGFloat, rate: Int, nom: SP.Run)?
+  for t in tips {
+    var top = -1, at = [(CGFloat, SP.Run)]()
+    for v in speeds {
+      let nom = SP.runWith(ms, tipX: tipX, tipY: t, speed: v)
+      guard keep(nom) else { continue }
+      let k = sample(ms, tipX: tipX, tipY: t, speed: v, aim: aimOf(nom), judge)["ok"] ?? 0
+      if k > top { (top, at) = (k, [(v, nom)]) } else if k == top { at.append((v, nom)) }
+    }
+    if top > (best?.rate ?? -1) { best = (t, at[at.count / 2].0, top, at[at.count / 2].1) }
+  }
+  return best
+}
+
+/// Một round đặt lại bi cái: bi `n` vào `pk`, bi khác trong `left` đứng yên làm bi chắn. Rate là số mẫu vào sạch. `stop`
+/// có thì cú danh nghĩa phải là stop shot, bi cái dừng cách chỗ chạm không quá chừng đó. In một dòng chi tiết và một
+/// dòng chép sang `DrillRound`, `contactPoint` chỉ in khi tip khác `base` của bài.
+func placed(_ label: String, ball n: Int, pocket pk: String, cue: CGPoint, left: [Int: CGPoint], tipX: CGFloat = 0, tips: [CGFloat],
+            base: CGFloat, speeds: [CGFloat], stop: CGFloat? = nil, why: (CGFloat, CGFloat, SP.Run, CGPoint) -> String) {
+  let ms = setup(cue, Shot(ball: n, pocket: pk, tipY: 0, speed: 0, zone: nil), left)
+  let P = SP.pockets[pk]!, g = SP.ghost(left[n]!, P).g
+  let keep = { (r: SP.Run) in clean(r, pk) && (stop.map { dist(r.stop, g) <= $0 } ?? true) }
+  guard let b = pick(ms, tipX: tipX, tips: tips, speeds: speeds, keep: keep, { clean($0, pk) ? "ok" : "miss" }) else {
+    print("\(label) bi \(n): không cú danh nghĩa nào đạt"); exit(1)
+  }
+  print(String(format: "%@ bi %d→%@ từ %@ cắt %.0f° D %.1f L %.1f · tipY %+.2f speed %.2f rate=%d/45 · dừng %@ cách chỗ chạm %.1f\" cách lỗ gần nhất %.1f\"",
+               label, n, pk, norm(cue), cutDeg(cue, left[n]!, P), dist(cue, left[n]!), dist(left[n]!, P), b.tipY, b.speed, b.rate,
+               norm(b.nom.stop), dist(b.nom.stop, g), nearestPocket(b.nom.stop)))
+  let cp = b.tipY == base && tipX == 0 ? "" : "contactPoint: { x: \(num(tipX)), y: \(num(b.tipY)) }, "
+  print("   { \(cp)speed: \(num(b.speed)), rate: \(b.rate), why: '\(why(b.tipY, b.speed, b.nom, g))' },")
+}
+
+/// Drill 34, Ring Around the Side: năm bi trên cung 1 diamond quanh lỗ giữa trái, bi cái thẳng sau mỗi bi 1 diamond, bi
+/// chưa đánh còn trên bàn. Tip giữa như bài, lực bậc soft (dưới 0.89 m/s).
+func drill34() {
+  let ring: [(Int, CGPoint, CGPoint)] = [
+    (1, inch(0.1434, 0.6024), inch(0.2868, 0.7048)), (2, inch(0.2218, 0.5577), inch(0.4435, 0.6154)),
+    (3, inch(0.25, 0.5), inch(0.5, 0.5)), (4, inch(0.2218, 0.4423), inch(0.4435, 0.3846)),
+    (5, inch(0.1434, 0.3976), inch(0.2868, 0.2952)),
+  ]
+  for (i, (n, _, cue)) in ring.enumerated() {
+    let left = Dictionary(uniqueKeysWithValues: ring[i...].map { ($0.0, $0.1) })
+    placed("34", ball: n, pocket: "sideLeft", cue: cue, left: left, tips: [0], base: 0, speeds: grid(0.3, 0.88, 0.02)) { t, v, nom, g in
+      String(format: "Straight in from one diamond. %@ at %@ m/s lets the cue ball roll %.0f\" past contact and stop %.0f\" short of the pocket.",
+             tipWord(t), num(v), dist(nom.stop, g), nearestPocket(nom.stop))
+    }
+  }
+}
+
+/// Drill 35, 15-Ball Lineup: 15 bi trên đường nối hai lỗ giữa, bi cái thẳng lỗ sau mỗi bi 2 diamond, bàn còn các bi chưa
+/// đánh. Bài là stop shot nên cú danh nghĩa phải dừng cách chỗ chạm không quá một bán kính bi; quét tip thấp, lực bậc medium.
+func drill35() {
+  let xs: [CGFloat] = [0.075, 0.1357, 0.1964, 0.2571, 0.3179, 0.3786, 0.4393, 0.5, 0.5607, 0.6214, 0.6821, 0.7429, 0.8036, 0.8643, 0.925]
+  let cues: [(CGFloat, CGFloat)] = [
+    (0.1124, 0.7493), (0.2029, 0.7477), (0.2928, 0.7453), (0.3816, 0.7421), (0.4694, 0.7383), (0.5556, 0.7338), (0.6404, 0.7289),
+    (0.7236, 0.7236), (0.3596, 0.7289), (0.4444, 0.7338), (0.5306, 0.7383), (0.6184, 0.7421), (0.7072, 0.7453), (0.7971, 0.7477),
+    (0.8876, 0.7493),
+  ]
+  for i in xs.indices {
+    let left = Dictionary(uniqueKeysWithValues: (i..<xs.count).map { ($0 + 1, inch(xs[$0], 0.5)) })
+    placed("35", ball: i + 1, pocket: i < 8 ? "footLeft" : "footRight", cue: inch(cues[i].0, cues[i].1), left: left,
+           tips: [-0.1, -0.2, -0.3, -0.4, -0.5, -0.6], base: -0.5, speeds: grid(0.9, 1.85, 0.05), stop: SP.ballRadius) { _, v, nom, g in
+      String(format: "Straight in from two diamonds. Below center at %@ m/s stops the cue ball within %.0f\" of contact.",
+             num(v), max(1, dist(nom.stop, g).rounded()))
+    }
+  }
+}
+
+/// Drill 46, Jal Circle: bảy bi trên cung tâm lỗ footLeft, bi cái song song long rail sau ghost ball 2 diamond, bàn còn các
+/// bi chưa đánh. Tip giữa hay follow thì bi cái theo tangent đâm vào bi kế trên cung, nên quét cả draw và follow tới
+/// `miscueSafe`, lực tới 3 m/s.
+func drill46() {
+  let arc: [(CGFloat, CGFloat)] = [(0.125, 0.4961), (0.25, 0.4841), (0.375, 0.4635), (0.5, 0.433), (0.625, 0.3903), (0.75, 0.3307), (0.875, 0.2421)]
+  let cues: [(CGFloat, CGFloat)] = [(0.1306, 0.7461), (0.2612, 0.7341), (0.3919, 0.7135), (0.5225, 0.683), (0.6531, 0.6403), (0.7837, 0.5807), (0.9144, 0.4921)]
+  let thickness = ["7/8", "3/4", "5/8", "1/2", "3/8", "1/4", "1/8"]
+  for i in arc.indices {
+    let left = Dictionary(uniqueKeysWithValues: (i..<arc.count).map { ($0 + 1, inch(arc[$0].0, arc[$0].1)) })
+    placed("46", ball: i + 1, pocket: "footLeft", cue: inch(cues[i].0, cues[i].1), left: left,
+           tips: [0, -0.2, 0.2, -0.4, 0.4, -0.5, 0.5], base: -0.5, speeds: grid(0.5, 3, 0.05)) { t, v, nom, _ in
+      let how = left.count == 1 ? String(format: "leaves the cue ball %.0f\" from the nearest pocket", nearestPocket(nom.stop))
+        : "keeps the cue ball clear of the balls left on the arc"
+      return String(format: "%.0f° cut, a %@ hit. %@ at %@ m/s gets the ball to the corner and %@.",
+                    cutDeg(inch(cues[i].0, cues[i].1), inch(arc[i].0, arc[i].1), SP.pockets["footLeft"]!), thickness[i], tipWord(t),
+                    num(v), how)
+    }
+  }
+}
+
+/// Drill 49, Soft Touch: một cú bi 1 vào footRight, bi cái phải chạm bi 2 rồi dừng trong một bề rộng bi quanh chỗ bi 2
+/// dừng (r 4.5" tính từ tâm). Không dùng `clean`: va chạm gán `hit` cho cả hai bi nên mẫu nào chạm bi 2 cũng bị loại,
+/// còn Play cú cố định chỉ đòi bi mục tiêu vào và bi cái không rơi. Layout đọc từ hình (bi cái giữa bàn, cắt 49°) không
+/// ra cú nào: bi 1 đi 35" mới tới lỗ, bi cái tới bi 2 còn 0.77–1.22 m/s. Ở đây bi 1 giữ foot spot, bi cái và bi 2 dời
+/// cho cú cắt 13°. Quét tip × lực, rate là số mẫu đạt.
+func drill49() {
+  let pk = "footRight", cue = inch(0.26, 0.33), one = inch(0.5, 0.25), two = inch(0.7, 0.26), r: CGFloat = 0.09 * 50
+  let ms = setup(cue, Shot(ball: 1, pocket: pk, tipY: 0, speed: 0, zone: nil), [1: one, 2: two])
+  let touch = { (x: SP.Run) -> Bool in
+    x.short == nil && x.scratch == nil && x.ob.pocket == pk && x.ob.hit == nil && x.hit == 2
+      && (x.moved[2].map { $0.pocket == nil && $0.hit == 0 && dist(x.stop, $0.stop) <= r } ?? false)
+  }
+  guard let b = pick(ms, tips: [0, -0.1, 0.1, -0.2, 0.2, -0.3, 0.3, -0.4, 0.4], speeds: grid(0.3, 1.6, 0.02), keep: touch,
+                     { touch($0) ? "ok" : "miss" }) else { print("49: không cú danh nghĩa nào chạm bi 2 rồi dừng sát"); exit(1) }
+  let to = b.nom.moved[2]?.stop ?? two, cut = cutDeg(cue, one, SP.pockets[pk]!), gap = dist(b.nom.stop, to) - 2 * SP.ballRadius
+  print(String(format: "49 bi 1→%@ cắt %.0f° · tipY %+.2f speed %.2f dừng %@ · bi 2 %@ → %@ dời %.1f\", bi cái cách mặt bi 2 %.1f\" rate=%d/45",
+               pk, cut, b.tipY, b.speed, norm(b.nom.stop), norm(two), norm(to), dist(two, to), gap, b.rate))
+  print(String(format: "   { ball: 1, pocket: '%@', tipY: %@, speed: %@, zone: 0, rate: %d, why: '%.0f° cut. %@ at %@ m/s bends the cue ball off the tangent line into the 2, nudging it %.0f\" and stopping %.0f\" from it.' },",
+               pk, num(b.tipY), num(b.speed), b.rate, cut, tipWord(b.tipY), num(b.speed), max(1, dist(two, to).rounded()),
+               max(1, gap.rounded())))
+}
+
+/// Thử tipX: cắt 30° vào footLeft, bi cái cách ghost 1 diamond (12.5"), tipX 0 và ±0.5, ngắm theo cú danh nghĩa của tip đó.
+func tipXTrial() {
+  let o = CGPoint(x: 15, y: 30), P = SP.pockets["footLeft"]!, g = SP.ghost(o, P).g
+  let d = CGPoint(x: (P.x - o.x) / dist(P, o), y: (P.y - o.y) / dist(P, o)), a = 30 * CGFloat.pi / 180
+  let u = CGPoint(x: d.x * cos(a) - d.y * sin(a), y: d.x * sin(a) + d.y * cos(a))
+  let c = CGPoint(x: g.x - u.x * 12.5, y: g.y - u.y * 12.5)
+  let ms = SP.Setup(c: c, o: o, pocket: "footLeft", others: [], ball: 1)
+  for x in [0, 0.5, -0.5] as [CGFloat] {
+    let nom = SP.runWith(ms, tipX: x, tipY: 0, speed: 1.5)
+    let k = sample(ms, tipX: x, tipY: 0, speed: 1.5, aim: aimOf(nom)) { clean($0, "footLeft") ? "ok" : "miss" }["ok"] ?? 0
+    print(String(format: "tipX thử cắt %.0f° tipX %+.2f speed 1.50 rate=%d/45 squirtDeg %+.2f throwDeg %+.2f gear %.2f · danh nghĩa %@",
+                 cutDeg(c, o, P), x, k, nom.squirtDeg, nom.throwDeg, nom.gear, clean(nom, "footLeft") ? "vào" : SP.why(nom)))
+  }
+}
+
+/// Drill 26, English Check: cùng thế cắt nửa bi, ba round tipX 0, +0.5 (phê ngoài), −0.5 (phê trong). Mỗi round tìm lực
+/// rate cao nhất, ngắm theo cú danh nghĩa của tip đó. In squirt và throw để why ghi chiều dày, mỏng.
+func drill26() {
+  let pk = "footLeft", cue = inch(0.6034, 0.5772), one = inch(0.5, 0.3125)
+  for x in [0, 0.5, -0.5] as [CGFloat] {
+    let ms = setup(cue, Shot(ball: 1, pocket: pk, tipY: 0, speed: 0, zone: nil), [1: one])
+    guard let b = pick(ms, tipX: x, tips: [0], speeds: grid(0.8, 2.4, 0.05), keep: { clean($0, pk) }, { clean($0, pk) ? "ok" : "miss" })
+    else {
+      for v in [1.0, 1.4, 1.8, 2.2] as [CGFloat] {
+        let n = SP.runWith(ms, tipX: x, tipY: 0, speed: v)
+        print(String(format: "26 tipX %+.2f speed %.1f: bi 1 %@, scratch %@, dừng %@ · %@", x, v, n.ob.pocket ?? "-", n.scratch ?? "-",
+                     norm(n.stop), SP.why(n)))
+      }
+      continue
+    }
+    print(String(format: "26 tipX %+.2f cắt %.0f° speed %.2f rate=%d/45 squirtDeg %+.2f throwDeg %+.2f · dừng %@",
+                 x, cutDeg(cue, one, SP.pockets[pk]!), b.speed, b.rate, b.nom.squirtDeg, b.nom.throwDeg, norm(b.nom.stop)))
+  }
+}
+
+/// Drill 48, Frozen Pair & Throw: bi cái đánh bi 2, bi 2 đẩy bi 1 ép băng vào headLeft. Đích của engine là bi 2 vào
+/// headLeft, bi 1 làm vật chắn; mẫu đạt khi bi 1 vào headLeft, bi 2 và bi cái không rơi.
+func drill48() {
+  let pk = "headLeft", cue = inch(0.5, 0.0625), one = inch(0.0225, 0.75), two = inch(0.0225, 0.7275)
+  let ms = SP.Setup(c: cue, o: two, pocket: pk, others: [SP.Obstacle(n: 1, p: one)], ball: 2)
+  let ok = { (r: SP.Run) -> Bool in r.scratch == nil && r.moved[1]?.pocket == pk && r.ob.pocket == nil }
+  for x in [0, 0.2, -0.2] as [CGFloat] {
+    guard let b = pick(ms, tipX: x, tips: [0], speeds: grid(0.6, 2.4, 0.05), keep: ok, { ok($0) ? "ok" : "miss" }) else {
+      let n = SP.runWith(ms, tipX: x, tipY: 0, speed: 1.5)
+      print(String(format: "48 tipX %+.2f: không cú danh nghĩa nào đạt · thử 1.5 m/s: bi 1 %@ dừng %@, bi 2 %@ · %@", x,
+                   n.moved[1]?.pocket ?? "-", norm(n.moved[1]?.stop ?? one), n.ob.pocket ?? "-", SP.why(n)))
+      continue
+    }
+    print(String(format: "48 tipX %+.2f speed %.2f rate=%d/45 squirtDeg %+.2f throwDeg %+.2f · bi cái dừng %@",
+                 x, b.speed, b.rate, b.nom.squirtDeg, b.nom.throwDeg, norm(b.nom.stop)))
+  }
+}
+
+/// Drill 83, One-Diamond Squirt: bi 1 cố định, bi cái cách ghost 1 diamond ở góc cắt 15° và 30°, tipX 0 và ±0.31 (9 mm).
+/// Mỗi round in rate với cú danh nghĩa của tip đó, rồi đánh lại với hướng ngắm của round trơn cùng góc để đo bi 1 lệch bao
+/// nhiêu inch ở lỗ so với tip giữa cùng lực: dương là dày (góc ra nhỏ hơn), âm là mỏng.
+func drill83() {
+  let pk = "footLeft", o = CGPoint(x: 15, y: 30), P = SP.pockets[pk]!, g = SP.ghost(o, P).g
+  let d = CGPoint(x: (P.x - o.x) / dist(P, o), y: (P.y - o.y) / dist(P, o))
+  for deg in [30, 15] as [CGFloat] {
+    let a = deg * .pi / 180
+    let u = CGPoint(x: d.x * cos(a) - d.y * sin(a), y: d.x * sin(a) + d.y * cos(a))
+    let c = CGPoint(x: g.x - u.x * 12.5, y: g.y - u.y * 12.5)
+    let ms = SP.Setup(c: c, o: o, pocket: pk, others: [], ball: 1)
+    let base = SP.runWith(ms, tipX: 0, tipY: 0, speed: 2)
+    let cutOf = { (r: SP.Run) -> CGFloat in
+      guard r.ob.pts.count > 1 else { return .nan }
+      let v = CGPoint(x: r.ob.pts[1].x - r.ob.pts[0].x, y: r.ob.pts[1].y - r.ob.pts[0].y)
+      return abs(signedDeg(CGPoint(x: o.x - c.x, y: o.y - c.y), v))
+    }
+    for x in [0, 0.31, -0.31] as [CGFloat] {
+      guard let b = pick(ms, tipX: x, tips: [0], speeds: grid(1.0, 3.0, 0.1), keep: { clean($0, pk) }, { clean($0, pk) ? "ok" : "miss" }) else {
+        print(String(format: "83 cắt %.0f° tipX %+.2f: không cú danh nghĩa nào đạt", deg, x)); continue
+      }
+      let fixed = SP.runWith(ms, tipX: x, tipY: 0, speed: b.speed, aim: aimOf(base))
+      let ref = SP.runWith(ms, tipX: 0, tipY: 0, speed: b.speed, aim: aimOf(base))
+      let dc = cutOf(ref) - cutOf(fixed)
+      print(String(format: "83 cắt %.1f° c %@ tipX %+.2f speed %.2f rate=%d/45 squirtDeg %+.2f throwDeg %+.2f · ngắm như trơn: góc ra %.2f° (trơn %.2f°) lệch ở lỗ %+.1f\" %@",
+                   cutDeg(c, o, P), norm(c), x, b.speed, b.rate, b.nom.squirtDeg, b.nom.throwDeg, cutOf(fixed), cutOf(ref),
+                   tan(dc * .pi / 180) * dist(o, P), dc > 0 ? "dày" : "mỏng"))
+    }
+  }
+}
+
+/// Drill 84, Throw Check: cắt nửa bi (30°) vào footLeft, bi cái cách ghost 2 diamond. Ba round: tip giữa chậm, tip giữa
+/// nhanh, phê ngoài vừa gearing. tipX gearing tìm bằng chia đôi trên `throwDeg` của cú danh nghĩa, bắt đầu từ `gear`.
+func drill84() {
+  let pk = "footLeft", o = CGPoint(x: 15, y: 30), P = SP.pockets[pk]!, g = SP.ghost(o, P).g
+  let d = CGPoint(x: (P.x - o.x) / dist(P, o), y: (P.y - o.y) / dist(P, o)), a = 30 * CGFloat.pi / 180
+  let u = CGPoint(x: d.x * cos(a) - d.y * sin(a), y: d.x * sin(a) + d.y * cos(a))
+  let c = CGPoint(x: g.x - u.x * 25, y: g.y - u.y * 25)
+  let ms = SP.Setup(c: c, o: o, pocket: pk, others: [], ball: 1)
+  let judge = { (r: SP.Run) in clean(r, pk) ? "ok" : "miss" }
+  func row(_ label: String, _ x: CGFloat, _ speeds: [CGFloat]) {
+    guard let b = pick(ms, tipX: x, tips: [0], speeds: speeds, keep: { clean($0, pk) }, judge) else {
+      print("84 \(label): không cú danh nghĩa nào đạt"); return
+    }
+    print(String(format: "84 %@ cắt %.1f° c %@ tipX %+.3f speed %.2f rate=%d/45 squirtDeg %+.2f throwDeg %+.2f gear %+.3f",
+                 label, cutDeg(c, o, P), norm(c), x, b.speed, b.rate, b.nom.squirtDeg, b.nom.throwDeg, b.nom.gear))
+  }
+  row("chậm", 0, grid(0.7, 1.1, 0.05))
+  row("nhanh", 0, grid(2.4, 3.2, 0.1))
+  let v: CGFloat = 1.6
+  let g0 = SP.runWith(ms, tipX: 0, tipY: 0, speed: v).gear
+  var lo: CGFloat = 0, hi = 2 * g0
+  let th = { (x: CGFloat) in SP.runWith(ms, tipX: x, tipY: 0, speed: v).throwDeg }
+  let s0 = th(lo)
+  for _ in 0..<30 { let m = (lo + hi) / 2; if (th(m) > 0) == (s0 > 0) { lo = m } else { hi = m } }
+  let xg = ((lo + hi) / 2 * 100).rounded() / 100
+  print(String(format: "84 gear0 %+.3f tipX throw=0 ở %.2f m/s: %+.3f, làm tròn %+.2f throwDeg %+.2f", g0, v, (lo + hi) / 2, xg, th(xg)))
+  row("gearing", xg, [v])
+  for sp in [0.6, 0.8, 1.0, 1.2, 1.6, 2.0, 2.4, 3.0] as [CGFloat] {
+    let n = SP.runWith(ms, tipX: 0, tipY: 0, speed: sp)
+    let k = clean(n, pk) ? (sample(ms, tipY: 0, speed: sp, aim: aimOf(n), judge)["ok"] ?? 0) : -1
+    print(String(format: "84 quét tip giữa %.1f m/s rate=%d throwDeg %+.2f · %@", sp, k, n.throwDeg, clean(n, pk) ? "vào" : SP.why(n)))
+  }
+}
+
+/// Drill 82, NPL Gate: bi cái cách footLeft 2 diamond theo đường chéo 45°, cổng hai bi ở giữa đường, mỗi bên hở 0.35"
+/// cho tâm bi cái. Chỉ bi cái: bi 1 đỗ xa ở đầu bàn. Mỗi tipX đánh ba kiểu ngắm: tâm lỗ (không bù), bù BHE (cơ xoay đúng
+/// bằng squirt về phía phê, tức cầu tay ở đúng NPL của engine), và bù nửa chừng. Rate là số mẫu qua cổng vào lỗ.
+func drill82() {
+  let P = SP.pockets["footLeft"]!, u = CGPoint(x: sqrt(0.5), y: sqrt(0.5)), n = CGPoint(x: -u.y, y: u.x), gap: CGFloat = 0.35
+  let cue = CGPoint(x: P.x + u.x * 25, y: P.y + u.y * 25), G = CGPoint(x: cue.x - u.x * 12.5, y: cue.y - u.y * 12.5)
+  let off = 2.25 + gap, a = CGPoint(x: G.x + n.x * off, y: G.y + n.y * off), b = CGPoint(x: G.x - n.x * off, y: G.y - n.y * off)
+  let ms = SP.Setup(c: cue, o: CGPoint(x: 25, y: 98), pocket: "headLeft", others: [SP.Obstacle(n: 2, p: a), SP.Obstacle(n: 3, p: b)], ball: 1)
+  print(String(format: "82 thế: bi cái %@, cổng bi 2 %@ bi 3 %@, zone sau cổng %@", norm(cue), norm(a), norm(b),
+               norm(CGPoint(x: G.x - u.x * 5, y: G.y - u.y * 5))))
+  let aim0 = atan2(P.y - cue.y, P.x - cue.x)
+  // `runWith` chỉ thả bi khác vào sau khi bi cái chạm bi mục tiêu, đường `pre` đi xuyên qua cổng, nên chạm cổng xét bằng
+  // khoảng cách tâm trên `pre.pts`.
+  let through = { (r: SP.Run) -> String in
+    if r.pre.pts.contains(where: { dist($0, a) < 2.25 }) { return "bi 2" }
+    if r.pre.pts.contains(where: { dist($0, b) < 2.25 }) { return "bi 3" }
+    return r.pre.pocket == "footLeft" ? "ok" : "trượt lỗ"
+  }
+  for x in [0, -0.5, 0.5] as [CGFloat] {
+    for v in [2.0, 2.5] as [CGFloat] {
+      let nom = SP.runWith(ms, tipX: x, tipY: 0, speed: v, aim: aim0)
+      let row = [("tâm", CGFloat(0)), ("bù nửa", 0.5), ("bù BHE", 1)].map { (name, k) -> String in
+        let aim = aim0 + k * nom.squirtDeg * .pi / 180
+        let s = sample(ms, tipX: x, tipY: 0, speed: v, aim: aim, through)
+        let lat = (dist(SP.runWith(ms, tipX: x, tipY: 0, speed: v, aim: aim).pre.pts.min { abs(dist($0, cue) - 12.5) < abs(dist($1, cue) - 12.5) }!, G))
+        return String(format: "%@: danh nghĩa %@ lệch ở cổng %.2f\" rate=%d/45 (%@)", name, through(SP.runWith(ms, tipX: x, tipY: 0, speed: v, aim: aim)),
+                      lat, s["ok"] ?? 0, s.filter { $0.key != "ok" }.map { "\($0.key) \($0.value)" }.sorted().joined(separator: ", "))
+      }
+      print(String(format: "82 tipX %+.2f %.1f m/s squirtDeg %+.2f · ", x, v, nom.squirtDeg) + row.joined(separator: " · "))
+    }
+  }
+}
+
+/// Drill 86, Outside Draw / Inside Follow: thế cắt 30° của drill 84 (bi cái cách ghost 2 diamond, tipX dương là phê
+/// ngoài). Quét hai họ cú: kéo + phê ngoài và theo + phê trong, chỉ giữ cú danh nghĩa vào sạch, dừng cách lỗ gần nhất quá 8".
+/// Lấy các cặp có chỗ dừng gần nhau nhất, zone là trung điểm bán kính ½ diamond (6.25"), rate mỗi cú là số mẫu vào sạch và dừng trong zone.
+func drill86() {
+  let pk = "footLeft", one = inch(0.3, 0.3), P = SP.pockets[pk]!
+  let g = SP.ghost(one, P).g, back = CGPoint(x: g.x - one.x, y: g.y - one.y)
+  let k = 30 * CGFloat.pi / 180, u = CGPoint(x: back.x / hypot(back.x, back.y), y: back.y / hypot(back.x, back.y))
+  let d = CGPoint(x: u.x * cos(k) - u.y * sin(k), y: u.x * sin(k) + u.y * cos(k))
+  let cue = CGPoint(x: g.x + d.x * 25, y: g.y + d.y * 25)
+  let ms = setup(cue, Shot(ball: 1, pocket: pk, tipY: 0, speed: 0, zone: nil), [1: one])
+  print(String(format: "86 thế: bi cái %@ cắt %.0f°", norm(cue), cutDeg(cue, one, P)))
+  typealias C = (x: CGFloat, y: CGFloat, v: CGFloat, nom: SP.Run)
+  func family(_ xs: [CGFloat], _ ys: [CGFloat]) -> [C] {
+    var out = [C]()
+    for x in xs { for y in ys { for v in grid(1.2, 3.2, 0.1) {
+      let n = SP.runWith(ms, tipX: x, tipY: y, speed: v)
+      if clean(n, pk) && nearestPocket(n.stop) > 8 { out.append((x, y, v, n)) }
+    } } }
+    return out
+  }
+  let draw = family([0.2, 0.3, 0.4], [-0.25, -0.35, -0.45])
+  let follow = family([-0.2, -0.3, -0.4], [0.25, 0.35, 0.45])
+  var pairs = [(a: C, b: C, gap: CGFloat)]()
+  for a in draw { for b in follow { pairs.append((a, b, dist(a.nom.stop, b.nom.stop))) } }
+  pairs.sort { $0.gap < $1.gap }
+  var seen = [String](), best: (a: C, b: C, z: CGPoint, ka: Int, kb: Int)?
+  for p in pairs {
+    let key = String(format: "%.0f,%.0f", (p.a.nom.stop.x + p.b.nom.stop.x) / 4, (p.a.nom.stop.y + p.b.nom.stop.y) / 4)
+    if seen.contains(key) { continue }
+    seen.append(key)
+    if seen.count > 25 { break }
+    let z = CGPoint(x: (p.a.nom.stop.x + p.b.nom.stop.x) / 2, y: (p.a.nom.stop.y + p.b.nom.stop.y) / 2)
+    let judge = { (r: SP.Run) in clean(r, pk) && dist(r.stop, z) <= 6.25 ? "ok" : "miss" }
+    let ka = sample(ms, tipX: p.a.x, tipY: p.a.y, speed: p.a.v, aim: aimOf(p.a.nom), judge)["ok"] ?? 0
+    let kb = sample(ms, tipX: p.b.x, tipY: p.b.y, speed: p.b.v, aim: aimOf(p.b.nom), judge)["ok"] ?? 0
+    print(String(format: "86 cặp gap %.1f\" zone %@: kéo tip(%+.2f,%+.2f) %.1f m/s rate %d · theo tip(%+.2f,%+.2f) %.1f m/s rate %d",
+                 p.gap, norm(z), p.a.x, p.a.y, p.a.v, ka, p.b.x, p.b.y, p.b.v, kb))
+    if min(ka, kb) > min(best?.ka ?? -1, best?.kb ?? -1) { best = (p.a, p.b, z, ka, kb) }
+  }
+  guard let b = best else { print("86: không cặp nào"); exit(1) }
+  for (name, c, kk) in [("Outside draw", b.a, b.ka), ("Inside follow", b.b, b.kb)] {
+    print(String(format: "86 %@ tip(%+.2f,%+.2f) %.2f m/s rate=%d/45 squirtDeg %+.2f throwDeg %+.2f dừng %@ cách zone %.1f\" · zone %@ cách lỗ gần nhất %.1f\"",
+                 name, c.x, c.y, c.v, kk, c.nom.squirtDeg, c.nom.throwDeg, norm(c.nom.stop), dist(c.nom.stop, b.z), norm(b.z), nearestPocket(b.z)))
+  }
+}
+
+
+/// Drill 85, 1 Tip = 1 Diamond: chỉ bi cái, đánh vào băng dài trái rồi sang băng dài phải. Bi 1 đặt ở head rail, ngoài
+/// đường đi, để `runWith(aim:)` chạy hết đường bi cái trong `pre`. Mỗi tip tìm lực để bi cái dừng sát băng phải (trong
+/// 3" quanh chỗ chạm), rate là số mẫu dừng trong ½ diamond quanh đó. In chỗ chạm (diamond tính từ foot rail) và độ dịch
+/// so với tip giữa.
+func drill85() {
+  let cue = CGPoint(x: 40, y: 87.5), park = CGPoint(x: 25, y: 98), far: CGFloat = 50 - 1.125
+  let ms = SP.Setup(c: cue, o: park, pocket: "headLeft", others: [], ball: 1)
+  func farHit(_ r: SP.Run) -> CGPoint? {
+    var left = false
+    for p in r.pre.pts { if p.x < 1.2 { left = true }; if left && p.x > far - 0.05 { return p } }
+    return nil
+  }
+  for y in [66, 70, 74, 78] as [CGFloat] {
+    let aim = atan2(y - cue.y, 1.125 - cue.x)
+    print(String(format: "85 ngắm băng trái y %.0f\": tip giữa 2.0 m/s chạm băng phải %@", y, farHit(SP.runWith(ms, tipX: 0, tipY: 0, speed: 2, aim: aim)).map { norm($0) } ?? "-"))
+  }
+  let aim = atan2(78 - cue.y, 1.125 - cue.x)
+  for v in [1.6, 2.0, 2.4] as [CGFloat] {
+    let row = ([-0.44, -0.33, -0.22, -0.11, 0, 0.11, 0.22, 0.33, 0.44] as [CGFloat]).map { x -> String in
+      let n = SP.runWith(ms, tipX: x, tipY: 0, speed: v, aim: aim)
+      return farHit(n).map { String(format: "%+.2f:%.2f", x, $0.y / 12.5) } ?? String(format: "%+.2f:-", x)
+    }
+    print(String(format: "85 quét %.1f m/s, diamond chạm băng phải: ", v) + row.joined(separator: " "))
+  }
+  var ref: CGFloat?
+  for x in [0, 0.22, 0.44] as [CGFloat] {
+    var best: (v: CGFloat, k: Int, stop: CGPoint, h: CGPoint)?
+    for v in grid(1.2, 3.2, 0.05) {
+      let nom = SP.runWith(ms, tipX: x, tipY: 0, speed: v, aim: aim)
+      guard nom.pre.hit == nil, nom.pre.pocket == nil, let h = farHit(nom), dist(nom.pre.stop, h) <= 3 else { continue }
+      let k = sample(ms, tipX: x, tipY: 0, speed: v, aim: aim) { r in r.pre.hit == nil && r.pre.pocket == nil && dist(r.pre.stop, h) <= 6.25 ? "ok" : "out" }["ok"] ?? 0
+      if k > (best?.k ?? -1) { best = (v, k, nom.pre.stop, h) }
+    }
+    guard let b = best else { print(String(format: "85 tipX %+.2f: không lực nào dừng sát băng phải", x)); continue }
+    if x == 0 { ref = b.h.y }
+    print(String(format: "85 tipX %+.2f lực %@ rate=%d/45 chạm băng phải %@ (%.2f diamond từ foot) dịch %+.2f diamond · dừng %@",
+                 x, num(b.v), b.k, norm(b.h), b.h.y / 12.5, ((ref ?? b.h.y) - b.h.y) / 12.5, norm(b.stop)))
+  }
+}
+
 drill12()
 drill15()
 drill23()
-drill31Trial()
+// Tắt sau khi sửa băng: lực 2.0–3.4 m/s đều không đưa bi cái về zone round 2 của video (2.5–3.0 còn rơi lỗ giữa trái).
+// drill31Trial()
 drill24()
 drill25()
 drill30()
 drill27()
 drill28()
+drill34()
+drill35()
+drill46()
+drill49()
+tipXTrial()
+drill26()
+drill48()
+drill83()
+drill84()
+drill85()
+drill86()
+drill82()
+drill109()
+drill110()
+drill113()
+drill120()
+drill121()

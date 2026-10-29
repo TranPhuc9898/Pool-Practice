@@ -9,7 +9,11 @@ export const PoolColor = {
   tablePocket: '#030303',
   diamond: '#E9E4D4',
 
-  cueBall: '#F4F1E8',
+  /** Bi cái và hai cực bi sọc theo bộ Aramith Tournament BLACK, khớp `TournamentBlackPalette.swift`. */
+  cueBall: '#FBFAE9',
+  stripePole: '#181818',
+  /** Đĩa số trên bi. */
+  ballDisc: '#FFFFFF',
   /** Số trên bi — luôn mực đen, không theo theme. */
   ballInk: '#111111',
   objectBall: '#F5C542',
@@ -20,18 +24,21 @@ export const PoolColor = {
   contactPoint: '#FF6369',
 } as const;
 
-/** Màu chuẩn bi số 1–10 (bộ WPA). Bi 9 sọc vàng, bi 10 sọc xanh dương. */
+/**
+ * Màu giữa bi 1–10 theo bộ Aramith Tournament BLACK, cùng số với `TournamentBlackPalette.tones` bên native.
+ * Bi 9–15 dùng màu của số trừ 8, sọc có hai cực đen.
+ */
 export const BallColor = {
-  1: '#F2C230',
-  2: '#1F4FB8',
-  3: '#D3322C',
-  4: '#5B2A86',
-  5: '#E8752A',
-  6: '#1E7A46',
-  7: '#7A2A22',
-  8: '#111111',
-  9: '#F2C230',
-  10: '#1F4FB8',
+  1: '#E99C00',
+  2: '#053E7F',
+  3: '#AF0022',
+  4: '#F26D85',
+  5: '#59478B',
+  6: '#25916B',
+  7: '#82441F',
+  8: '#1D1D1D',
+  9: '#E99C00',
+  10: '#053E7F',
 } as const;
 
 export type BallNumber = keyof typeof BallColor;

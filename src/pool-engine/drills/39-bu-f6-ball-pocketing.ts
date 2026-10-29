@@ -73,7 +73,7 @@ export const buF6BallPocketing = {
     },
     {
       title: 'Shot 4 · Right side',
-      spin: 'center',
+      spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 2,
       cueBall: { x: 0.25, y: 0.75 },
       objectBalls: [{ number: 1, x: 0.5, y: 0.5 }],
       guideLines: [
@@ -123,7 +123,7 @@ export const buF6BallPocketing = {
     },
     {
       title: 'Shot 9 · Left side',
-      spin: 'center',
+      spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 2,
       cueBall: { x: 0.75, y: 0.75 },
       objectBalls: [{ number: 1, x: 0.5, y: 0.5 }],
       guideLines: [

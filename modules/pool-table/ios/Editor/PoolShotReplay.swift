@@ -3,6 +3,28 @@ import simd
 
 /// Một lần chạy thử cú chính theo đúng thời gian vật lý: bi cái tới ghost, rồi bi cái và bi mục tiêu tách ra.
 /// Cùng mô phỏng với guide, nên bi đi đúng đường đang vẽ. Bi xoay theo spin của chính mô phỏng đó.
+/// Cú của một round drill đã giải: một nguồn cho preview, đường vẽ, thẻ và Play.
+/// Engine tất định nên dựng lại replay từ cùng thông số ra đúng đường đã vẽ.
+struct DrillShot {
+  let balls: [Int: CGPoint]
+  let setup: ShotPhysics.Setup
+  let aim: CGFloat?
+  let tipX, tipY, theta, speed: CGFloat
+  /// Kết luận của planner. nil là cú thường, chấm bằng `clean(pocket)`.
+  let pass: Bool?
+
+  func replay(jump: Bool) -> ShotReplay {
+    var r = ShotReplay(setup, ball: setup.ball, tipX: tipX, tipY: tipY, theta: theta, speed: speed, aim: aim, jump: jump)
+    r.pass = pass ?? r.clean(setup.pocket)
+    return r
+  }
+
+  /// Bàn và cú trên model vẫn là cú đã giải: anh chưa kéo bi hay đổi phê, lực trên thẻ.
+  func current(_ m: PoolEditorModel) -> Bool {
+    m.balls == balls && m.tipX == tipX && m.tipY == tipY && m.theta == theta && m.speed == speed
+  }
+}
+
 struct ShotReplay {
   /// Trạng thái bi, cùng năm trạng thái và bảng màu của docs/research/bi-cai-xoay.html.
   enum Phase: Int {
@@ -47,6 +69,8 @@ struct ShotReplay {
     /// Phê, rad/s, dương ngược chiều kim đồng hồ nhìn từ trên.
     var wzs: [CGFloat] = []
     var sink = false
+    /// Tên lỗ bi rơi, nil nếu không rơi.
+    var pocket: String?
     /// Hướng thân bi, vận tốc góc (rad/s, khung vẽ) và trạng thái tại từng điểm, dựng bởi `orient`.
     private(set) var qs: [simd_quatf] = []
     private(set) var om: [SIMD3<Float>] = []
@@ -191,12 +215,24 @@ struct ShotReplay {
     // Bi mục tiêu và bi bị đụng: cùng mô phỏng với bi cái, nên dội băng, đụng nhau, rơi lỗ y như đường đang vẽ.
     func track(_ n: Int, _ tr: ShotPhysics.Trace) -> Track {
       var k = Track(sink: tr.pocket != nil)
+      k.pocket = tr.pocket
       for i in tr.ts.indices { k.add(t0 + tr.ts[i], tr.pts[i], v: tr.vs[i], w: tr.ws[i], wz: tr.wzs[i]) }
       k.orient(from: PoolBallSphere.restPose(n))
       return k
     }
     ob = track(ball, r.ob)
     others = Dictionary(uniqueKeysWithValues: r.moved.map { ($0.key, track($0.key, $0.value)) })
+  }
+
+  /// Bi được tính vào lỗ của cú: bi mục tiêu hay bi bị đẩy (cặp sát, combo), chỉ tính khi rơi đúng `pocket`.
+  func potted(_ pocket: String) -> Int? {
+    ob.pocket == pocket ? ball : others.first { $0.value.pocket == pocket }?.key
+  }
+
+  /// Cú gọi vào sạch: đúng một bi rơi và rơi đúng `pocket`, bi cái không rơi.
+  func clean(_ pocket: String) -> Bool {
+    let sunk = (ob.sink ? 1 : 0) + others.values.filter(\.sink).count
+    return !cue.sink && sunk == 1 && potted(pocket) != nil
   }
 
   /// Diễn lại đường bi cái ghi sẵn (inch, mỗi `dt` giây), không qua mô phỏng. Bi cái lăn đều theo từng đoạn, mẫu cuối
@@ -252,7 +288,8 @@ struct ShotReplay {
 
 extension PoolEditorModel {
   /// Bấm Đánh: chạy cú, bấm lần nữa là dừng. Một haptic, đúng lúc bi cái chạm bi mục tiêu.
-  func toggleReplay(reduceMotion: Bool) {
+  /// `aim` có thì đánh đúng hướng đó thay cho `solve()`.
+  func toggleReplay(reduceMotion: Bool, aim: CGFloat? = nil) {
     if replay != nil { replay = nil; return }
     if let p = demo {
       // Cảnh mẫu: đánh đúng hướng của web. Không có bi mục tiêu thì đặt bi 1 ngoài bàn, bi cái không bao giờ chạm.
@@ -267,17 +304,39 @@ extension PoolEditorModel {
           ShotPhysics.shotOf(ball: ball, pocket: pocket, balls: balls)?.level != .bad
     else { return }
     if lesson != nil, guessing { guessed = guessKey }
-    play(ShotReplay(ms, ball: ball, tipX: tipX, tipY: tipY, theta: theta, speed: speed, jump: reduceMotion))
+    var r = ShotReplay(ms, ball: ball, tipX: tipX, tipY: tipY, theta: theta, speed: speed, aim: aim, jump: reduceMotion)
+    r.pass = r.clean(pocket)
+    play(r)
   }
 
-  /// Cú chỉ có bi cái (Stroke của Daily Workout): không `aimBall`, `aimPocket` là điểm trên băng. Đánh thẳng về điểm đó,
-  /// bi cái dội băng rồi đi hết đường như cảnh mẫu không bi mục tiêu. nil nếu bàn còn bi khác hay đầu cơ quá mức.
+  /// Bài squirt: `expectedCuePath` đúng hai điểm, từ bi cái tới ghost của bi mục tiêu. Play đánh theo hướng ngắm của tip
+  /// giữa cùng lực thay vì `solve()` bù phê, để thấy squirt và throw đẩy bi lệch dày hay mỏng ở lỗ. Sai quá nửa inch là nil.
+  func centerAim(_ d: DrillRecord) -> CGFloat? {
+    guard let g = d.guideLines.first(where: { $0.kind == "expectedCuePath" }), g.points.count == 2,
+          let c = balls[0], let ball = aimBall, let o = balls[ball], let pocket = aimPocket,
+          ShotPhysics.isPocket(pocket), let P = ShotPhysics.target(pocket), let ms = shotSetup else { return nil }
+    let inch = { (p: PointRecord) in CGPoint(x: CGFloat(p.x) * Self.width, y: CGFloat(p.y) * Self.length) }
+    let a = inch(g.points[0]), b = inch(g.points[1]), G = ShotPhysics.ghost(o, P).g
+    guard hypot(a.x - c.x, a.y - c.y) <= 0.5, hypot(b.x - G.x, b.y - G.y) <= 0.5 else { return nil }
+    return ShotPhysics.solve(ms, tipX: 0, tipY: tipY, theta: theta, speed: speed).map { atan2($0.L.y, $0.L.x) }
+  }
+
+  /// Cú chỉ đánh bi cái: không `aimBall`, `aimPocket` là điểm trên băng (Stroke của Daily Workout) hay một lỗ (cổng NPL).
+  /// Bi khác trên bàn đứng yên làm cổng, bi cái không va chúng. Đích băng thì đánh thẳng về điểm đó; đích lỗ thì bù
+  /// squirt như back-hand english, bi cái vào tâm lỗ. Đạt là bi cái vào lỗ khi đích là lỗ, không rơi lỗ khi đích là băng.
+  /// nil nếu đầu cơ quá mức.
   func soloReplay(jump: Bool) -> ShotReplay? {
-    guard demo == nil, aimBall == nil, balls.count == 1, let c = balls[0], let pocket = aimPocket,
+    guard demo == nil, aimBall == nil, let c = balls[0], let pocket = aimPocket,
           let P = ShotPhysics.target(pocket), hypot(tipX, tipY) <= ShotPhysics.tipMax + 0.001 else { return nil }
-    let ms = ShotPhysics.Setup(c: c, o: CGPoint(x: -1000, y: -1000), pocket: pocket, others: [], ball: 1)
-    var r = ShotReplay(ms, ball: 1, tipX: tipX, tipY: tipY, theta: theta, speed: speed, aim: atan2(P.y - c.y, P.x - c.x), jump: jump)
+    // Số bi giả không trùng bi đang đứng, để bi cổng không bị bản chạy che.
+    let free = (1...15).first { balls[$0] == nil } ?? 1
+    let ms = ShotPhysics.Setup(c: c, o: CGPoint(x: -1000, y: -1000), pocket: pocket, others: [], ball: free)
+    let isPocket = ShotPhysics.isPocket(pocket)
+    var aim = atan2(P.y - c.y, P.x - c.x)
+    if isPocket, let h = ShotPhysics.hit(ms, aim: aim, tipX: tipX, tipY: tipY, theta: theta, speed: speed) { aim += h.squirtDeg * .pi / 180 }
+    var r = ShotReplay(ms, ball: free, tipX: tipX, tipY: tipY, theta: theta, speed: speed, aim: aim, jump: jump)
     r.solo = true
+    r.pass = r.cue.sink == isPocket
     return r
   }
 
@@ -297,7 +356,16 @@ extension PoolEditorModel {
 
   /// Play của drill mà `DrillShotPlanner` lo: dò cú trên nền vì bank có thể mất nửa giây, xong thì chạy nếu bàn chưa đổi.
   /// Bàn thiếu bi để dò thì `blocked`.
-  func playDrill(_ d: DrillRecord, jump: Bool, blocked: @escaping () -> Void) {
+  /// Giải cú của round một lần lúc dựng bàn. Preview, đường vẽ, thẻ và Play cùng dùng kết quả này.
+  /// `planned`: planner dò hướng và lực theo guide, chạy nền. Còn lại là cú thường: hướng ngắm theo tip và lực của round.
+  /// nil khi không có cú: bị che, planner không tìm ra, hay cú chỉ có bi cái. Bàn đổi lúc planner đang chạy thì bỏ kết quả.
+  func planDrill(_ d: DrillRecord, planned: Bool, done: @escaping (DrillShot?) -> Void) {
+    let balls = balls, aimBall = aimBall, aimPocket = aimPocket, tipX = tipX, tipY = tipY, theta = theta, speed = speed
+    guard planned else {
+      guard let ball = aimBall, let pocket = aimPocket, let ms = shotSetup,
+            ShotPhysics.shotOf(ball: ball, pocket: pocket, balls: balls)?.level != .bad else { return done(nil) }
+      return done(DrillShot(balls: balls, setup: ms, aim: centerAim(d), tipX: tipX, tipY: tipY, theta: theta, speed: speed, pass: nil))
+    }
     let inch = { (p: PointRecord) in CGPoint(x: CGFloat(p.x) * Self.width, y: CGFloat(p.y) * Self.length) }
     var g = DrillShotPlanner.Guides()
     for l in d.guideLines {
@@ -308,17 +376,22 @@ extension PoolEditorModel {
       default: break
       }
     }
-    let balls = balls, aimBall = aimBall, aimPocket = aimPocket, tipX = tipX, tipY = tipY, speed = speed
     DispatchQueue.global(qos: .userInitiated).async {
       let s = DrillShotPlanner.plan(skill: d.skill, balls: balls, aimBall: aimBall, aimPocket: aimPocket, guides: g,
                                     tipX: tipX, tipY: tipY, speed: speed)
       DispatchQueue.main.async { [weak self] in
-        guard let self, self.balls == balls, self.replay == nil else { return }
-        guard let s else { self.onReplayEnd = nil; return blocked() }
-        var r = ShotReplay(s.setup, ball: s.setup.ball, tipX: s.tipX, tipY: s.tipY, theta: s.theta, speed: s.speed, aim: s.aim, jump: jump)
-        r.pass = s.pass
-        self.play(r)
+        guard let self, self.balls == balls else { return }
+        done(s.map { DrillShot(balls: balls, setup: $0.setup, aim: $0.aim, tipX: $0.tipX, tipY: $0.tipY, theta: $0.theta, speed: $0.speed, pass: $0.pass) })
       }
+    }
+  }
+
+  /// Play khi cú của round chưa giải xong: giải ngay rồi đánh.
+  func playDrill(_ d: DrillRecord, jump: Bool, blocked: @escaping () -> Void) {
+    planDrill(d, planned: true) { [weak self] s in
+      guard let self, self.replay == nil else { return }
+      guard let s else { self.onReplayEnd = nil; return blocked() }
+      self.play(s.replay(jump: jump))
     }
   }
 

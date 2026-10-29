@@ -18,6 +18,7 @@ import {
   useLastDrillId,
 } from "@/pool-engine/progress";
 import { useDaily, useDailyDays } from "@/pool-engine/daily";
+import { useGuideStep } from "@/pool-engine/first-use";
 import {
   LADDER,
   ladderOf,
@@ -40,6 +41,8 @@ export default function HomeScreen() {
   const lastId = useLastDrillId();
   const today = useDaily();
   const days = useDailyDays();
+  // Người mới, chưa đánh cú nào hôm nay: hero nói app dùng thế nào thay cho màn onboarding riêng.
+  const firstShot = useGuideStep() !== "done" && today.length === 0;
   const run = streak((k) => (days[k]?.length ?? 0) > 0, new Date());
 
   const isPassed = (d: PoolDrill) => {
@@ -94,19 +97,25 @@ export default function HomeScreen() {
       </AppText>
 
       <HeroCard
-        title={block ? block.title : "Workout complete"}
+        title={
+          firstShot ? "Tốt hơn từng cú đánh." : block ? block.title : "Workout complete"
+        }
         subtitle={
-          block && mark
-            ? `${mark.label} · ${block.goal}`
-            : `${WORKOUT_TOTAL} shots in. Come back tomorrow.`
+          firstShot
+            ? "Xem đường bi. Đánh thật. Ghi kết quả."
+            : block && mark
+              ? `${mark.label} · ${block.goal}`
+              : `${WORKOUT_TOTAL} shots in. Come back tomorrow.`
         }
         eyebrow="Daily · Fundamentals"
         cta={
-          today.length === 0
-            ? "Start workout"
-            : at
-              ? "Continue workout"
-              : "Review workout"
+          firstShot
+            ? "Bắt đầu tập"
+            : today.length === 0
+              ? "Start workout"
+              : at
+                ? "Continue workout"
+                : "Review workout"
         }
         onPress={() => router.push("/workout")}
         gauge={{
@@ -121,7 +130,9 @@ export default function HomeScreen() {
               : `${pad(passes)} passed${level}`,
         }}
         accessibilityLabel={
-          `Daily workout, ${day.done} of ${WORKOUT_TOTAL} shots. ` +
+          firstShot
+            ? "Tốt hơn từng cú đánh. Xem đường bi, đánh thật, ghi kết quả. Bắt đầu tập."
+            : `Daily workout, ${day.done} of ${WORKOUT_TOTAL} shots. ` +
           (block && mark ? `Next: ${block.title}, ${mark.label}.` : "Done for today.")
         }
       />

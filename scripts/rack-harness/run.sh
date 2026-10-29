@@ -8,4 +8,4 @@ trap 'rm -rf "$out"' EXIT
 sed '/^enum ShotPhysicsFixture/,$d' "$src/ShotPhysics.swift" > "$out/ShotPhysics.swift"
 cp "$src/RackPlanner.swift" "$src/RackSim.swift" "$src/RackInHandSolver.swift" "$here/main.swift" "$out/"
 swiftc -O -o "$out/harness" "$out"/*.swift
-"$out/harness"
+"$out/harness" "$@"

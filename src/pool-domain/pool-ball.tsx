@@ -27,14 +27,14 @@ export function PoolBall({ number, cue, size = 32 }: PoolBallProps) {
         height: size,
         borderRadius: size / 2,
         overflow: 'hidden',
-        backgroundColor: stripe ? PoolColor.cueBall : base,
+        backgroundColor: stripe ? PoolColor.stripePole : base,
         borderWidth: t.border.hairline,
         borderColor: t.color.borderPrimary,
         alignItems: 'center',
         justifyContent: 'center',
       }}>
       {stripe && (
-        <View style={{ position: 'absolute', left: 0, right: 0, height: size * 0.56, backgroundColor: base }} />
+        <View style={{ position: 'absolute', left: 0, right: 0, top: size * 0.22, height: size * 0.56, backgroundColor: base }} />
       )}
       {!cue && number != null && (
         <View
@@ -42,7 +42,7 @@ export function PoolBall({ number, cue, size = 32 }: PoolBallProps) {
             width: badge,
             height: badge,
             borderRadius: badge / 2,
-            backgroundColor: PoolColor.cueBall,
+            backgroundColor: PoolColor.ballDisc,
             alignItems: 'center',
             justifyContent: 'center',
           }}>

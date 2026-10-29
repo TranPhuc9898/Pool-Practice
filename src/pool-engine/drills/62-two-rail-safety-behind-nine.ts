@@ -3,11 +3,12 @@ import type { PoolDrill } from '../types';
 /**
  * Two-Rail Safety Behind the 9, bài 62 của `docs/research/pool-practice-drills/drills-49-65-dieu-bi-safety-kick.md`,
  * Billiard University Exam VI #18 (https://billiarduniversity.org/documents/BU_Exam-VI_Safety_Challenge.pdf). Layout
- * và hai chỗ bi dừng lấy từ toạ độ "→ app" của research [nguồn], đo từ hình nên sai số khoảng ±¼ diamond [suy luận].
+ * lấy từ toạ độ "→ app" của research [nguồn], đo từ hình nên sai số khoảng ±¼ diamond [suy luận].
  * Bi 7 bật head rail rồi long rail trái ra giữa bàn, bi cái bật head rail rồi long rail phải dừng sau bi 9. Điểm chạm
- * băng tính bằng gương hai lần qua đường tâm bi lúc chạm băng, ghost ball cho góc cắt khoảng 20° [suy luận]. Đường bi 7
- * vẽ bằng `objectBallBankPath` dù điểm cuối không phải lỗ; `targetPocket` footRight chỉ là lỗ gần nhất. Vòng đích bán
- * kính 2.5", 3 cú, ngưỡng 2/3 theo tiêu chí chung của nhóm [đề xuất]. Chưa kiểm trên bàn thật.
+ * băng và chỗ dừng lấy từ `ShotPhysics` (draw ¼ tip, medium 1.8 m/s, ngắm 111.1°): bi cái dừng cách tâm vòng 1.2",
+ * không đụng bi 8, 9, cửa ngắm chỉ khoảng ±0.2° [suy luận]. Đường bi 7 vẽ bằng `objectBallBankPath` dù điểm cuối không
+ * phải lỗ; `targetPocket` footRight chỉ là lỗ gần nhất. Vòng đích bán kính 2.5", 3 cú, ngưỡng 2/3
+ * theo tiêu chí chung của nhóm [đề xuất]. Chưa kiểm trên bàn thật.
  */
 export const twoRailSafetyBehindNine = {
   id: '62',
@@ -32,31 +33,31 @@ export const twoRailSafetyBehindNine = {
       kind: 'objectBallBankPath',
       points: [
         { x: 0.655, y: 0.875 },
-        { x: 0.4464, y: 0.98875 },
-        { x: 0.0225, y: 0.7576 },
-        { x: 0.44, y: 0.53 },
+        { x: 0.4136, y: 0.9888 },
+        { x: 0.0225, y: 0.8002 },
+        { x: 0.542, y: 0.563 },
       ],
     },
     {
       kind: 'expectedCuePath',
       points: [
         { x: 0.775, y: 0.75 },
-        { x: 0.6854, y: 0.8584 },
-        { x: 0.8832, y: 0.98875 },
-        { x: 0.9775, y: 0.9266 },
-        { x: 0.925, y: 0.892 },
+        { x: 0.6895, y: 0.8606 },
+        { x: 0.8811, y: 0.9888 },
+        { x: 0.9775, y: 0.914 },
+        { x: 0.9394, y: 0.8821 },
       ],
     },
   ],
-  recommendedContactPoint: { x: 0, y: 0.3 },
-  recommendedSpin: 'follow',
+  recommendedContactPoint: { x: 0, y: -0.2 },
+  recommendedSpin: 'draw',
   recommendedSpeed: 'medium',
   allowedRails: 2,
   attemptCount: 3,
   passCondition: { kind: 'inZone', required: 2 },
   tips: [
     'Cut the 7 to the left so it clears the 8 on its way to the head rail.',
-    'A little follow keeps the cue ball from bouncing too far off the right rail.',
+    'A touch of draw keeps the cue ball from running too far off the right rail.',
     'Pass when the hit is legal and the 9 blocks the line from the cue ball to the 7.',
   ],
   mistakes: [

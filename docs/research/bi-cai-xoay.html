@@ -428,17 +428,19 @@ function collide(balls){
 // Băng rút gọn: phản lực đi qua tâm (không sinh mô-men), ma sát dọc băng tại điểm chạm cao hơn tâm.
 function cushion(B, n){
   const cosE = Math.sqrt(1 - P.sinE*P.sinE);
-  const vn = B.v[0]*n[0] + B.v[1]*n[1];
   const r = [-P.R*cosE*n[0], -P.R*cosE*n[1], P.R*P.sinE];
   const t = [-n[1], n[0], 0];
-  const Jn = -(1+P.eRail)*P.m*vn;
   const wr = cross(B.w, r);
+  // Xung pháp tuyến đặt ở điểm chạm nên có mômen: e áp cho vận tốc điểm chạm, chia khối lượng hiệu dụng.
+  const N3 = [n[0], n[1], 0], rxn = cross(r, N3);
+  const un = (B.v[0]+wr[0])*n[0] + (B.v[1]+wr[1])*n[1];
+  const Jn = un < 0 ? -(1+P.eRail)*un/(1/P.m + dot(rxn,rxn)/I_BALL) : 0;
   const ut = (B.v[0]+wr[0])*t[0] + (B.v[1]+wr[1])*t[1];
   const rxt = cross(r, t);
   const meff = 1/(1/P.m + dot(rxt,rxt)/I_BALL);
   const Jt = -Math.sign(ut)*Math.min(P.muW*Jn, Math.abs(ut)*meff);
   B.v = [B.v[0] + (Jn*n[0] + Jt*t[0])/P.m, B.v[1] + (Jn*n[1] + Jt*t[1])/P.m];
-  const dw = cross(r, [Jt*t[0], Jt*t[1], 0]);
+  const dw = cross(r, [Jn*n[0] + Jt*t[0], Jn*n[1] + Jt*t[1], 0]);
   B.w = [B.w[0]+dw[0]/I_BALL, B.w[1]+dw[1]/I_BALL, B.w[2]+dw[2]/I_BALL];
 }
 function pot(B){ B.alive = false; B.v = [0,0]; B.w = [0,0,0]; }

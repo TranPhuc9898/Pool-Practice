@@ -25,13 +25,16 @@ const palette = {
   mono700: '#3A3A3A',
   mono800: '#262626',
   mono950: '#0A0A0A',
+  // Bàn bida theme sáng: băng than, felt xám nhạt.
+  railLight: '#1E1E1E',
+  feltLight: '#DCDCDC',
 
   // GOLD — màu nhấn duy nhất, dè sẻn: CTA của card hero, đường guide. Không tô nền, không tô icon tab.
   gold500: '#C9A45C',
   gold700: '#8A6A2A',
 } as const;
 
-const alpha = (hex: string, opacity: number) => {
+export const alpha = (hex: string, opacity: number) => {
   const a = Math.round(opacity * 255)
     .toString(16)
     .padStart(2, '0');
@@ -89,6 +92,14 @@ export const darkColors = {
   errorMuted: alpha(palette.white, 0.08),
 
   overlay: alpha(palette.black, 0.7),
+
+  /** Bàn bida vẽ bằng View (intro). Felt sáng hơn băng để bi đen và bi trắng cùng nổi. */
+  tableRail: palette.ash850,
+  tableFelt: palette.mono700,
+  tablePocket: palette.black,
+  ballCue: palette.white,
+  ballObject: palette.black,
+  ballEdge: palette.ash500,
 } as const;
 
 export type ColorTokens = { [K in keyof typeof darkColors]: string };
@@ -144,5 +155,12 @@ export const lightColors: ColorTokens = {
   errorMuted: alpha(palette.mono950, 0.06),
 
   overlay: alpha(palette.mono950, 0.4),
+
+  tableRail: palette.railLight,
+  tableFelt: palette.feltLight,
+  tablePocket: palette.black,
+  ballCue: palette.white,
+  ballObject: palette.mono950,
+  ballEdge: palette.mono700,
 };
 export type ColorToken = keyof ColorTokens;

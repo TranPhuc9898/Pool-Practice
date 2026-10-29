@@ -6,6 +6,6 @@ here=$(cd "$(dirname "$0")" && pwd)
 root="$here/../.."
 out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT
-(cd "$root" && npx tsc --ignoreConfig src/pool-engine/drills/index.ts --outDir "$out" --module commonjs \
+(cd "$root" && npx tsc --ignoreConfig src/pool-engine/drills/index.ts src/pool-engine/stages.ts src/pool-engine/topics.ts --outDir "$out" --module commonjs \
   --target es2022 --skipLibCheck --rootDir src/pool-engine)
 node "$here/lint.js" "$out/drills/index.js" "$@"

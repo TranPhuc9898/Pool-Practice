@@ -7,7 +7,10 @@ import type { DrillRound, PoolBallPlacement, PoolDrill } from '../types';
  * diamond theo research; ví dụ "bi 1 ở W 1" trong research chỉ là minh hoạ, ở đây bi 1 ở W 0.3. Bi cái mỗi round lùi
  * 2 diamond thẳng lỗ sau bi đang đánh [nguồn], bàn chỉ còn các bi chưa đánh. Ngưỡng 10/15 là [đề xuất] hạng G;
  * mốc 12–13/15 dưới intermediate, khoảng 95% là intermediate là [forum]
- * (https://forums.azbilliards.com/threads/your-percent-for-this-drill.503614/). Chưa kiểm trên bàn thật.
+ * (https://forums.azbilliards.com/threads/your-percent-for-this-drill.503614/). Tip, lực và `rate` từng round chép từ
+ * `sh scripts/position-harness/run.sh` trên ShotPhysics ddf3049: quét tip −0.1 → −0.6 và lực 0.9 → 1.85 m/s, giữ cú
+ * danh nghĩa có bi cái dừng trong một bán kính bi quanh chỗ chạm, lấy cú nhiều mẫu vào sạch nhất. Hash khác thì chạy lại
+ * harness, chép lại số. Chưa kiểm trên bàn thật.
  */
 const line = [
   { number: 1, x: 0.075, y: 0.5 },
@@ -46,16 +49,21 @@ const cueSpots = [
   { x: 0.8876, y: 0.7493 },
 ];
 
+/** Chép từ harness, cùng thứ tự với `line`: tipY và số mẫu trên 45 còn vào lỗ sạch ở 1.85 m/s. */
+const tipY = [-0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.4, -0.4, -0.4, -0.4, -0.4, -0.4, -0.5, -0.5, -0.4];
+const rate = [38, 38, 38, 36, 33, 31, 27, 26, 31, 35, 37, 38, 38, 38, 40];
+
 export const fifteenBallLineup = {
   id: '35',
   number: 35,
   title: '15-Ball Lineup',
-  subtitle: 'Fifteen balls across the side pockets. One straight stop shot each, no second chances.',
+  subtitle:
+    'Fifteen balls across the side pockets. One straight stop shot each, no second chances. Checked in simulation, not on a real table.',
   category: 'shotMaking',
   skill: 'lineUp',
   skillLabel: 'Line-Up',
   difficulty: 1,
-  objective: 'Stop-shot each ball straight into a foot corner: 1–8 left, 9–15 right. Pot 10 of 15.',
+  objective: 'Ball in hand at the marked spot every shot. Stop-shot each ball straight into a foot corner: 1–8 left, 9–15 right. Pot 10 of 15.',
   cueBall: cueSpots[0],
   objectBalls: line,
   targetPocket: 'footLeft',
@@ -64,7 +72,7 @@ export const fifteenBallLineup = {
     { kind: 'objectBallPath', ball: 1, pocket: 'footLeft' },
     { kind: 'ghostBall', ball: 1, pocket: 'footLeft' },
   ],
-  recommendedContactPoint: { x: 0, y: -0.1 },
+  recommendedContactPoint: { x: 0, y: -0.5 },
   recommendedSpin: 'stun',
   recommendedSpeed: 'medium',
   allowedRails: 0,
@@ -91,6 +99,10 @@ export const fifteenBallLineup = {
         { kind: 'objectBallPath', ball: ball.number, pocket },
         { kind: 'ghostBall', ball: ball.number, pocket },
       ],
+      contactPoint: { x: 0, y: tipY[i] },
+      speed: 1.85,
+      rate: rate[i],
+      why: 'Straight in from two diamonds. Below center at 1.85 m/s stops the cue ball within 1" of contact.',
     };
   }),
 } satisfies PoolDrill;

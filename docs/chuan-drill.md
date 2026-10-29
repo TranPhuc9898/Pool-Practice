@@ -36,17 +36,21 @@ Bài chấm vị trí là bài có `cueBallTargetZones`. Bài chỉ đếm bi v�
 - Mọi drill có Play. Không còn danh sách drill bị giấu Play.
 - Một lần bấm là một cú. Vào sạch thì card sang cú kế, bàn đứng nguyên chỗ bi vừa dừng, không chớp, không reset.
 - Trượt, bi cái rơi lỗ hay chạm bi khác thì báo đúng lý do một dòng và ở lại cú đó.
-- Drill có từ hai bi mục tiêu trở lên chạy chuỗi: 1 xong đánh 2, 2 xong đánh 3, tới bi cuối.
+- Drill có từ hai bi mục tiêu trở lên chạy chuỗi: 1 xong đánh 2, 2 xong đánh 3, tới bi cuối. Trừ skill `safety`, `kick`, `combo`, `break`, `jump`, `masse`, `speedControl`: bi còn lại là bi chắn, rack, bi phụ hay đích cho bi cái dừng sát, không phải bi cần pot.
 - Drill một bi nhiều round (thang khoảng cách, thang góc cắt) coi mỗi round là một cú, cùng luật trên.
+- Số bi tăng dần theo thứ tự cú: cú i ăn bi số nhỏ thứ i trong `shots`. Nguồn ghi "thứ tự tuỳ ý" (Rail Cut BU, PPC, runout) thì route harness quyết thứ tự, rồi đánh số lại bi theo route. Vị trí bi và cú giữ nguyên. Objective ghi "in number order", không ghi "any order".
+- Bài chấm vị trí: sau khi chạm bi mục tiêu, bi cái chạm băng không quá `allowedRails` lần. Zone tới được bằng đường vòng hai ba băng là cú sai. Bài runout, Rail Cut và bài không có zone không áp luật này.
 - Previous/Next dựng lại bàn đúng thế trước cú đó, như lúc chạy thật.
 
 ## 5. Đường đi lấy từ đâu
 
 Theo thứ tự ưu tiên, dùng nguồn đầu tiên đạt:
 
-1. **Engine** (`ShotPhysics`): khi harness 45 mẫu lệch tay cho cú vào lỗ và bi cái dừng trong zone. Dữ liệu là `shots`.
+1. **Engine** (`ShotPhysics`): khi harness 45 mẫu lệch tay cho cú vào lỗ và bi cái dừng trong zone. Dữ liệu là `shots`. Bài đặt lại bi cái mỗi cú (ball in hand mỗi cú) giữ `rounds`, mỗi round có `speed` m/s và `rate` chép từ harness.
 2. **Video**: đường bi cái ghi từ video bằng `scripts/video-harness/`, như drill 31. Dữ liệu là `rounds[].replay`.
 3. **Vẽ tay**: cho thứ engine không mô phỏng được. Gồm nhảy, massé, break, và bank khi băng chưa hiệu chỉnh. Subtitle ghi `Path drawn, not simulated.`
+
+Drill một cú không có `shots`, video hay zone: app giải cú một lần lúc dựng bàn (`planDrill`). Bàn vẽ vệt engine của chính cú đó, thẻ ghi phê và lực của nó, Play đánh nó. Đường vẽ tay khi đó chỉ là gợi ý cho planner, không vẽ lên bàn. Planner không tìm ra cú thì bàn giữ đường vẽ tay.
 
 Drill dùng engine hay vẽ tay mà chưa đo bàn thật thì subtitle ghi `Checked in simulation, not on a real table.`
 
@@ -59,6 +63,7 @@ Drill dùng engine hay vẽ tay mà chưa đo bàn thật thì subtitle ghi `Che
 
 Có ba lớp kiểm, chạy theo thứ tự:
 
-1. `scripts/drill-lint` duyệt `DRILLS` và báo drill thiếu mục nào ở trên.
+1. `scripts/drill-lint` duyệt `DRILLS` và báo drill thiếu mục nào ở trên, gồm số bi không tăng dần.
 2. Harness: mỗi cú engine phải có rate.
+   Audit engine đếm số băng bi cái chạm sau va chạm (`cueRailsPost`), vượt `allowedRails` ở bài chấm vị trí là rớt.
 3. Simulator: Play tới cú cuối, card về `N/N`, bàn chỉ còn bi cái hoặc đúng thế bài yêu cầu.

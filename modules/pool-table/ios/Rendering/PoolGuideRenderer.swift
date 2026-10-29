@@ -161,10 +161,13 @@ struct PoolGuideVisibility: Equatable {
   var ghostBall = true
   var tangentLine = true
   var cuePath = true
+  /// Đang vẽ vệt engine của cú đã giải: giấu mọi đường vẽ tay để không vẽ hai đường cho một cú.
+  var engine = false
 
   static let all = PoolGuideVisibility()
 
   func shows(_ kind: String) -> Bool {
+    if engine, Self.paths.contains(kind) { return false }
     switch kind {
     case "ghostBall": return ghostBall
     case "tangentLine", "railContact": return tangentLine
@@ -172,6 +175,8 @@ struct PoolGuideVisibility: Equatable {
     default: return true
     }
   }
+
+  private static let paths: Set = ["objectBallPath", "objectBallBankPath", "cueBallPath", "expectedCuePath", "ghostBall", "tangentLine", "railContact"]
 }
 
 /// Lớp guide. Mỗi lần đổi drill thì vẽ dần 250ms; Reduce Motion thì chỉ mờ hiện.

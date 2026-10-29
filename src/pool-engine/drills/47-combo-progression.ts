@@ -46,6 +46,6 @@ export const comboProgression = {
   rounds: [
     { title: 'Straight', spin: 'center', cueBall: { x: 0.7105, y: 0.8684 } },
     { title: 'Stop', spin: 'stun', cueBall: { x: 0.7105, y: 0.8684 }, contactPoint: { x: 0, y: -0.1 } },
-    { title: '15° off line', spin: 'center', cueBall: { x: 0.6432, y: 0.8814 } },
+    { title: '15° off line', spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 1.7, cueBall: { x: 0.6432, y: 0.8814 } },
   ],
 } satisfies PoolDrill;

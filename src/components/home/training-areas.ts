@@ -19,8 +19,8 @@ export const TRAINING_AREAS: readonly TrainingArea[] = [
   {
     id: 'cueBallControl',
     title: 'Cue Ball Control',
-    topics: 'Stop · Follow · Draw · Speed',
-    a11y: 'Stop, follow, draw, speed control',
+    topics: 'Stop · Follow · Draw · English',
+    a11y: 'Stop, follow, draw, English',
   },
   {
     id: 'positionPlay',
@@ -57,7 +57,7 @@ const areaBySkill: Record<DrillSkill, TrainingAreaId> = {
   cutAngle: 'fundamentals',
   naturalAngle: 'positionPlay',
   drawAngle: 'cueBallControl',
-  english: 'fundamentals',
+  english: 'cueBallControl',
   bank: 'fundamentals',
   break: 'patterns',
   combo: 'fundamentals',
@@ -73,10 +73,12 @@ export const areaOf = (drill: PoolDrill) => TRAINING_AREAS.find((a) => a.id === 
 
 /** Thứ tự trong từng nhóm, dễ trước khó sau, bài cùng dòng (Rail Cut) đứng liền. Drill chưa có tên ở đây xếp cuối nhóm. */
 const ORDER: Record<TrainingAreaId, readonly string[]> = {
-  fundamentals: ['01', '22', '21', '18', '19', '20'],
-  cueBallControl: ['02', '03', '04', '05', '06'],
-  positionPlay: ['07', '08', '09', '11'],
-  patterns: ['12', '13', '23', '15', '14', '10', '16', '17'],
+  fundamentals: ['01', '22', '21', '18', '19', '20', '27', '28', '89'],
+  // Sau stop/follow/draw là chuỗi phê: đo NPL, squirt, throw, phê sau băng, phê trong điều bi.
+  cueBallControl: ['02', '03', '04', '05', '06', '82', '26', '83', '48', '84', '85', '86', '25'],
+  positionPlay: ['07', '08', '09', '11', '24', '93', '94'],
+  // Sau 29 là bài giai đoạn 5–6: runout bàn rải, chuỗi áp lực, break.
+  patterns: ['12', '13', '23', '15', '14', '10', '16', '17', '30', '29', '88', '87', '90', '91', '92', '96', '95'],
 };
 
 const rank = (area: TrainingAreaId, d: PoolDrill) => {

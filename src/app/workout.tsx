@@ -14,6 +14,7 @@ import {
   stageHeightFor,
   stageState,
 } from "@/components/drill/stage";
+import { FirstUseHint } from "@/components/first-use-hint";
 import {
   AppText,
   makeStyles,
@@ -29,6 +30,11 @@ import {
   useDaily,
   useDailyDays,
 } from "@/pool-engine/daily";
+import {
+  finishGuide,
+  guideSawPlay,
+  useGuideStep,
+} from "@/pool-engine/first-use";
 import {
   LADDER_RUNGS,
   ladderOf,
@@ -51,6 +57,7 @@ export default function WorkoutScreen() {
   const gutter = useGutter();
   const { width: windowWidth } = useWindowDimensions();
   const [playRev, setPlayRev] = useState(0);
+  const guide = useGuideStep();
   const day = progressOf(today.length);
   const at = day.next;
 
@@ -162,11 +169,17 @@ export default function WorkoutScreen() {
         }}
         pass={`${passed} of ${mark.shots}`}
       />
+      {guide === "play" && (
+        <FirstUseHint text="Bấm Play shot để xem đường bi. Chỉ là mô phỏng, chưa tính cú." />
+      )}
       <GraphiteAction
         sheen
         title="Play shot"
         icon="play.fill"
-        onPress={() => setPlayRev((n) => n + 1)}
+        onPress={() => {
+          setPlayRev((n) => n + 1);
+          guideSawPlay();
+        }}
       />
 
       <Scoreboard
@@ -178,19 +191,28 @@ export default function WorkoutScreen() {
         caption={`${ladder ? `${mark.label} · ` : ""}Shot ${at.shot + 1} of ${mark.shots}`}
       />
 
+      {guide === "record" && (
+        <FirstUseHint text="Đánh thật trên bàn, rồi ghi Pass hoặc Miss." />
+      )}
       <View style={s.row}>
         <GoldAction
           title="Pass"
           icon="checkmark"
           haptic="light"
           style={s.flex}
-          onPress={() => recordShot("pass")}
+          onPress={() => {
+            recordShot("pass");
+            finishGuide();
+          }}
         />
         <GraphiteAction
           title="Miss"
           icon="xmark"
           style={s.flex}
-          onPress={() => recordShot("fail")}
+          onPress={() => {
+            recordShot("fail");
+            finishGuide();
+          }}
         />
       </View>
       {today.length > 0 && <UndoShot />}

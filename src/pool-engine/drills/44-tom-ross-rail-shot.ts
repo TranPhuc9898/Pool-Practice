@@ -44,18 +44,18 @@ export const tomRossRailShot = {
     'Rail-first shot jumps off the rail: too far from the ball, or not enough english.',
   ],
   rounds: [
-    { title: 'Off rail · A', spin: 'center', cueBall: { x: 0.175, y: 0.1 } },
-    { title: 'Off rail · B', spin: 'center', cueBall: { x: 0.175, y: 0.188 } },
-    { title: 'Off rail · C', spin: 'center', cueBall: { x: 0.263, y: 0.256 } },
+    { title: 'Off rail · A', spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 0.9, cueBall: { x: 0.175, y: 0.1 } },
+    { title: 'Off rail · B', spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 1.05, cueBall: { x: 0.175, y: 0.188 } },
+    { title: 'Off rail · C', spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 1.5, cueBall: { x: 0.263, y: 0.256 } },
     {
       title: 'Frozen · A',
-      spin: 'center',
+      spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 0.9,
       cueBall: { x: 0.175, y: 0.1 },
       objectBalls: [{ number: 1, x: 0.55, y: 0.01125 }],
     },
     {
       title: 'Frozen · B',
-      spin: 'center',
+      spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 1.1,
       cueBall: { x: 0.175, y: 0.188 },
       objectBalls: [{ number: 1, x: 0.55, y: 0.01125 }],
     },
@@ -63,7 +63,7 @@ export const tomRossRailShot = {
       title: 'Rail-first · C',
       spin: 'center',
       cueBall: { x: 0.263, y: 0.256 },
-      contactPoint: { x: 0.5, y: 0 },
+      contactPoint: { x: 0.3, y: 0 }, speed: 1.45,
       guideLines: [
         { kind: 'objectBallPath', ball: 1, pocket: 'footRight' },
         { kind: 'railContact', point: { x: 0.5, y: 0 } },

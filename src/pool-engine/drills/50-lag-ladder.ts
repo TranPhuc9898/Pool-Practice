@@ -6,7 +6,8 @@ import type { PoolDrill } from '../types';
  * cái, đánh từng bi thẳng về foot, mỗi bi dừng vừa quá bi trước, đếm số bi tới khi có bi chạm foot rail. Mốc F 6 bi
  * [đề xuất]. Sơ đồ gốc tượng trưng: 10 chỗ trên head string chia đều W 0.4 → 3.6 và bậc đích cách nhau ½ diamond từ
  * L = 3 tới L = 7.5 là [đề xuất], để vẽ ra "đường chéo đều" mà nguồn nói. Mỗi round là một bi, bàn chỉ vẽ bi đang
- * đánh ở chỗ bi cái, không vẽ các bi đã dừng. Chưa kiểm trên bàn thật.
+ * đánh ở chỗ bi cái, không vẽ các bi đã dừng. Lực từng round dò bằng `ShotPhysics` cho bi dừng giữa vòng mà không chạm
+ * foot rail; lực soft chung 0.8 đưa mọi bi tới sát foot rail (6.3"). Chưa kiểm trên bàn thật.
  */
 export const lagLadder = {
   id: '50',
@@ -51,15 +52,15 @@ export const lagLadder = {
     'A ball stops short of the previous one: you backed off on the stroke. Keep the same tempo and lengthen it a little.',
   ],
   rounds: [
-    { title: 'Ball 1', zone: 0, spin: 'center', cueBall: { x: 0.1, y: 0.75 } },
-    { title: 'Ball 2', zone: 1, spin: 'center', cueBall: { x: 0.1889, y: 0.75 } },
-    { title: 'Ball 3', zone: 2, spin: 'center', cueBall: { x: 0.2778, y: 0.75 } },
-    { title: 'Ball 4', zone: 3, spin: 'center', cueBall: { x: 0.3667, y: 0.75 } },
-    { title: 'Ball 5', zone: 4, spin: 'center', cueBall: { x: 0.4556, y: 0.75 } },
-    { title: 'Ball 6', zone: 5, spin: 'center', cueBall: { x: 0.5444, y: 0.75 } },
-    { title: 'Ball 7', zone: 6, spin: 'center', cueBall: { x: 0.6333, y: 0.75 } },
-    { title: 'Ball 8', zone: 7, spin: 'center', cueBall: { x: 0.7222, y: 0.75 } },
-    { title: 'Ball 9', zone: 8, spin: 'center', cueBall: { x: 0.8111, y: 0.75 } },
-    { title: 'Ball 10', zone: 9, spin: 'center', cueBall: { x: 0.9, y: 0.75 } },
+    { title: 'Ball 1', zone: 0, spin: 'center', speed: 0.34, cueBall: { x: 0.1, y: 0.75 } },
+    { title: 'Ball 2', zone: 1, spin: 'center', speed: 0.42, cueBall: { x: 0.1889, y: 0.75 } },
+    { title: 'Ball 3', zone: 2, spin: 'center', speed: 0.485, cueBall: { x: 0.2778, y: 0.75 } },
+    { title: 'Ball 4', zone: 3, spin: 'center', speed: 0.54, cueBall: { x: 0.3667, y: 0.75 } },
+    { title: 'Ball 5', zone: 4, spin: 'center', speed: 0.59, cueBall: { x: 0.4556, y: 0.75 } },
+    { title: 'Ball 6', zone: 5, spin: 'center', speed: 0.64, cueBall: { x: 0.5444, y: 0.75 } },
+    { title: 'Ball 7', zone: 6, spin: 'center', speed: 0.68, cueBall: { x: 0.6333, y: 0.75 } },
+    { title: 'Ball 8', zone: 7, spin: 'center', speed: 0.725, cueBall: { x: 0.7222, y: 0.75 } },
+    { title: 'Ball 9', zone: 8, spin: 'center', speed: 0.765, cueBall: { x: 0.8111, y: 0.75 } },
+    { title: 'Ball 10', zone: 9, spin: 'center', speed: 0.8, cueBall: { x: 0.9, y: 0.75 } },
   ],
 } satisfies PoolDrill;

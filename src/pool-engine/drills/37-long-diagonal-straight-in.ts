@@ -46,7 +46,7 @@ export const longDiagonalStraightIn = {
   rounds: [
     { title: 'Stop', spin: 'stun', contactPoint: { x: 0, y: -0.1 } },
     { title: 'Stop', spin: 'stun', contactPoint: { x: 0, y: -0.1 } },
-    { title: 'Follow to scratch', spin: 'follow', contactPoint: { x: 0, y: 0.4 } },
+    { title: 'Follow to scratch', spin: 'follow', contactPoint: { x: 0, y: 0.4 }, speed: 1.75 },
     { title: 'Draw to scratch', spin: 'draw', contactPoint: { x: 0, y: -0.4 } },
   ],
 } satisfies PoolDrill;

@@ -255,7 +255,7 @@ enum ShotPhysics {
     w0 > 0 ? max(0, w0 - spinDecay * t) : min(0, w0 + spinDecay * t)
   }
 
-  /// Băng theo `cushion()` của docs/research/bi-cai-xoay.html: phản lực qua tâm, ma sát dọc băng ở điểm chạm cao hơn
+  /// Băng theo `cushion()` của docs/research/bi-cai-xoay.html: phản lực và ma sát dọc băng cùng đặt ở điểm chạm cao hơn
   /// tâm sinE·R, khối lượng 1, I = 0,4R². Spin giữ qua băng, nên bi culê hay kéo rời băng vẫn còn trượt và ma sát vải bẻ cong
   /// đường. `n` là pháp tuyến băng hướng vào bàn. Bi không đi vào băng thì trả nguyên trạng thái.
   static func cushion(v: CGPoint, w: CGPoint, wz: CGFloat, n: CGPoint) -> (v: CGPoint, w: CGPoint, wz: CGFloat) {
@@ -268,11 +268,14 @@ enum ShotPhysics {
     let r = SIMD3<Double>(-R * cosE * N.x, -R * cosE * N.y, R * sinE)
     let t = SIMD3<Double>(-N.y, N.x, 0)
     let I = 0.4 * R * R
-    let Jn = -(1 + Double(railRestitution)) * vn
+    // Xung pháp tuyến đặt ở điểm chạm nên có mômen: e áp cho vận tốc điểm chạm, chia khối lượng hiệu dụng. Bỏ mômen thì
+    // topspin qua băng nguyên vẹn, bi lăn đập thẳng băng chỉ dội ra 30% tốc và góc ra mở quá rộng (Han 2005, Mathavan 2010).
+    let rxn = simd_cross(r, N), un = simd_dot(V + simd_cross(om, r), N)
+    let Jn = un < 0 ? -(1 + Double(railRestitution)) * un / (1 + simd_dot(rxn, rxn) / I) : 0
     let ut = simd_dot(V + simd_cross(om, r), t)
     let rxt = simd_cross(r, t), meff = 1 / (1 + simd_dot(rxt, rxt) / I)
     let Jt = ut == 0 ? 0 : -(ut > 0 ? 1 : -1) * min(Double(railMu) * Jn, abs(ut) * meff)
-    let V2 = V + Jn * N + Jt * t, om2 = om + simd_cross(r, Jt * t) / I
+    let V2 = V + Jn * N + Jt * t, om2 = om + simd_cross(r, Jn * N + Jt * t) / I
     return (CGPoint(x: V2.x, y: -V2.y), CGPoint(x: R * om2.y, y: R * om2.x), CGFloat(om2.z))
   }
 
@@ -513,7 +516,8 @@ enum ShotPhysics {
   /// Hướng cơ cho bi mục tiêu vào đúng tâm lỗ, có tính throw và squirt: secant từ hướng ngắm ghost.
   static func solve(_ ms: Setup, tipX: CGFloat, tipY: CGFloat, theta: CGFloat = 0, speed: CGFloat) -> Contact? {
     let (G, _) = ghost(ms.o, ms.P)
-    var a0 = atan2(G.y - ms.c.y, G.x - ms.c.x)
+    // Bắt đầu đã bù squirt: phê trong ở cú mỏng và xa, ngắm thẳng ghost có thể trượt hẳn bi mục tiêu.
+    var a0 = atan2(G.y - ms.c.y, G.x - ms.c.x) + squirtDeg * .pi / 180 * min(max(tipX / 0.5, -1.1), 1.1)
     guard var r0 = hit(ms, aim: a0, tipX: tipX, tipY: tipY, theta: theta, speed: speed), r0.reached else {
       return hit(ms, aim: a0, tipX: tipX, tipY: tipY, theta: theta, speed: speed)
     }

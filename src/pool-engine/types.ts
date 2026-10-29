@@ -93,6 +93,11 @@ export type DrillRound = {
   replay?: CueReplay;
   /** Vì sao chọn cú này, một câu, như `DrillShot.why`. */
   why?: string;
+  /**
+   * Như `DrillShot.rate`, cho bài đặt lại bi cái mỗi cú: số mẫu trên 45 mẫu lệch tay của `scripts/position-harness/` còn
+   * vào lỗ sạch. Có cùng `speed` thì round lấy nguồn engine.
+   */
+  rate?: number;
 };
 
 /**

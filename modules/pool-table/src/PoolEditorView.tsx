@@ -52,6 +52,8 @@ export type TargetPick = {
   scratch?: boolean;
   /** Play một cú: bi khác che, cú không chạy. */
   blocked?: boolean;
+  /** Cú native đã giải cho bàn vừa dựng: phê và lực mà Play sẽ đánh. Không phải vùng đích. */
+  plan?: boolean;
 };
 
 /** Ba góc nhìn của cùng một cú, khớp `EditorViewMode` bên Swift. */

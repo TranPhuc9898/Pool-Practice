@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { numberIn } from '@/components/home/training-areas';
 import { AppChip, AppIcon, AppText, makeStyles, MaterialCard, type ChipTone } from '@/design-system';
 import { drillStatus, type DrillProgress, type DrillStatus } from '@/pool-engine/progress';
+import { stageOf } from '@/pool-engine/stages';
 import type { PoolDrill } from '@/pool-engine/types';
 
 const statusMeta: Record<DrillStatus, { label: string; tone: ChipTone }> = {
@@ -13,12 +14,16 @@ const statusMeta: Record<DrillStatus, { label: string; tone: ChipTone }> = {
   notPassed: { label: 'Not Passed', tone: 'error' },
 };
 
-/** Một dòng drill: số trong nhóm, tên, kỹ năng · level · điểm, chip trạng thái. Bấm mở `/drill/[id]`. */
-export function DrillCard({ drill, progress }: { drill: PoolDrill; progress?: DrillProgress }) {
+/**
+ * Một dòng drill: số (mặc định số trong nhóm, `number` để màn gọi tự đánh), tên, kỹ năng · giai đoạn kèm hạng SABO tham
+ * khảo · điểm, chip trạng thái. Bấm mở `/drill/[id]`.
+ */
+export function DrillCard({ drill, progress, number }: { drill: PoolDrill; progress?: DrillProgress; number?: string }) {
   const s = useStyles();
   const key = progress ? drillStatus(drill, progress) : 'notStarted';
   const status = statusMeta[key];
-  const n = numberIn(drill);
+  const n = number ?? numberIn(drill);
+  const stage = stageOf(drill);
   const best = progress?.best
     ? `Best ${progress.best}/${drill.attemptCount}`
     : `Pass ${drill.passCondition.required}/${drill.attemptCount}`;
@@ -36,7 +41,7 @@ export function DrillCard({ drill, progress }: { drill: PoolDrill; progress?: Dr
         <View style={s.flex}>
           <AppText variant="headline">{drill.title}</AppText>
           <AppText variant="caption" color="textTertiary">
-            {drill.skillLabel} · Level {drill.difficulty} · {best}
+            {drill.skillLabel} · Stage {stage.stage} ~{stage.sabo} · {best}
           </AppText>
         </View>
         <AppChip label={status.label} tone={status.tone} />

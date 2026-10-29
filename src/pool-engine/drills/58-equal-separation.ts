@@ -4,8 +4,9 @@ import type { PoolDrill } from '../types';
  * Equal Separation, bài 58 của `docs/research/pool-practice-drills/drills-49-65-dieu-bi-safety-kick.md`, Billiard
  * University Exam VI #5 (https://billiarduniversity.org/documents/BU_Exam-VI_Safety_Challenge.pdf). Layout và hai chỗ
  * bi dừng lấy từ toạ độ "→ app" của research [nguồn], đo từ hình nên sai số khoảng ±¼ diamond [suy luận]. Bi 8 bật
- * foot rail về long rail phải, bi cái bật foot rail về long rail trái, bi 9 nằm giữa. Điểm chạm băng tính bằng gương
- * qua đường tâm bi lúc chạm băng; ghost ball cho góc cắt khoảng 38°, khớp "mỏng hơn nửa bi một chút" [suy luận]. Đường
+ * foot rail về long rail phải, bi cái bật foot rail về long rail trái, bi 9 nằm giữa. Điểm chạm, băng và chỗ dừng lấy
+ * từ `ShotPhysics` (phê trái 0.2, draw 0.3, medium 1.8 m/s, ngắm -90.96°): bi cái dừng cách tâm vòng 2.6", không đụng
+ * bi 9, cửa ngắm chỉ khoảng ±0.1° nên đây là cú khó nhất nhóm [suy luận]. Đường
  * bi 8 vẽ bằng `objectBallBankPath` dù điểm cuối không phải lỗ; `targetPocket` footRight chỉ là lỗ gần nhất. Vòng đích
  * bán kính 4", 3 cú, ngưỡng 2/3 theo tiêu chí chung của nhóm [đề xuất]. Chưa kiểm trên bàn thật.
  */
@@ -31,24 +32,25 @@ export const equalSeparation = {
       kind: 'objectBallBankPath',
       points: [
         { x: 0.535, y: 0.045 },
-        { x: 0.5872, y: 0.01125 },
-        { x: 0.975, y: 0.262 },
+        { x: 0.5794, y: 0.0113 },
+        { x: 0.8471, y: 0.2451 },
       ],
     },
     {
       kind: 'expectedCuePath',
       points: [
         { x: 0.51, y: 0.5 },
-        { x: 0.5075, y: 0.0628 },
-        { x: 0.4295, y: 0.01125 },
-        { x: 0.05, y: 0.262 },
+        { x: 0.5106, y: 0.0639 },
+        { x: 0.4297, y: 0.0112 },
+        { x: 0.0228, y: 0.2138 },
+        { x: 0.092, y: 0.2475 },
       ],
     },
   ],
-  recommendedContactPoint: { x: 0, y: 0.4 },
-  recommendedSpin: 'follow',
+  recommendedContactPoint: { x: -0.2, y: -0.3 },
+  recommendedSpin: 'draw',
   recommendedSpeed: 'medium',
-  allowedRails: 1,
+  allowedRails: 2,
   attemptCount: 3,
   passCondition: { kind: 'inZone', required: 2 },
   tips: [

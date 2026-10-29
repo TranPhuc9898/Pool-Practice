@@ -3,14 +3,15 @@ import type { PoolDrill } from '../types';
 /**
  * English Check, mục 4 của `docs/research/pool-9ball/07-spin-and-deflection.md`. Thế bi lấy round 30° của drill 22:
  * cắt nửa bi sang trái vào lỗ góc, bi cái chạm phía phải bi 1 nên phê thuận là phê phải (x dương), phê nghịch là phê
- * trái. Round Center để có đường gốc. Engine có squirt nhưng không có swerve, nên Play chỉ hiện ở round Center.
+ * trái. Round Center để có đường gốc. Engine có squirt và throw nhưng không có swerve, cơ nằm ngang. Lực, rate và số
+ * squirt, throw trong why lấy từ `drill26()` của `scripts/position-harness/`.
  * Tip chỉ lấy claim VERIFIED của 07; số pivot và tỉ lệ trộn BHE/FHE còn chờ đo nên không đưa vào.
  */
 export const englishCheck = {
   id: '26',
   number: 26,
   title: 'English Check',
-  subtitle: 'Same half-ball cut three ways: center, outside, inside. See which way sidespin pushes the hit.',
+  subtitle: 'Same half-ball cut three ways: center, outside, inside. See which way sidespin pushes the hit. Checked in simulation, not on a real table.',
   category: 'shotMaking',
   skill: 'english',
   skillLabel: 'English',
@@ -44,8 +45,29 @@ export const englishCheck = {
     'Change one thing at a time. Never adjust aim and tip on the same shot.',
   ],
   rounds: [
-    { title: 'Center', spin: 'center', contactPoint: { x: 0, y: 0 } },
-    { title: 'Outside', spin: 'center', contactPoint: { x: 0.5, y: 0 } },
-    { title: 'Inside', spin: 'center', contactPoint: { x: -0.5, y: 0 } },
+    {
+      title: 'Center',
+      spin: 'center',
+      contactPoint: { x: 0, y: 0 },
+      speed: 1.7,
+      rate: 15,
+      why: 'Baseline: 30° cut at 1.7 m/s, no squirt. Collision throw alone pushes the 1-ball about 1.2° toward undercut.',
+    },
+    {
+      title: 'Outside',
+      spin: 'center',
+      contactPoint: { x: 0.5, y: 0 },
+      speed: 1.7,
+      rate: 15,
+      why: 'Squirt 2.5° makes the hit fuller. The spin goes past gearing and throws the 1-ball 1.2° the other way.',
+    },
+    {
+      title: 'Inside',
+      spin: 'center',
+      contactPoint: { x: -0.5, y: 0 },
+      speed: 1.75,
+      rate: 15,
+      why: 'Squirt 2.5° makes the hit thinner, and throw still adds 0.8° of undercut. Aim fuller than the center round.',
+    },
   ],
 } satisfies PoolDrill;

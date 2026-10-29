@@ -4,9 +4,11 @@ import type { DrillRound, PoolBallPlacement, PoolDrill } from '../types';
  * Jal Circle, bài 46 của `docs/research/pool-practice-drills/drills-32-48-dua-bi.md`, Jal trên AZBilliards
  * (https://forums.azbilliards.com/threads/shot-making-drills.56705). Cung và quy tắc độ dày = 1 − W/4 là [forum]: bảy bi trên
  * cung tâm lỗ footLeft, bán kính nửa chiều dài bàn, W 0.5 → 3.5. Bi cái song song long rail sau bi, lùi 2 diamond về phía
- * head [suy luận]; với cách đặt này sin(góc cắt) = W/4 đúng tuyệt đối vì x bi cái là điểm ghost ball. Góc cắt 7, 15, 22,
+ * head [suy luận]; với cách đặt này sin(góc cắt) = W/4 đúng tuyệt đối vì x bi cái là điểm ghost ball. Góc cắt 7, 14, 22,
  * 30, 39, 49, 61°. Mỗi bi 4 cú, ngưỡng 23/28 (khoảng 4/5) là [đề xuất]; forum không có tiêu chí. Mỗi round bàn còn các bi
- * chưa đánh. Chưa kiểm trên bàn thật.
+ * chưa đánh. Tip, lực và `rate` từng round chép từ `sh scripts/position-harness/run.sh` trên ShotPhysics ddf3049, giữ cú
+ * danh nghĩa vào sạch, không chạm bi còn trên cung. Ở bi 3, tip giữa hay follow cho bi cái đâm vào bi 4, có khi cả 5 và 6;
+ * chỉ draw từ khoảng 1.8 m/s mới sạch. Hash khác thì chạy lại harness, chép lại số. Chưa kiểm trên bàn thật.
  */
 const arc = [
   { number: 1, x: 0.125, y: 0.4961 },
@@ -31,16 +33,30 @@ const cueSpots = [
 
 const thickness = ['7/8', '3/4', '5/8', '1/2', '3/8', '1/4', '1/8'];
 
+/**
+ * Chép từ harness, cùng thứ tự với `arc`. Round không ghi `contactPoint` dùng của drill. Round 30° và 39° quét lại lực trên
+ * ShotPhysics (2026-10-29) vì cú harness làm bi cái đụng bi kế trên cung (luật 1); lực nằm giữa dải ăn sạch, chưa có rate.
+ */
+const play = [
+  { spin: 'draw', speed: 1.9, rate: 41, why: '7° cut, a 7/8 hit. Draw at 1.9 m/s gets the ball to the corner and keeps the cue ball clear of the balls left on the arc.' },
+  { spin: 'draw', contactPoint: { x: 0, y: -0.4 }, speed: 2.2, rate: 26, why: '14° cut, a 3/4 hit. Draw at 2.2 m/s gets the ball to the corner and keeps the cue ball clear of the balls left on the arc.' },
+  { spin: 'draw', contactPoint: { x: 0, y: -0.4 }, speed: 2.05, rate: 21, why: '22° cut, a 5/8 hit. Draw at 2.05 m/s gets the ball to the corner and keeps the cue ball clear of the balls left on the arc.' },
+  { spin: 'draw', contactPoint: { x: 0, y: -0.6 }, speed: 2.9, why: '30° cut, a 1/2 hit. Draw at 2.9 m/s gets the ball to the corner and keeps the cue ball clear of the balls left on the arc.' },
+  { spin: 'draw', contactPoint: { x: 0, y: -0.4 }, speed: 2.6, why: '39° cut, a 3/8 hit. Draw at 2.6 m/s gets the ball to the corner and keeps the cue ball clear of the balls left on the arc.' },
+  { spin: 'draw', contactPoint: { x: 0, y: -0.2 }, speed: 2.9, rate: 15, why: '49° cut, a 1/4 hit. Draw at 2.9 m/s gets the ball to the corner and keeps the cue ball clear of the balls left on the arc.' },
+  { spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 2.6, rate: 15, why: '61° cut, a 1/8 hit. Center ball at 2.6 m/s gets the ball to the corner and leaves the cue ball 22" from the nearest pocket.' },
+] satisfies Partial<DrillRound>[];
+
 export const jalCircle = {
   id: '46',
   number: 46,
   title: 'Jal Circle',
-  subtitle: 'Seven balls on an arc around the corner. Each one is a known fraction of ball.',
+  subtitle: 'Seven balls on an arc around the corner. Each one is a known fraction of ball. Checked in simulation, not on a real table.',
   category: 'shotMaking',
   skill: 'cutAngle',
   skillLabel: 'Ball Fraction',
   difficulty: 3,
-  objective: 'Cut each ball into the left foot corner, shooting parallel to the long rail. Four shots per ball.',
+  objective: 'Ball in hand at the marked spot every shot. Cut each ball into the left foot corner, shooting parallel to the long rail. Four shots per ball.',
   cueBall: cueSpots[0],
   objectBalls: arc,
   targetPocket: 'footLeft',
@@ -49,9 +65,9 @@ export const jalCircle = {
     { kind: 'objectBallPath', ball: 1, pocket: 'footLeft' },
     { kind: 'ghostBall', ball: 1, pocket: 'footLeft' },
   ],
-  recommendedContactPoint: { x: 0, y: 0 },
-  recommendedSpin: 'center',
-  recommendedSpeed: 'medium',
+  recommendedContactPoint: { x: 0, y: -0.5 },
+  recommendedSpin: 'draw',
+  recommendedSpeed: 'firm',
   allowedRails: 0,
   attemptCount: 28,
   passCondition: { kind: 'pocketed', required: 23 },
@@ -67,12 +83,12 @@ export const jalCircle = {
   ],
   rounds: arc.map((ball, i): DrillRound => ({
     title: `Ball ${ball.number} · ${thickness[i]}`,
-    spin: 'center',
     cueBall: cueSpots[i],
     objectBalls: arc.slice(i),
     guideLines: [
       { kind: 'objectBallPath', ball: ball.number, pocket: 'footLeft' },
       { kind: 'ghostBall', ball: ball.number, pocket: 'footLeft' },
     ],
+    ...play[i],
   })),
 } satisfies PoolDrill;

@@ -46,7 +46,7 @@ export const cutAngleLadder = {
     { title: '0°', spin: 'center', cueBall: { x: 0.8405, y: 0.5253 } },
     { title: '15°', spin: 'center', cueBall: { x: 0.7288, y: 0.5591 } },
     { title: '30°', spin: 'center', cueBall: { x: 0.6034, y: 0.5772 } },
-    { title: '45°', spin: 'center', cueBall: { x: 0.4729, y: 0.5785 } },
-    { title: '60°', spin: 'center', cueBall: { x: 0.3462, y: 0.5629 } },
+    { title: '45°', spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 2.45, cueBall: { x: 0.4729, y: 0.5785 } },
+    { title: '60°', spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 1.9, cueBall: { x: 0.3462, y: 0.5629 } },
   ],
 } satisfies PoolDrill;

@@ -212,7 +212,7 @@ extension PoolEditorModel {
         let took = Date().timeIntervalSince(t0) * 1000
         let replay = ShotReplay(ms, ball: b.ball, tipX: tipX, tipY: tipY, speed: speed, jump: reduceMotion)
         let after = FixedShot.after(replay, on: cur)
-        let ok = replay.ob.sink && !replay.cue.sink
+        let ok = replay.clean(b.pocket)
         let stop = after[0] ?? CGPoint(x: -1, y: -1)
         NSLog("[rack] %d→%@ a %.2f b %.2f v %.1f, %.0f ms, %@, cue (%.1f,%.1f)", b.ball, b.pocket, tipX, tipY, speed, took,
               ok ? "in" : "miss", stop.x, stop.y)
@@ -293,7 +293,7 @@ extension PoolEditorModel {
       EditorHaptics.fire(.warning, balls[0] == nil ? "Cue ball scratched" : "Missed \(ShotPhysics.name(last.ball))")
     } else if run.fixed, let last {
       // Một cú của drill có `shots` vào sạch: bàn đứng chờ cú kế, không phải hết cú.
-      EditorHaptics.fire(.selection, "Pocketed \(ShotPhysics.name(last.ball))")
+      EditorHaptics.fire(.selection, "Pocketed \(ShotPhysics.name(last.replay.potted(last.pocket) ?? last.ball))")
     } else {
       EditorHaptics.fire(.warning, "No clean shot on \(ShotPhysics.name(left[0]))")
     }
@@ -325,7 +325,7 @@ enum FixedShot {
     for s in shots.prefix(i) {
       guard let ms = setup(s, on: cur) else { return nil }
       let r = ShotReplay(ms, ball: s.ball, tipX: CGFloat(s.tipX), tipY: CGFloat(s.tipY), speed: CGFloat(s.speed), jump: true)
-      guard r.ob.sink, !r.cue.sink else { return nil }
+      guard r.clean(s.pocket) else { return nil }
       cur = after(r, on: cur)
     }
     return cur
@@ -353,7 +353,16 @@ enum FixedShot {
       var b = BallRecord(); b.number = n; b.x = p.x; b.y = p.y; return b
     }
     out.targetPocket = s.pocket
-    out.guideLines = [guide("objectBallPath", s), guide("ghostBall", s), guide("cueBallPath", s)]
+    // Đường bi mục tiêu là vệt engine của chính cú này, không phải đường thẳng bi → lỗ: bi sát băng nảy khỏi băng rồi mới chạy dọc.
+    var path = guide("objectBallPath", s)
+    if let ms = setup(s, on: balls) {
+      let r = ShotReplay(ms, ball: s.ball, tipX: CGFloat(s.tipX), tipY: CGFloat(s.tipY), speed: CGFloat(s.speed), jump: true)
+      var pts: [CGPoint] = []
+      for p in r.ob.pts where pts.last.map({ hypot($0.x - p.x, $0.y - p.y) >= 1 }) ?? true { pts.append(p) }
+      if let e = r.ob.pts.last, pts.last != e { pts.append(e) }
+      if pts.count >= 2 { path.kind = "objectBallBankPath"; path.points = pts.map(point) }
+    }
+    out.guideLines = [path, guide("ghostBall", s), guide("cueBallPath", s)]
       + (i + 1 < d.shots.count ? [guide("objectBallPath", d.shots[i + 1])] : [])
     out.cueBallTargetZones = d.shots[i...].compactMap { d.cueBallTargetZones.indices.contains($0.zone) ? d.cueBallTargetZones[$0.zone] : nil }
     return out

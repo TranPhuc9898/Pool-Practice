@@ -96,6 +96,8 @@ export default function DrillScreen() {
   });
   const [pick, setPick] = useState<{ drillId: string; shot: TargetPick }>();
   const [playRev, setPlayRev] = useState(0);
+  // Cú native giải một lần mỗi lần dựng bàn, gắn với `rev` của bàn đó.
+  const [plan, setPlan] = useState<{ drillId: string; rev: number; tipX: number; tipY: number; speed: number }>();
   // Drill có `shots`: cú đang xem và số lần bấm cú trước/cú sau, để native dựng lại bàn kể cả khi chỉ số không đổi.
   const [shotAt, setShotAt] = useState<{
     drillId: string;
@@ -252,6 +254,15 @@ export default function DrillScreen() {
     }
   };
   const lastRun = useLastRun(drill);
+  // Native chỉ nạp lại bàn khi `rev` đổi, nên round dời bi, đổi guide hay đổi tip phải có `rev` riêng.
+  const baseStage = stageState(drill, level?.diamonds ?? 0);
+  const bank = bankTarget(drill);
+  const stage = roundMovesTable || round?.contactPoint || round?.speed != null
+    ? { ...baseStage, rev: baseStage.rev * 10 + roundIndex, speed: round?.playSpeed ?? round?.speed ?? baseStage.speed }
+    : baseStage;
+
+  // Cú native đã giải cho bàn đang dựng: thẻ ghi đúng phê và lực Play sẽ đánh, không phải số trong data.
+  const solved = plan?.drillId === drill.id && plan.rev === stage.rev ? plan : undefined;
   const shot = planned
     ? { tipX: planned.tipX ?? 0, tipY: planned.tipY, speed: planned.speed }
     : target?.found
@@ -262,7 +273,9 @@ export default function DrillScreen() {
         }
       : multi
         ? undefined
-        : {
+        : solved
+          ? { tipX: solved.tipX, tipY: solved.tipY, speed: solved.speed }
+          : {
             tipX: drill.recommendedContactPoint.x,
             tipY: drill.recommendedContactPoint.y,
             speed: round?.speed ?? speedMs[drill.recommendedSpeed],
@@ -316,13 +329,6 @@ export default function DrillScreen() {
     router.setParams({ id: String(n), d: undefined });
   };
 
-  // Native chỉ nạp lại bàn khi `rev` đổi, nên round dời bi hay đổi guide phải có `rev` riêng.
-  const baseStage = stageState(drill, level?.diamonds ?? 0);
-  const bank = bankTarget(drill);
-  const stage = roundMovesTable
-    ? { ...baseStage, rev: baseStage.rev * 10 + roundIndex, speed: round?.playSpeed ?? round?.speed ?? baseStage.speed }
-    : baseStage;
-
   const stageWidth = (width ?? windowWidth) - 2 * gutter;
   const stageHeight = stageHeightFor(stageWidth);
 
@@ -370,16 +376,21 @@ export default function DrillScreen() {
               shot.cueX !== undefined && shot.cueY !== undefined ? { x: shot.cueX, y: shot.cueY } : undefined,
             );
           // Play một cú trượt: báo lý do, bàn giữ thế cũ để Play lại.
+          // Bài chỉ đánh bi cái (`aimBall` -1) thì trượt là bi cái không tới đích, không có bi nào để gọi tên.
           if (!shot.ok && shot.shot === -1) {
-            const ball = `Ball ${drill.objectBalls[0]?.number}`;
+            const ball = stage.aimBall >= 0 ? `Ball ${stage.aimBall}` : undefined;
             setMissAt({
               drillId: drill.id,
               i: roundIndex,
               note: shot.blocked
-                ? `No clean shot on ${ball}.`
-                : `${shot.scratch ? "Cue ball scratched" : `Missed ${ball}`} · Play to retry.`,
+                ? ball ? `No clean shot on ${ball}.` : "No clean shot."
+                : `${shot.scratch ? "Cue ball scratched" : ball ? `Missed ${ball}` : "Cue ball missed the target"} · Play to retry.`,
             });
           }
+          return;
+        }
+        if (shot.plan) {
+          setPlan({ drillId: drill.id, rev: stage.rev, tipX: shot.tipX ?? 0, tipY: shot.tipY ?? 0, speed: shot.speed ?? 0 });
           return;
         }
         setPick({ drillId: drill.id, shot });
@@ -425,7 +436,7 @@ export default function DrillScreen() {
             : target?.found
               ? `Shot → ${target.label}`
               : round && rounds
-                ? `Shot ${roundIndex + 1}/${rounds.length} · ${spinLabel[round.spin]}`
+                ? `Shot ${roundIndex + 1}/${rounds.length} · ${round.spin === "center" && round.contactPoint?.x ? "English" : spinLabel[round.spin]}`
                 : multi
                   ? "Shot"
                   : `Shot · ${spinLabel[drill.recommendedSpin]}`

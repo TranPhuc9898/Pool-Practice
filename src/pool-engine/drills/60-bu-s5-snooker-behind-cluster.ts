@@ -9,6 +9,8 @@ import type { PoolDrill } from '../types';
  * quanh (L 6, W 3), ở đây đặt năm bi 2–6 thành hình chữ X sát nhau quanh điểm đó [suy luận]. Đường đi không có trong
  * nguồn, người chơi tự chọn giấu bi cái hay bi 1, nên drill không vẽ đường và không có vòng đích. `targetPocket`
  * footRight chỉ để đủ schema. Ngưỡng 6/10 [đề xuất]. Doctorate thêm 2 vị trí chưa đo được nên không có ở đây.
+ * Spot B lực 1.4 và Spot D lực 0.8: ở lực mặc định 1.8 cú mẫu của DrillShotPlanner đẩy bi 1 hoặc bi cái vào cụm (B đụng
+ * 2/4/6, D đụng 2/5/6); quét 2026-10-29 trên ShotPhysics thì hai lực này chạm bi 1 hợp lệ mà không đụng cụm [engine].
  * Chưa kiểm trên bàn thật.
  */
 export const buS5SnookerBehindCluster = {
@@ -50,9 +52,9 @@ export const buS5SnookerBehindCluster = {
   ],
   rounds: [
     { title: 'Spot A', spin: 'center', cueBall: { x: 0.5, y: 0.75 } },
-    { title: 'Spot B', spin: 'center', cueBall: { x: 0.5, y: 0.875 } },
+    { title: 'Spot B', spin: 'center', speed: 1.4, cueBall: { x: 0.5, y: 0.875 } },
     { title: 'Spot C', spin: 'center', cueBall: { x: 0.25, y: 0.875 } },
-    { title: 'Spot D', spin: 'center', cueBall: { x: 0.125, y: 0.875 } },
+    { title: 'Spot D', spin: 'center', speed: 0.8, cueBall: { x: 0.125, y: 0.875 } },
     { title: 'Spot E', spin: 'center', cueBall: { x: 0.125, y: 0.75 } },
   ],
 } satisfies PoolDrill;
