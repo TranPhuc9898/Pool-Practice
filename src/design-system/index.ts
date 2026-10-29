@@ -51,7 +51,7 @@ export {
   type MaterialCardProps,
   type MetricCardProps,
 } from './components/instrument/material-card';
-export { RankBadge, RankProgress, RankSelector } from './components/rank';
+export { RankBadge, RankProgress, RankSelector, type RankInfo } from './components/rank';
 export { RANKS, rankGradient, rankTone, type Rank } from './tokens/rank';
 export {
   homeSurfaces,

@@ -4,6 +4,7 @@ import {
   Stack,
   useFocusEffect,
   useLocalSearchParams,
+  useNavigation,
 } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useCallback, useState } from "react";
@@ -86,6 +87,9 @@ export default function DrillScreen() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const landscape = windowWidth > windowHeight;
   const [showInfo, setShowInfo] = useState(false);
+  const overRank = useNavigation()
+    .getState()
+    ?.routes.some((r) => r.name === "rank/[id]");
   const devMode = __DEV__ && dev === "1";
   // Bàn ngang cũ chỉ còn cho công cụ dev: kéo bi, lưới hình học, tắt guide.
   const legacyTable = devMode || debug === "1" || guide === "0";
@@ -697,6 +701,17 @@ export default function DrillScreen() {
           // Tên drill nằm trong nội dung, thanh trên chỉ giữ back và info.
           title: "",
           headerLargeTitleEnabled: false,
+          // Màn sau trang hạng (transparentModal) bị trình bày dạng modal nên mất nút back gốc.
+          headerLeft: overRank
+            ? () => (
+                <IconButton
+                  icon="chevron.left"
+                  variant="plain"
+                  accessibilityLabel="Back"
+                  onPress={() => router.back()}
+                />
+              )
+            : undefined,
           headerRight: () => (
             <IconButton
               icon={showInfo ? "info.circle.fill" : "info.circle"}
