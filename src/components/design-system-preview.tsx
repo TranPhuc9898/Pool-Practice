@@ -26,6 +26,12 @@ import {
   NumericInput,
   PickerRow,
   PrimaryButton,
+  RANKS,
+  RankBadge,
+  RankProgress,
+  RankSelector,
+  rankTone,
+  type Rank,
   Screen,
   SecondaryButton,
   Section,
@@ -41,25 +47,65 @@ import {
 import { PoolBall } from '@/pool-domain/pool-ball';
 import { BallColor, PoolColor, type BallNumber } from '@/pool-domain/pool-colors';
 
+/** Từ khoá tìm của mỗi mục, gồm cả tên component bên trong để gõ "slider" vẫn ra Inputs. */
+const SECTIONS: [keywords: string, Body: () => React.ReactNode][] = [
+  ['rank hạng badge progress selector gradient', RankSection],
+  ['color màu palette token', ColorsSection],
+  ['typography font chữ text', TypographySection],
+  ['spacing radius border shadow scale', ScaleSection],
+  ['buttons nút', ButtonsSection],
+  ['cards thẻ stat training drill session metric', CardsSection],
+  ['inputs text field search stepper toggle slider segmented picker', InputsSection],
+  ['chips difficulty status category select', ChipsSection],
+  ['icons sf symbols', IconsSection],
+  ['motion duration spring animation', MotionSection],
+  ['pool domain ball table bi bàn', PoolSection],
+];
+
 /**
  * Catalog nội bộ. Đổi token → mở màn này là thấy cả ngôn ngữ UI đổi theo.
- * Mỗi component mới của design system phải có mặt ở đây.
+ * Mỗi component mới của design system phải có mặt ở đây. `query` lọc mục theo từ khoá, `children` luôn hiện khi rỗng.
  */
-export function DesignSystemPreview({ children }: { children?: React.ReactNode }) {
+export function DesignSystemPreview({ query = '', children }: { query?: string; children?: React.ReactNode }) {
+  const q = query.trim().toLowerCase();
+  const shown = SECTIONS.filter(([keywords]) => !q || keywords.includes(q));
   return (
     <Screen gap="section">
-      {children}
-      <ColorsSection />
-      <TypographySection />
-      <ScaleSection />
-      <ButtonsSection />
-      <CardsSection />
-      <InputsSection />
-      <ChipsSection />
-      <IconsSection />
-      <MotionSection />
-      <PoolSection />
+      {!q && children}
+      {shown.map(([keywords, Body]) => (
+        <Body key={keywords} />
+      ))}
+      {shown.length === 0 && (
+        <AppText variant="body" color="textTertiary" align="center">
+          No section matches “{query.trim()}”
+        </AppText>
+      )}
     </Screen>
+  );
+}
+
+/* ── Rank ───────────────────────────────────────────────── */
+
+function RankSection() {
+  const s = useStyles();
+  const [rank, setRank] = useState<Rank | null>(null);
+  return (
+    <Section title="Rank" caption="Tap a rank: the pill opens into its hero. Gradients only on badges, selection and progress.">
+      <RankSelector value={rank} onChange={setRank} caption={(r) => `${rankTone[r].stops.join(' → ')}`} />
+      <View style={s.rankRow}>
+        {RANKS.map((r) => (
+          <RankBadge key={r} rank={r} />
+        ))}
+      </View>
+      {RANKS.map((r, i) => (
+        <View key={r} style={s.rankProgress}>
+          <RankBadge rank={r} />
+          <View style={s.flex}>
+            <RankProgress rank={r} value={(i + 1) / RANKS.length} />
+          </View>
+        </View>
+      ))}
+    </Section>
   );
 }
 
@@ -464,6 +510,8 @@ function PoolSection() {
 }
 
 const useStyles = makeStyles((t) => ({
+  rankRow: { flexDirection: 'row', flexWrap: 'wrap', gap: t.space.xs },
+  rankProgress: { flexDirection: 'row', alignItems: 'center', gap: t.space.sm },
   flex: { flex: 1 },
   row: { flexDirection: 'row', gap: t.space.sm },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm, alignItems: 'center' },
