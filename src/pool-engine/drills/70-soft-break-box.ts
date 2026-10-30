@@ -1,4 +1,4 @@
-import type { PoolDrill } from '../types';
+import type { GuideLine, PoolDrill } from '../types';
 
 /**
  * Soft Break from the Box, bài 70 (R5) của `docs/research/pool-practice-drills/drills-66-81-bank-break-jump-kiem-tra.md`,
@@ -7,12 +7,13 @@ import type { PoolDrill } from '../types';
  * 0.28875). [suy luận] của research: box là nửa giữa kitchen, x 0.25 → 0.75, y 0.75 → 1; bi cái in sẵn ở giữa box
  * (0.5, 0.875) theo sơ đồ. [đề xuất]: đạt 7/10 break hợp lệ. [suy luận] của em: tip stun để bi cái đứng gần giữa bàn,
  * nguồn chỉ nói tập cho bi cái đứng giữa. Không chấm vị trí bi cái nên không có zone. Chưa kiểm trên bàn thật.
+ * Round là cú phá vẽ tay như bài 95, lực 8 m/s là lực Play dùng cho cú phá, nguồn không ghi số [đề xuất]; đường lùi về giữa bàn [suy luận].
  */
 export const softBreakBox = {
   id: '70',
   number: 70,
   title: 'Soft Break from the Box',
-  subtitle: '9-ball on the spot. Break with control from the box, not full power.',
+  subtitle: '9-ball on the spot. Break with control from the box, not full power. Path drawn, not simulated.',
   category: 'patternPlay',
   skill: 'break',
   skillLabel: 'Break',
@@ -48,4 +49,5 @@ export const softBreakBox = {
     'Fewer than three balls reach the head string: too soft or hit off center on the 1. Add a little speed, not power.',
     'Cue ball runs to the rails after the hit: it arrived rolling. Hit lower so it is still stunned at the 1.',
   ],
+  rounds: [{ title: 'Soft break', spin: 'stun', contactPoint: { x: 0, y: -0.2 }, speed: 8, why: 'Square hit on the 1 with a low tip. The cue ball is still stunned at contact and stays near the middle instead of running to the rails.', guideLines: [{ kind: 'expectedCuePath', points: [{ x: 0.5, y: 0.875 }, { x: 0.5, y: 0.3115 }, { x: 0.5, y: 0.539 }] }] }],
 } satisfies PoolDrill;

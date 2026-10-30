@@ -6,12 +6,13 @@ import type { PoolDrill } from '../types';
  * [nguồn]; toạ độ đo từ hình [suy luận]. Mỗi cú chỉ một bi trên bàn, nên round nào cũng dùng bi 1. Điểm = số cú vào,
  * scratch là hỏng [nguồn]; ngưỡng 7/10 cho hạng F là [đề xuất]. Cú 4 và 9 cắt khoảng 68° vào lỗ giữa, cú 5 và 10 thẳng
  * lỗ. Chưa kiểm trên bàn thật.
+ * Lực và rate từng cú lấy từ `drill39()` của `scripts/position-harness/` (`ONLY=G0`) trên ShotPhysics `65a775f`.
  */
 export const buF6BallPocketing = {
   id: '39',
   number: 39,
   title: 'BU F6 Ball Pocketing',
-  subtitle: 'Ten set shots into side and corner pockets from two cue ball spots.',
+  subtitle: 'Ten set shots into side and corner pockets from two cue ball spots. Checked in simulation, not on a real table.',
   category: 'shotMaking',
   skill: 'cutAngle',
   skillLabel: 'Cut Angle',
@@ -44,6 +45,9 @@ export const buF6BallPocketing = {
     {
       title: 'Shot 1 · Left side',
       spin: 'center',
+      speed: 1.52,
+      rate: 30,
+      why: '53° cut into the side. Center ball at 1.52 m/s, the cue ball stops 29" from the nearest pocket.',
       cueBall: { x: 0.25, y: 0.75 },
       objectBalls: [{ number: 1, x: 0.25, y: 0.625 }],
       guideLines: [
@@ -54,6 +58,9 @@ export const buF6BallPocketing = {
     {
       title: 'Shot 2 · Top left',
       spin: 'center',
+      speed: 1.58,
+      rate: 33,
+      why: '14° cut into the corner. Center ball at 1.58 m/s, the cue ball stops 21" from the nearest pocket.',
       cueBall: { x: 0.25, y: 0.75 },
       objectBalls: [{ number: 1, x: 0.25, y: 0.625 }],
       guideLines: [
@@ -64,6 +71,9 @@ export const buF6BallPocketing = {
     {
       title: 'Shot 3 · Top right',
       spin: 'center',
+      speed: 1.92,
+      rate: 15,
+      why: '32° cut into the corner. Center ball at 1.92 m/s, the cue ball stops 6" from the nearest pocket.',
       cueBall: { x: 0.25, y: 0.75 },
       objectBalls: [{ number: 1, x: 0.5, y: 0.25 }],
       guideLines: [
@@ -73,7 +83,10 @@ export const buF6BallPocketing = {
     },
     {
       title: 'Shot 4 · Right side',
-      spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 2,
+      spin: 'center',
+      speed: 2.2,
+      rate: 13,
+      why: '68° cut into the side. Center ball at 2.2 m/s, the cue ball stops 16" from the nearest pocket.',
       cueBall: { x: 0.25, y: 0.75 },
       objectBalls: [{ number: 1, x: 0.5, y: 0.5 }],
       guideLines: [
@@ -84,6 +97,9 @@ export const buF6BallPocketing = {
     {
       title: 'Shot 5 · Top right',
       spin: 'center',
+      speed: 1.72,
+      rate: 15,
+      why: '0° cut into the corner. Center ball at 1.72 m/s, the cue ball stops 25" from the nearest pocket.',
       cueBall: { x: 0.25, y: 0.75 },
       objectBalls: [{ number: 1, x: 0.5, y: 0.5 }],
       guideLines: [
@@ -94,6 +110,9 @@ export const buF6BallPocketing = {
     {
       title: 'Shot 6 · Right side',
       spin: 'center',
+      speed: 1.52,
+      rate: 30,
+      why: '53° cut into the side. Center ball at 1.52 m/s, the cue ball stops 29" from the nearest pocket.',
       cueBall: { x: 0.75, y: 0.75 },
       objectBalls: [{ number: 1, x: 0.75, y: 0.625 }],
       guideLines: [
@@ -104,6 +123,9 @@ export const buF6BallPocketing = {
     {
       title: 'Shot 7 · Top right',
       spin: 'center',
+      speed: 1.6,
+      rate: 33,
+      why: '14° cut into the corner. Center ball at 1.6 m/s, the cue ball stops 21" from the nearest pocket.',
       cueBall: { x: 0.75, y: 0.75 },
       objectBalls: [{ number: 1, x: 0.75, y: 0.625 }],
       guideLines: [
@@ -114,6 +136,9 @@ export const buF6BallPocketing = {
     {
       title: 'Shot 8 · Top left',
       spin: 'center',
+      speed: 1.92,
+      rate: 15,
+      why: '32° cut into the corner. Center ball at 1.92 m/s, the cue ball stops 6" from the nearest pocket.',
       cueBall: { x: 0.75, y: 0.75 },
       objectBalls: [{ number: 1, x: 0.5, y: 0.25 }],
       guideLines: [
@@ -123,7 +148,10 @@ export const buF6BallPocketing = {
     },
     {
       title: 'Shot 9 · Left side',
-      spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 2,
+      spin: 'center',
+      speed: 2.2,
+      rate: 13,
+      why: '68° cut into the side. Center ball at 2.2 m/s, the cue ball stops 16" from the nearest pocket.',
       cueBall: { x: 0.75, y: 0.75 },
       objectBalls: [{ number: 1, x: 0.5, y: 0.5 }],
       guideLines: [
@@ -134,6 +162,9 @@ export const buF6BallPocketing = {
     {
       title: 'Shot 10 · Top left',
       spin: 'center',
+      speed: 1.72,
+      rate: 15,
+      why: '0° cut into the corner. Center ball at 1.72 m/s, the cue ball stops 25" from the nearest pocket.',
       cueBall: { x: 0.75, y: 0.75 },
       objectBalls: [{ number: 1, x: 0.5, y: 0.5 }],
       guideLines: [

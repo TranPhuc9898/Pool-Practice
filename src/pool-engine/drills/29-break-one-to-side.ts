@@ -1,4 +1,4 @@
-import type { PoolDrill } from '../types';
+import type { GuideLine, PoolDrill } from '../types';
 
 /**
  * Break: 1 to Side, clip #1 của `docs/research/pool-9ball/09-break-techniques.md` và BD 1/2021 (VERIFIED / CONDITIONAL:
@@ -8,12 +8,13 @@ import type { PoolDrill } from '../types';
  * International Open. Bi 1 vào lỗ giữa nhờ dội từ rack, không theo đường cắt, nên không có guide ghost hay đường bi 1.
  * Lỗ giữa phía đối diện bi cái là suy luận của em, chưa đo. Không có Play: planner native chỉ giải cú pot, không có break.
  * Tip chỉ lấy claim VERIFIED, CONDITIONAL, APPROXIMATION; độ dày "mỏng hơn nửa bi một sợi tóc" còn NEEDS CALIBRATION.
+ * Round là cú phá vẽ tay: bi cái chạm thẳng bi 1 rồi lùi ngược đường tới 22.75" [suy luận], lực 8 m/s là lực Play dùng cho cú phá [đề xuất]. Độ dày thật của cú còn NEEDS CALIBRATION.
  */
 export const breakOneToSide = {
   id: '29',
   number: 29,
   title: 'Break: 1 to Side',
-  subtitle: '9-ball on the spot. Break from the box and send the 1-ball into a side pocket.',
+  subtitle: '9-ball on the spot. Break from the box and send the 1-ball into a side pocket. Path drawn, not simulated.',
   category: 'patternPlay',
   skill: 'break',
   skillLabel: 'Break',
@@ -51,8 +52,8 @@ export const breakOneToSide = {
     'The 1 drops but few balls reach the head string: fine here, but under a 3-ball rule that break does not count.',
   ],
   rounds: [
-    { title: 'Box edge', spin: 'stun', cueBall: { x: 0.34, y: 0.75 } },
-    { title: 'Mid box', spin: 'stun', cueBall: { x: 0.4, y: 0.75 } },
-    { title: 'Near center', spin: 'stun', cueBall: { x: 0.46, y: 0.75 } },
+    { title: 'Box edge', spin: 'stun', cueBall: { x: 0.34, y: 0.75 }, contactPoint: { x: 0, y: -0.2 }, speed: 8, why: 'Full hit on the 1 from box edge with a low tip. The cue ball draws back toward the middle and the 1 rebounds off the rack toward the side.', guideLines: [{ kind: 'expectedCuePath', points: [{ x: 0.34, y: 0.75 }, { x: 0.4923, y: 0.3111 }, { x: 0.4145, y: 0.5353 }] }] },
+    { title: 'Mid box', spin: 'stun', cueBall: { x: 0.4, y: 0.75 }, contactPoint: { x: 0, y: -0.2 }, speed: 8, why: 'Full hit on the 1 from mid box with a low tip. The cue ball draws back toward the middle and the 1 rebounds off the rack toward the side.', guideLines: [{ kind: 'expectedCuePath', points: [{ x: 0.4, y: 0.75 }, { x: 0.4951, y: 0.3113 }, { x: 0.4461, y: 0.5375 }] }] },
+    { title: 'Near center', spin: 'stun', cueBall: { x: 0.46, y: 0.75 }, contactPoint: { x: 0, y: -0.2 }, speed: 8, why: 'Full hit on the 1 from near center with a low tip. The cue ball draws back toward the middle and the 1 rebounds off the rack toward the side.', guideLines: [{ kind: 'expectedCuePath', points: [{ x: 0.46, y: 0.75 }, { x: 0.498, y: 0.3114 }, { x: 0.4783, y: 0.5387 }] }] },
   ],
 } satisfies PoolDrill;

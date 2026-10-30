@@ -1,4 +1,4 @@
-import type { PoolDrill } from '../types';
+import type { GuideLine, PoolDrill } from '../types';
 
 /**
  * RDS Levels 7–9, bài 76 của `docs/research/pool-practice-drills/drills-66-81-bank-break-jump-kiem-tra.md`, gốc BU Exam IV (RDS).
@@ -9,12 +9,17 @@ import type { PoolDrill } from '../types';
  * 2/3 tổng số rack, gần với luật "2/3 rack thì lên level" nhưng không xét riêng từng level.
  * [nguồn] research: qua level 7 là đạt D, qua level 9 là sang C.
  * Chưa kiểm trên bàn thật.
+ * Round là cú phá đầu rack, vẽ tay như bài 74 và 95: chạm bi 1 thẳng rồi lùi về giữa bàn [suy luận], lực 8 m/s là lực Play dùng cho cú phá [đề xuất].
  */
+const BREAK_PATH: GuideLine[] = [
+  { kind: 'expectedCuePath', points: [{ x: 0.5, y: 0.875 }, { x: 0.5, y: 0.2725 }, { x: 0.5, y: 0.5 }] },
+];
+
 export const rdsLevels7To9 = {
   id: '76',
   number: 76,
   title: 'RDS Levels 7–9',
-  subtitle: 'Break and run nine to fifteen balls with one or two ball-in-hands.',
+  subtitle: 'Break and run nine to fifteen balls with one or two ball-in-hands. Path drawn, not simulated.',
   category: 'patternPlay',
   skill: 'test',
   skillLabel: 'RDS',
@@ -50,7 +55,11 @@ export const rdsLevels7To9 = {
   rounds: [
     {
       title: 'Level 7',
-      spin: 'center',
+      spin: 'stun',
+      contactPoint: { x: 0, y: -0.15 },
+      speed: 8,
+      why: 'Square hit on the 1 at break speed. A touch below center stops the cue ball near the middle, away from the rails and pockets.',
+      guideLines: BREAK_PATH,
       objectBalls: [
         { number: 1, x: 0.5, y: 0.25 },
         { number: 2, x: 0.4775, y: 0.23051 },
@@ -65,7 +74,11 @@ export const rdsLevels7To9 = {
     },
     {
       title: 'Level 8',
-      spin: 'center',
+      spin: 'stun',
+      contactPoint: { x: 0, y: -0.15 },
+      speed: 8,
+      why: 'Square hit on the 1 at break speed. A touch below center stops the cue ball near the middle, away from the rails and pockets.',
+      guideLines: BREAK_PATH,
       objectBalls: [
         { number: 1, x: 0.5, y: 0.25 },
         { number: 9, x: 0.4775, y: 0.23051 },
@@ -80,7 +93,11 @@ export const rdsLevels7To9 = {
     },
     {
       title: 'Level 9',
-      spin: 'center',
+      spin: 'stun',
+      contactPoint: { x: 0, y: -0.15 },
+      speed: 8,
+      why: 'Square hit on the 1 at break speed. A touch below center stops the cue ball near the middle, away from the rails and pockets.',
+      guideLines: BREAK_PATH,
       objectBalls: [
         { number: 1, x: 0.5, y: 0.25 },
         { number: 2, x: 0.4775, y: 0.23051 },

@@ -1,4 +1,4 @@
-import type { PoolDrill } from '../types';
+import type { GuideLine, PoolDrill } from '../types';
 
 /**
  * Break: Squat, clip #2 của `docs/research/pool-9ball/09-break-techniques.md`, BU Part X và Dr. Dave FAQ (VERIFIED: bi cái
@@ -6,12 +6,13 @@ import type { PoolDrill } from '../types';
  * head, cùng rack với `drill30()` trong `scripts/position-harness/main.swift`; bi cái (0.5, 0.78) và zone giữa bàn 3.5"
  * cũng lấy từ đó. Harness chạy tipY −0.2 ở 5.7 m/s, rate 4/45, vượt vMax 4.5 của Play, nên không có Play. Tip hiện cú
  * giữa bi theo research, không theo harness: engine chưa hiệu chỉnh khối lượng hiệu dụng của rack (DISPUTED ⅔ hay 2×).
+ * Round là cú phá vẽ tay như bài 95, lực 8 m/s là lực Play dùng cho cú phá [đề xuất]; đường lùi về giữa bàn [suy luận].
  */
 export const breakSquat = {
   id: '30',
   number: 30,
   title: 'Break: Squat',
-  subtitle: '1-ball on the spot. Break straight in and park the cue ball in the middle of the table.',
+  subtitle: '1-ball on the spot. Break straight in and park the cue ball in the middle of the table. Path drawn, not simulated.',
   category: 'patternPlay',
   skill: 'break',
   skillLabel: 'Break',
@@ -46,4 +47,5 @@ export const breakSquat = {
   mistakes: [
     'Cue ball flies back toward the head rail: you hit it with draw or stun. Move the tip up toward center.',
   ],
+  rounds: [{ title: 'Squat break', spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 8, why: 'Square hit on the 1 at break speed, center ball. The cue ball reaches the rack with a little roll and squats mid-table.', guideLines: [{ kind: 'expectedCuePath', points: [{ x: 0.5, y: 0.78 }, { x: 0.5, y: 0.2725 }, { x: 0.5, y: 0.5 }] }] }],
 } satisfies PoolDrill;

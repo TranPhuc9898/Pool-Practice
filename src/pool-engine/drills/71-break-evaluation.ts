@@ -1,4 +1,4 @@
-import type { PoolDrill } from '../types';
+import type { GuideLine, PoolDrill } from '../types';
 
 /**
  * Break Evaluation, bài 71 (R1) của `docs/research/pool-practice-drills/drills-66-81-bank-break-jump-kiem-tra.md`, gốc BU
@@ -9,12 +9,17 @@ import type { PoolDrill } from '../types';
  * app chỉ có Pass/Miss nên mỗi break ghi 5 lần, đúng thứ tự 5 tiêu chí, 3 round × 5 = 15, qua khi đạt 9 (3 mỗi break); tổng
  * không phải median, phải tự lấy median nếu muốn đúng điểm gốc. Không vẽ zone dải giữa bàn: schema chỉ có tròn, elip. Bi cái
  * in sẵn ở (0.5, 0.875) theo sơ đồ. Chưa kiểm trên bàn thật.
+ * Round là cú phá đầu rack, vẽ tay như bài 74 và 95: chạm bi 1 thẳng rồi lùi về giữa bàn [suy luận], lực 8 m/s là lực Play dùng cho cú phá [đề xuất].
  */
+const BREAK_PATH: GuideLine[] = [
+  { kind: 'expectedCuePath', points: [{ x: 0.5, y: 0.875 }, { x: 0.5, y: 0.2725 }, { x: 0.5, y: 0.5 }] },
+];
+
 export const breakEvaluation = {
   id: '71',
   number: 71,
   title: 'Break Evaluation',
-  subtitle: 'Three 9-ball breaks, five checks each. Score the median.',
+  subtitle: 'Three 9-ball breaks, five checks each. Score the median. Path drawn, not simulated.',
   category: 'patternPlay',
   skill: 'break',
   skillLabel: 'Break',
@@ -52,8 +57,8 @@ export const breakEvaluation = {
     'Cue ball flies back toward the head rail: it arrived with draw. Move the tip up toward center.',
   ],
   rounds: [
-    { title: 'Break 1', spin: 'center' },
-    { title: 'Break 2', spin: 'center' },
-    { title: 'Break 3', spin: 'center' },
+    { title: 'Break 1', spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 8, why: 'Square hit on the 1 at break speed, center ball. A little roll left at contact squats the cue ball in the middle band.', guideLines: BREAK_PATH },
+    { title: 'Break 2', spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 8, why: 'Square hit on the 1 at break speed, center ball. A little roll left at contact squats the cue ball in the middle band.', guideLines: BREAK_PATH },
+    { title: 'Break 3', spin: 'center', contactPoint: { x: 0, y: 0 }, speed: 8, why: 'Square hit on the 1 at break speed, center ball. A little roll left at contact squats the cue ball in the middle band.', guideLines: BREAK_PATH },
   ],
 } satisfies PoolDrill;

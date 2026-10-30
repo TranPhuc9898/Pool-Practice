@@ -10,6 +10,11 @@ const only = process.argv.slice(3).map(Number);
 const POCKETS = ['footLeft', 'footRight', 'sideLeft', 'sideRight', 'headLeft', 'headRight'];
 // Bi còn lại trên bàn là bi chắn, rack, bi phụ, cổng hay đích cho bi cái dừng sát, không phải chuỗi cần pot.
 const NO_CHAIN = new Set(['safety', 'kick', 'combo', 'break', 'jump', 'masse', 'speedControl', 'english']);
+// Bàn xếp rack thì engine đánh cú phá như skill break, chép từ `DrillShotPlanner.racked`: từ năm bi mục tiêu, bi nào
+// cũng có bi khác cách tâm dưới 2.25" + 0.3". Toạ độ ra inch như harness: x × 50, y × 100.
+const racked = (balls) =>
+  balls.length >= 5 &&
+  balls.every((p) => balls.some((q) => q !== p && Math.hypot((q.x - p.x) * 50, (q.y - p.y) * 100) < 2.25 + 0.3));
 const SIM = 'Checked in simulation, not on a real table.';
 const DRAWN = 'Path drawn, not simulated.';
 // Bốn nhóm theo skill, chép từ `areaBySkill` trong src/components/home/training-areas.ts (file đó dùng alias `@/` nên
@@ -115,7 +120,7 @@ function lint(d) {
   if (noWhy.length) add(3, 'thiếu câu vì sao chọn cú', noWhy);
 
   // Mục 4: từ hai bi mục tiêu trở lên phải chạy chuỗi tới bi cuối.
-  if (d.objectBalls.length >= 2 && !NO_CHAIN.has(d.skill)) {
+  if (d.objectBalls.length >= 2 && !NO_CHAIN.has(d.skill) && !racked(d.objectBalls)) {
     const hit = new Set(shots.map((s) => s.ball));
     const miss = d.objectBalls.map((b) => b.number).filter((n) => !hit.has(n));
     if (shots.length < 2) add(4, `${d.objectBalls.length} bi mục tiêu mà chỉ có một cú`);
