@@ -37,3 +37,11 @@ Ngoài phạm vi: payout HLV, Android, web admin, subscription.
 4. Auth Apple + `DELETE /me` có revoke. Điểm kiểm tra: login thật từ dev build, xoá account xong thì Apple ID không còn liệt kê app trong "Sign in with Apple".
 5. Sync attempts, app đẩy và kéo, local vẫn là nguồn chính khi offline.
 6. IAP: product sandbox, verify JWS, notification REFUND thu hồi quyền.
+
+## Cập nhật 2026-10-30
+- Thu nhỏ v1 còn 7 bảng: users, apple_tokens, refresh_tokens, attempts, shot_results, clip_sessions, clip_strokes. Bỏ packs, pack_drills, drills, entitlements cho tới plan IAP.
+- Cursor sync là `seq bigserial` do server cấp, không dùng `at` của client, vì batch offline tới muộn sẽ lọt qua cursor của máy khác.
+- Không sync KV `progress`, `daily`, `onboarding`, `firstUse`; máy dựng lại `progress` từ log. Không đẩy video, `clip_uri` ở lại máy.
+- Premium sau này là bảng `entitlements` riêng, trạng thái tính từ giao dịch Apple. Không thêm cột `is_premium` vào `users`.
+- Login: Sign in with Apple ngay từ đầu, không qua chế độ ẩn danh. Bundle id `com.chay.pooltraining`, team `MPPZK7HR4Z`.
+- Deploy bằng `railway up` từ máy, chưa nối GitHub auto-deploy.
