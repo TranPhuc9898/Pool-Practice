@@ -3,30 +3,32 @@ import type { PoolDrill } from '../types';
 /**
  * Stop shot có mục đích: bi 1 thẳng vào góc foot left, bi cái dừng tại ghost ball là thẳng bi 2 vào lỗ giữa phải. Tự soạn
  * cho giai đoạn 1 của `plans/reports/brainstorm-261027-1424-cap-do-bida-viet-nam-giao-trinh-drill.md`, không lấy từ nguồn.
- * Đường vẽ tay theo đường thẳng qua tâm bi, bàn 50" × 100"; tip, lực và ngưỡng 7/10 [đề xuất]. Chưa kiểm trên bàn thật.
+ * Bi cái lùi 12.5" sau ghost ball, zone 4" quanh ghost ball [đề xuất]. Tip, lực, rate lấy từ `chain("99 back 12.5 r 4.0")`
+ * trong `drill099()` của `scripts/position-harness/` trên ShotPhysics `65a775f`. Chưa kiểm trên bàn thật.
  */
 export const stopAndGo = {
   id: '99',
   number: 99,
   title: 'Stop and Go',
-  subtitle: 'Stop the cue ball dead and the next ball is straight in. Path drawn, not simulated.',
+  subtitle: 'Stop the cue ball dead and the next ball is straight in. Checked in simulation, not on a real table.',
   category: 'cueBallControl',
   skill: 'stop',
   skillLabel: 'Stop Shot',
   difficulty: 1,
   objective: 'Pot the 1 straight in and stop the cue ball on the spot. Then pot the 2 straight into the right side pocket. Ten tries.',
-  cueBall: { x: 0.4938, y: 0.4937 },
+  cueBall: { x: 0.3819, y: 0.3819 },
   objectBalls: [
     { number: 1, x: 0.25, y: 0.25 },
     { number: 2, x: 0.6932, y: 0.4034 },
   ],
   targetPocket: 'footLeft',
-  cueBallTargetZones: [{ kind: 'circle', center: { x: 0.2702, y: 0.2701 }, radius: 0.06, label: 'Stop' }],
+  cueBallTargetZones: [{ kind: 'circle', center: { x: 0.27, y: 0.27 }, radius: 0.08 }],
   guideLines: [
     { kind: 'objectBallPath', ball: 1, pocket: 'footLeft' },
     { kind: 'ghostBall', ball: 1, pocket: 'footLeft' },
+    { kind: 'objectBallPath', ball: 2, pocket: 'sideRight' },
   ],
-  recommendedContactPoint: { x: 0, y: -0.3 },
+  recommendedContactPoint: { x: 0, y: -0.2 },
   recommendedSpin: 'stun',
   recommendedSpeed: 'medium',
   allowedRails: 0,
@@ -37,33 +39,13 @@ export const stopAndGo = {
     'Cue ball rolls forward after contact: it was rolling at contact, aim lower or hit a touch firmer.',
     'Cue ball spins back: too low for this distance.',
   ],
-  rounds: [
-    {
-      title: 'Stop on the 1',
-      spin: 'stun',
-      zone: 0,
-      speed: 1.5,
-      contactPoint: { x: 0, y: -0.3 },
-      why: 'A dead stop at the ghost ball is exactly where the 2 lines up straight with the side pocket.',
-      guideLines: [
-        { kind: 'objectBallPath', ball: 1, pocket: 'footLeft' },
-        { kind: 'ghostBall', ball: 1, pocket: 'footLeft' },
-        { kind: 'expectedCuePath', points: [{ x: 0.4938, y: 0.4937 }, { x: 0.382, y: 0.382 }, { x: 0.2702, y: 0.2701 }] },
-      ],
-    },
-    {
-      title: 'Straight in on the 2',
-      spin: 'stun',
-      cueBall: { x: 0.2702, y: 0.2701 },
-      speed: 1.5,
-      contactPoint: { x: 0, y: -0.3 },
-      why: 'Same stroke again. Stopping the cue ball keeps it away from the side pocket.',
-      objectBalls: [{ number: 2, x: 0.6932, y: 0.4034 }],
-      guideLines: [
-        { kind: 'objectBallPath', ball: 2, pocket: 'sideRight' },
-        { kind: 'ghostBall', ball: 2, pocket: 'sideRight' },
-        { kind: 'expectedCuePath', points: [{ x: 0.2702, y: 0.2701 }, { x: 0.462, y: 0.331 }, { x: 0.6552, y: 0.3914 }] },
-      ],
-    },
+  steps: [
+    { label: 'STEP 1', caption: 'Pot 1' },
+    { label: 'STEP 2', caption: 'Stop here' },
+    { label: 'STEP 3', caption: 'Pot 2' },
+  ],
+  shots: [
+    { ball: 1, pocket: 'footLeft', tipY: -0.2, speed: 1.88, zone: 0, rate: 42, why: 'Straight in from 12.5". A touch below center at 1.88 m/s and the cue ball stops on the contact spot.' },
+    { ball: 2, pocket: 'sideRight', tipY: -0.3, speed: 1.4, rate: 45, why: 'Straight in from the stop. Same stroke again keeps the cue ball away from the side pocket.' },
   ],
 } satisfies PoolDrill;

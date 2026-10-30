@@ -45,6 +45,7 @@ const LEVEL_BY_NUMBER: Record<number, TrainingLevel> = {
   136: 'H',
   137: 'H',
   138: 'H',
+  139: 'H',
   // G: cắt dễ, stop/follow theo ý, vùng bi cái rộng, RDS nhập môn.
   34: 'G',
   35: 'G',

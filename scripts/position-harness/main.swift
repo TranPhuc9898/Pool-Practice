@@ -835,7 +835,30 @@ func drill137() {
     ])
   }
 }
-func drillH() { cutLR("132", deg: 10); cutLR("133", deg: 15); drill134(); drill136(); drill137(); drill138() }
+/// Drill 139, cắt 10° vào lỗ giữa hai phía: bi 1 cách băng dài 12.5" ngang lỗ giữa, bi cái lùi 18" sau ghost ball.
+func drill139() {
+  for (side, pk, o, sg) in [("Left", "sideLeft", inch(0.25, 0.5), -1), ("Right", "sideRight", inch(0.75, 0.5), 1)] as [(String, String, CGPoint, CGFloat)] {
+    let cue = cutCue(o, pk, deg: 10, back: 18, side: sg)
+    placed("139 \(side)", ball: 1, pocket: pk, cue: cue, left: [1: o], tips: [-0.4, -0.2, 0], base: -0.4, speeds: grid(0.8, 2.6, 0.02)) { t, v, nom, g in
+      String(format: "A 10° cut into the side from 18\" behind the ghost ball. %@ at %@ m/s stops the cue ball %.0f\" from contact.", tipWord(t), num(v), dist(nom.stop, g))
+    }
+  }
+}
+/// Drill 99: bi 1 thẳng vào footLeft, bi cái dừng ở ghost ball (zone 3"), từ đó bi 2 thẳng vào sideRight.
+func drill099() {
+  let one = inch(0.25, 0.25), two = inch(0.6932, 0.4034), P = SP.pockets["footLeft"]!, g = SP.ghost(one, P).g
+  let u = CGPoint(x: (one.x - P.x) / dist(one, P), y: (one.y - P.y) / dist(one, P))
+  for (back, r) in [(27.2, 3), (27.2, 4), (18, 3), (18, 4), (12.5, 3), (12.5, 4)] as [(CGFloat, CGFloat)] {
+    let c = CGPoint(x: g.x + u.x * back, y: g.y + u.y * back), z = (g, r)
+    guard let b = zoned("99 back \(back) r \(r)", ball: 1, pocket: "footLeft", cue: c, left: [1: one, 2: two], tips: [-0.2, -0.3, -0.4, -0.5, -0.6],
+                        speeds: grid(0.8, 3, 0.02), zone: z) else { continue }
+    chain("99 back \(back) r \(r)", cue: c, balls: [1: one, 2: two], shots: [
+      Shot(ball: 1, pocket: "footLeft", tipY: b.tipY, speed: b.speed, zone: z),
+      Shot(ball: 2, pocket: "sideRight", tipY: -0.3, speed: 1.4, zone: nil),
+    ])
+  }
+}
+func drillH() { cutLR("132", deg: 10); cutLR("133", deg: 15); drill134(); drill136(); drill137(); drill138(); drill139() }
 
 /// Drill 04, 06, 08, 52: một cú, mỗi round một zone. Quét tip × lực cho từng zone, in số chép sang `rounds`.
 func zoneRounds(_ id: String, cue: CGPoint, ob: CGPoint, pocket: String, zones: [(String, CGFloat, CGFloat, CGFloat)],
@@ -864,6 +887,8 @@ func drillZ() {
 }
 
 if ProcessInfo.processInfo.environment["ONLY"] == "Z" { drillZ(); exit(0) }
+if ProcessInfo.processInfo.environment["ONLY"] == "139" { drill139(); exit(0) }
+if ProcessInfo.processInfo.environment["ONLY"] == "99" { drill099(); exit(0) }
 if ProcessInfo.processInfo.environment["ONLY"] == "H" { drillH(); exit(0) }
 drill12()
 drill15()

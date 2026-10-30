@@ -125,6 +125,7 @@ import { basicDraw } from './135-basic-draw';
 import { threeZoneSpeedControl } from './136-three-zone-speed-control';
 import { twoBallRollingSequence } from './137-two-ball-rolling-sequence';
 import { shortPositionWideZone } from './138-short-position-wide-zone';
+import { sidePocketEasyCutLeftRight } from './139-side-pocket-easy-cut-left-right';
 import { englishSpeedCheck } from './113-english-speed-check';
 import { oneLayoutThreeAnswers } from './112-one-layout-three-answers';
 import { railRowReturn } from './120-rail-row-return';
@@ -267,6 +268,7 @@ export const DRILLS: readonly PoolDrill[] = [
   threeZoneSpeedControl,
   twoBallRollingSequence,
   shortPositionWideZone,
+  sidePocketEasyCutLeftRight,
 ];
 
 export function drillByNumber(n: number): PoolDrill | undefined {
