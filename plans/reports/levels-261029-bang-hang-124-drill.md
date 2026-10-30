@@ -6,20 +6,23 @@ Sinh từ `src/pool-engine/levels.ts` và `groups.ts` ngày 2026-10-29. Hạng l
 
 | Hạng | H | G | F | E | D | C− | C+ | B− | B+ | A− | A+ | PRO |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Số drill | 7 | 11 | 12 | 13 | 14 | 15 | 17 | 13 | 10 | 7 | 3 | 2 |
+| Số drill | 14 | 10 | 13 | 14 | 14 | 15 | 17 | 13 | 10 | 7 | 3 | 2 |
 
-Nhóm: Fundamentals 32, Cue Ball Control 22, Position Play 24, Kick 4, Bank 9, Spin 8, Advanced 25.
+Nhóm: Fundamentals 37, Cue Ball Control 24, Position Play 25, Kick 4, Bank 9, Spin 8, Advanced 25.
 
-Ngưỡng gợi ý "Next" đề xuất: hạng qua khi pass ≥ 2/3 số drill của hạng (H cần 5/7, C+ cần 12/17).
+Ngưỡng gợi ý "Next" đề xuất: hạng qua khi pass ≥ 2/3 số drill của hạng (H cần 10/14, C+ cần 12/17).
 
 ## Chỗ em không chắc
+
+- 2026-10-30, phương án B (`plans/reports/brainstorm-261030-1012-level-h.md`): 36 → F, 49 → E, 03 G → H, thêm drill 131. Tổng giờ là 125 drill. 33 qua khi mỗi round vào 3/5 (`roundQuota`).
+- 2026-10-30, H lên 14 bài: thêm 132–138 theo deep-research-report, toạ độ dò lại trên harness `ONLY=H`. Bỏ 139 Safety vì engine chưa chấm chạm hợp lệ. Tổng giờ là 132 drill.
 
 - A+ chỉ 3 bài, PRO chỉ 2 bài. Phase 5 thêm Corner-5 4 băng vào A+, nhưng PRO vẫn mỏng.
 - Kick chỉ 4 bài cho tới khi phase 5 thêm 6 bài.
 - RDS chia theo file: 74 → G, 75 → E, 76 → D, 78 → C+, 81 → B+.
 - Câu mốc là tiếng Anh vì UI app đang tiếng Anh.
 
-### H · 7 drill
+### H · 14 drill
 
 Mốc: Ten straight-ins in a row, cue ball stops dead
 
@@ -27,19 +30,25 @@ Mốc: Ten straight-ins in a row, cue ball stops dead
 |---|---|---|---|---|---|
 | 1 | Straight-In | straightStroke | 1 | 1 | Fundamentals |
 | 2 | Stop Shot | stop | 1 | 1 | Fundamentals |
+| 3 | Follow | follow | 2 | 2 | Fundamentals |
 | 32 | 10 Straight-In in a Row | straightStroke | 1 | 1 | Fundamentals |
 | 33 | Short Stop / Follow / Draw | straightStroke | 1 | 1 | Fundamentals |
-| 36 | Jewett Spot Progression | spotShot | 1 | 1 | Fundamentals |
-| 49 | Soft Touch | speedControl | 1 | 1 | Cue Ball Control |
 | 99 | Stop and Go | stop | 1 | 1 | Fundamentals |
+| 131 | Short Straight-In Left/Right | straightStroke | 1 | 1 | Fundamentals |
+| 132 | Easy Cut 10° Left/Right | cutAngle | 1 | 1 | Fundamentals |
+| 133 | Easy Cut 15° Left/Right | cutAngle | 1 | 1 | Fundamentals |
+| 134 | Basic Follow | follow | 1 | 1 | Fundamentals |
+| 135 | Basic Draw | draw | 1 | 1 | Fundamentals |
+| 136 | Three-Zone Speed Control | speedControl | 2 | 2 | Cue Ball Control |
+| 137 | Two-Ball Rolling Sequence | pattern | 2 | 2 | Position Play |
+| 138 | Short Position Wide Zone | drawAngle | 2 | 2 | Cue Ball Control |
 
-### G · 11 drill
+### G · 10 drill
 
 Mốc: Easy cuts, stop and follow on demand
 
 | # | Tên | Skill | Diff | Stage | Nhóm |
 |---|---|---|---|---|---|
-| 3 | Follow | follow | 2 | 2 | Fundamentals |
 | 34 | Ring Around the Side | cutAngle | 1 | 1 | Fundamentals |
 | 35 | 15-Ball Lineup | lineUp | 1 | 1 | Fundamentals |
 | 37 | Long Diagonal Straight-In | straightStroke | 2 | 2 | Fundamentals |
@@ -51,7 +60,7 @@ Mốc: Easy cuts, stop and follow on demand
 | 97 | Wide Zones: Stop, Follow, Draw | threePositions | 1 | 1 | Cue Ball Control |
 | 98 | Stun to the Second Ball | tangent | 1 | 1 | Cue Ball Control |
 
-### F · 12 drill
+### F · 13 drill
 
 Mốc: Thin cuts and draw a diamond back
 
@@ -62,6 +71,7 @@ Mốc: Thin cuts and draw a diamond back
 | 21 | Spot Shot Challenge | spotShot | 3 | 3 | Fundamentals |
 | 22 | Cut Angle Ladder | cutAngle | 3 | 3 | Fundamentals |
 | 24 | Natural Angle | naturalAngle | 3 | 2 | Cue Ball Control |
+| 36 | Jewett Spot Progression | spotShot | 1 | 1 | Fundamentals |
 | 42 | The Ladder | cutAngle | 3 | 3 | Fundamentals |
 | 44 | Tom Ross Rail Shot | cutAngle | 3 | 3 | Fundamentals |
 | 45 | Edge Love | cutAngle | 3 | 3 | Fundamentals |
@@ -70,7 +80,7 @@ Mốc: Thin cuts and draw a diamond back
 | 51 | Five-Level Draw | drawDistance | 2 | 2 | Cue Ball Control |
 | 70 | Soft Break from the Box | break | 2 | 2 | Advanced |
 
-### E · 13 drill
+### E · 14 drill
 
 Mốc: Follow and draw to a set zone at three speeds
 
@@ -83,6 +93,7 @@ Mốc: Follow and draw to a set zone at three speeds
 | 29 | Break: 1 to Side | break | 4 | 4 | Advanced |
 | 30 | Break: Squat | break | 3 | 4 | Advanced |
 | 47 | Combo Progression | combo | 3 | 3 | Fundamentals |
+| 49 | Soft Touch | speedControl | 1 | 1 | Cue Ball Control |
 | 52 | BU F8 Grid Target | speedControl | 3 | 3 | Cue Ball Control |
 | 53 | Follow Matrix | follow | 3 | 3 | Fundamentals |
 | 56 | Kill the Cue Ball | stop | 4 | 4 | Fundamentals |
