@@ -74,7 +74,9 @@ export type ContactPoint = { x: number; y: number };
 
 export type PassCondition =
   | { kind: 'pocketed'; required: number }
-  | { kind: 'inZone'; required: number };
+  | { kind: 'inZone'; required: number }
+  /** Mỗi round tính tối đa `perRound` pass, `required` = perRound × số round. */
+  | { kind: 'roundQuota'; required: number; perRound: number };
 
 /**
  * Một lượt trong drill nhiều zone (ladder, A/B/C) hoặc nhiều chỗ bi cái (thang góc cắt).

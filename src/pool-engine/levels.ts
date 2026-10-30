@@ -30,16 +30,22 @@ const LEVEL_BY_STAGE: readonly TrainingLevel[] = ['H', 'F', 'D', 'C+', 'B+', 'A+
  * `plans/reports/levels-261029-bang-hang-124-drill.md`. Thêm drill mới thì thêm dòng ở đây.
  */
 const LEVEL_BY_NUMBER: Record<number, TrainingLevel> = {
-  // H: cú thẳng, spot, stop gần, lực nhẹ.
+  // H: cú thẳng, stop gần, follow một diamond, chuỗi hai bi thẳng.
   1: 'H',
   2: 'H',
+  3: 'H',
   32: 'H',
   33: 'H',
-  36: 'H',
-  49: 'H',
   99: 'H',
+  131: 'H',
+  132: 'H',
+  133: 'H',
+  134: 'H',
+  135: 'H',
+  136: 'H',
+  137: 'H',
+  138: 'H',
   // G: cắt dễ, stop/follow theo ý, vùng bi cái rộng, RDS nhập môn.
-  3: 'G',
   34: 'G',
   35: 'G',
   37: 'G',
@@ -52,6 +58,7 @@ const LEVEL_BY_NUMBER: Record<number, TrainingLevel> = {
   98: 'G',
   // F: cắt mỏng, draw, tiếp tuyến, lực theo nấc.
   5: 'F',
+  36: 'F',
   7: 'F',
   21: 'F',
   22: 'F',
@@ -65,6 +72,7 @@ const LEVEL_BY_NUMBER: Record<number, TrainingLevel> = {
   70: 'F',
   // E: khoảng cách follow/draw, lực tới zone, break chính xác, bi đúng phía.
   4: 'E',
+  49: 'E',
   6: 'E',
   8: 'E',
   13: 'E',

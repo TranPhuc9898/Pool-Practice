@@ -3,8 +3,8 @@ import type { PoolDrill } from '../types';
 /**
  * Short Stop / Follow / Draw into Side, bài 33 của `docs/research/pool-practice-drills/drills-32-48-dua-bi.md`, Dr. Dave
  * BD 05/2020 #6 (https://drdavepoolinfo.com/bd_articles/2020/may20.pdf). Layout bi cái ở center, bi 1 cách 1 diamond thẳng
- * lỗ giữa trái, ba bài stop, follow, draw, mỗi bài 5 cú liên tiếp là [nguồn]. Ba round 5 cú, đạt 15/15 là cách dịch
- * "5 liên tiếp mỗi bài" sang đếm bi vào. Điểm chạm cơ và lực medium là [đề xuất]. Chưa kiểm trên bàn thật.
+ * lỗ giữa trái, ba bài stop, follow, draw, mỗi bài 5 cú liên tiếp là [nguồn]. Ba round 5 cú, qua khi mỗi round vào 3/5
+ * là ngưỡng hạng H, nhẹ hơn nguồn [đề xuất]. Điểm chạm cơ và lực medium là [đề xuất]. Chưa kiểm trên bàn thật.
  */
 export const shortStopFollowDraw = {
   id: '33',
@@ -15,7 +15,8 @@ export const shortStopFollowDraw = {
   skill: 'straightStroke',
   skillLabel: 'Straight-In',
   difficulty: 1,
-  objective: 'Five in a row with each stroke: stop, follow into the same side pocket, draw back to the opposite side.',
+  objective:
+    'Five shots with each stroke: stop, follow into the same side pocket, draw back to the opposite side. Make 3 of 5 in every round.',
   cueBall: { x: 0.5, y: 0.5 },
   objectBalls: [{ number: 1, x: 0.25, y: 0.5 }],
   targetPocket: 'sideLeft',
@@ -29,9 +30,9 @@ export const shortStopFollowDraw = {
   recommendedSpeed: 'medium',
   allowedRails: 0,
   attemptCount: 15,
-  passCondition: { kind: 'pocketed', required: 15 },
+  passCondition: { kind: 'roundQuota', required: 9, perRound: 3 },
   tips: [
-    'Five in a row per stroke. A miss restarts that stroke at zero.',
+    'Make 3 of 5 with every stroke. Extra makes in one stroke do not cover misses in another.',
     'Stop: the cue ball parks where the 1-ball was.',
     'Follow: the cue ball rolls in right behind the 1-ball. Draw: it comes straight back into the far side pocket.',
     'Same aim for all three. Only the tip height changes.',

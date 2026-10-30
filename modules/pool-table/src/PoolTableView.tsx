@@ -20,6 +20,8 @@ export type NativeDrill = {
   objectBalls: readonly NativeBall[];
   targetPocket: string;
   cueBallTargetZones: readonly NativeTargetZone[];
+  /** Round đã tách còn một zone: đủ zone của bài để bàn vẽ từng đích nhỏ. */
+  zoneMarks?: readonly NativeTargetZone[];
   guideLines: readonly NativeGuideLine[];
   /** Đường bi cái ghi sẵn, khớp `CueReplay` của `src/pool-engine/types.ts`. Có thì Play diễn lại nó thay cho engine. */
   replay?: { dt: number; contact: number; xy: readonly number[] };

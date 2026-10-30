@@ -41,7 +41,8 @@ import { atDistance, DRILLS, drillByNumber } from "@/pool-engine/drills";
 import { downAndBack } from "@/pool-engine/drills/down-and-back";
 import type { PoolDrill } from "@/pool-engine/types";
 import {
-  passes,
+  drillScore,
+  passLabel,
   recordAttempt,
   resetDrill,
   startDrill,
@@ -171,6 +172,7 @@ export default function DrillScreen() {
             roundMovesTable && round.zone !== undefined
               ? leveled.cueBallTargetZones.slice(round.zone, round.zone + 1)
               : leveled.cueBallTargetZones,
+          zoneMarks: roundMovesTable && round.zone !== undefined ? leveled.cueBallTargetZones : [],
           // Drill 31: Play diễn lại đường bi cái của video thay cho engine.
           replay: round.replay,
         }
@@ -237,8 +239,10 @@ export default function DrillScreen() {
     setRoundAt({ drillId: drill.id, i, cue });
   };
   // Cú trước/cú sau: drill `shots` đi trong `shots`, drill pattern đi trong round và dựng bàn từ `cueBall` của round.
-  const step = patternRounds
-    ? { at: roundIndex, last: patternRounds.length - 1, go: (by: number) => goRound(roundIndex + by) }
+  // Drill round dời bàn (thang zone như 136): mỗi round là một cú riêng, Play và nút cú trước/sau đi qua từng round.
+  const tableRounds = !patternRounds && roundMovesTable ? rounds : undefined;
+  const step = patternRounds ?? tableRounds
+    ? { at: roundIndex, last: (patternRounds ?? tableRounds)!.length - 1, go: (by: number) => goRound(roundIndex + by) }
     : drill.shots
       ? { at: shown, last: drill.shots.length - 1, go: stepShot }
       : undefined;
@@ -308,7 +312,7 @@ export default function DrillScreen() {
     [
       `Last ${last.passes}/${total}`,
       `${pct(last.passes)}%`,
-      last.passes >= required ? "Passed" : "Not passed",
+      drillScore(drill, last.attempts) >= required ? "Passed" : "Not passed",
       prev &&
         `${last.passes >= prev.passes ? "+" : ""}${pct(last.passes) - pct(prev.passes)} pts vs previous`,
     ]
@@ -370,7 +374,7 @@ export default function DrillScreen() {
       shotRev={shotAt?.rev ?? 0}
       onTargetPick={({ nativeEvent: shot }) => {
         // Drill có `shots`, hay drill pattern mà mỗi round là một cú: Play đánh một cú, vào sạch thì card và bàn sang
-        // cú kế, bi cái đứng chỗ engine dừng, chờ bấm Play tiếp. Drill round khác là các thế bài riêng, giữ round theo số lượt.
+        // cú kế, bi cái đứng chỗ engine dừng, chờ bấm Play tiếp. Ghi Pass/Miss thì round lại theo số lượt.
         if (shot.ended) {
           const next = (shot.shot ?? -1) + 1;
           if (shot.ok && drill.shots && next > 0 && next < drill.shots.length) showShot(next);
@@ -379,6 +383,8 @@ export default function DrillScreen() {
               roundIndex + 1,
               shot.cueX !== undefined && shot.cueY !== undefined ? { x: shot.cueX, y: shot.cueY } : undefined,
             );
+          // Round dời bàn đứng riêng: vào sạch thì sang round kế, hết round quay về round đầu, bi cái đặt lại chỗ cũ.
+          if (shot.ok && tableRounds) goRound((roundIndex + 1) % tableRounds.length);
           // Play một cú trượt: báo lý do, bàn giữ thế cũ để Play lại.
           // Bài chỉ đánh bi cái (`aimBall` -1) thì trượt là bi cái không tới đích, không có bi nào để gọi tên.
           if (!shot.ok && shot.shot === -1) {
@@ -446,7 +452,7 @@ export default function DrillScreen() {
                   : `Shot · ${spinLabel[drill.recommendedSpin]}`
         }
         shot={shot}
-        pass={`${required} of ${total}`}
+        pass={drill.passCondition.kind === "roundQuota" ? passLabel(drill) : `${required} of ${total}`}
       />
       {/* K/45: số mẫu đạt khi lực lệch ±10% và đầu cơ lệch ±0.1, harness `scripts/position-harness/`. Round không có rate. */}
       {(planned || round?.why) && (
@@ -527,10 +533,10 @@ export default function DrillScreen() {
       <Scoreboard
         attempts={progress.attempts}
         total={total}
-        passed={passes(progress)}
+        passed={drillScore(drill, progress.attempts)}
         required={required}
         // Theo lượt đang hiện, không theo `best`: lượt cuối trượt mà vẫn ghi Passed là nói ngược dòng Last bên dưới.
-        isPassed={passes(progress) >= required}
+        isPassed={drillScore(drill, progress.attempts) >= required}
         caption={caption}
       />
       {lastRun && (
@@ -604,6 +610,7 @@ export default function DrillScreen() {
             onPress={() => {
               recordAttempt(drill, "pass");
               if (patternRounds) goRound(Math.min(roundIndex + 1, patternRounds.length - 1));
+              if (tableRounds) setRoundAt(undefined);
             }}
           />
           <GraphiteAction
@@ -613,6 +620,7 @@ export default function DrillScreen() {
             onPress={() => {
               recordAttempt(drill, "fail");
               if (patternRounds) goRound(Math.min(roundIndex + 1, patternRounds.length - 1));
+              if (tableRounds) setRoundAt(undefined);
             }}
           />
         </View>
@@ -639,6 +647,7 @@ export default function DrillScreen() {
           onPress={() => {
             if (runResults.length === 0) {
               if (patternRounds) goRound(Math.max(roundIndex - 1, 0));
+              if (tableRounds) setRoundAt(undefined);
               return undoAttempt(drill);
             }
             setRun({ drillId: drill.id, results: runResults.slice(0, -1) });

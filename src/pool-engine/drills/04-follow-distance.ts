@@ -1,10 +1,13 @@
 import type { PoolDrill } from '../types';
 
+// Mỗi round mang guide riêng thì app tách zone theo round, không thì round nào cũng đánh zone đầu.
+const guides: PoolDrill['guideLines'] = [{ kind: 'objectBallPath', ball: 1, pocket: 'footLeft' }];
+
 export const followDistance = {
   id: '04',
   number: 4,
   title: 'Follow Distance',
-  subtitle: 'Same shot, four distances. Control how far, not just forward.',
+  subtitle: 'Same shot, four distances. Control how far, not just forward. Checked in simulation, not on a real table.',
   category: 'cueBallControl',
   skill: 'followDistance',
   skillLabel: 'Speed + Follow',
@@ -19,7 +22,7 @@ export const followDistance = {
     { kind: 'circle', center: { x: 0.184, y: 0.245 }, radius: 0.055, label: '1½' },
     { kind: 'circle', center: { x: 0.14, y: 0.187 }, radius: 0.055, label: '2' },
   ],
-  guideLines: [{ kind: 'objectBallPath', ball: 1, pocket: 'footLeft' }],
+  guideLines: guides,
   recommendedContactPoint: { x: 0, y: 0.4 },
   recommendedSpin: 'follow',
   recommendedSpeed: 'soft',
@@ -28,9 +31,45 @@ export const followDistance = {
   passCondition: { kind: 'inZone', required: 8 },
   tips: ['Keep the tip height fixed. Change only speed.'],
   rounds: [
-    { title: '½ diamond', zone: 0, spin: 'follow' },
-    { title: '1 diamond', zone: 1, spin: 'follow' },
-    { title: '1½ diamonds', zone: 2, spin: 'follow' },
-    { title: '2 diamonds', zone: 3, spin: 'follow' },
+    {
+      title: '½ diamond',
+      zone: 0,
+      spin: 'follow',
+      guideLines: guides,
+      contactPoint: { x: 0, y: 0.2 },
+      speed: 0.96,
+      rate: 9,
+      why: 'Low follow at 0.96 m/s rolls the cue ball 8" past contact.',
+    },
+    {
+      title: '1 diamond',
+      zone: 1,
+      spin: 'follow',
+      guideLines: guides,
+      contactPoint: { x: 0, y: 0.5 },
+      speed: 0.9,
+      rate: 10,
+      why: 'Full follow at 0.90 m/s rolls the cue ball 12" past contact.',
+    },
+    {
+      title: '1½ diamonds',
+      zone: 2,
+      spin: 'follow',
+      guideLines: guides,
+      contactPoint: { x: 0, y: 0.2 },
+      speed: 1.34,
+      rate: 7,
+      why: 'Low follow at 1.34 m/s rolls the cue ball 19" past contact.',
+    },
+    {
+      title: '2 diamonds',
+      zone: 3,
+      spin: 'follow',
+      guideLines: guides,
+      contactPoint: { x: 0, y: 0.2 },
+      speed: 1.52,
+      rate: 6,
+      why: 'Low follow at 1.52 m/s rolls the cue ball 26" past contact.',
+    },
   ],
 } satisfies PoolDrill;

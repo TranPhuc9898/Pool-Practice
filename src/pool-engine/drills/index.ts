@@ -117,6 +117,14 @@ import { twicePlusTenthsBank } from './110-twice-plus-tenths-bank';
 import { twoRailKickSubtraction } from './111-two-rail-kick-subtraction';
 import { lineOfBallsVepp } from './123-line-of-balls-vepp';
 import { landMine } from './130-land-mine';
+import { shortStraightInLeftRight } from './131-short-straight-in-left-right';
+import { easyCutTenLeftRight } from './132-easy-cut-10-left-right';
+import { easyCutFifteenLeftRight } from './133-easy-cut-15-left-right';
+import { basicFollow } from './134-basic-follow';
+import { basicDraw } from './135-basic-draw';
+import { threeZoneSpeedControl } from './136-three-zone-speed-control';
+import { twoBallRollingSequence } from './137-two-ball-rolling-sequence';
+import { shortPositionWideZone } from './138-short-position-wide-zone';
 import { englishSpeedCheck } from './113-english-speed-check';
 import { oneLayoutThreeAnswers } from './112-one-layout-three-answers';
 import { railRowReturn } from './120-rail-row-return';
@@ -251,6 +259,14 @@ export const DRILLS: readonly PoolDrill[] = [
   compactPlay,
   shortSide,
   rockAroundTheClock,
+  shortStraightInLeftRight,
+  easyCutTenLeftRight,
+  easyCutFifteenLeftRight,
+  basicFollow,
+  basicDraw,
+  threeZoneSpeedControl,
+  twoBallRollingSequence,
+  shortPositionWideZone,
 ];
 
 export function drillByNumber(n: number): PoolDrill | undefined {

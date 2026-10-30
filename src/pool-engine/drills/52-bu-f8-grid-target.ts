@@ -8,11 +8,17 @@ import type { PoolDrill } from '../types';
  * Spin từng ô là [đề xuất] từ tiếp tuyến của cú cắt khoảng 18°, chưa giải bằng engine. Ngưỡng E 10/20 [đề xuất].
  * Chưa kiểm trên bàn thật.
  */
+// Mỗi round mang guide riêng thì app tách zone theo round, không thì round nào cũng đánh zone đầu.
+const guides: PoolDrill['guideLines'] = [
+  { kind: 'objectBallPath', ball: 1, pocket: 'headLeft' },
+  { kind: 'ghostBall', ball: 1, pocket: 'headLeft' },
+];
+
 export const buF8GridTarget = {
   id: '52',
   number: 52,
   title: 'BU F8 Grid Target',
-  subtitle: 'Same shot into the head corner. Send the cue ball to five different boxes.',
+  subtitle: 'Same shot into the head corner. Send the cue ball to five different boxes. Checked in simulation, not on a real table.',
   category: 'cueBallControl',
   skill: 'speedControl',
   skillLabel: 'Speed Control',
@@ -28,10 +34,7 @@ export const buF8GridTarget = {
     { kind: 'circle', center: { x: 0.525, y: 0.5 }, radius: 0.1, label: 'T4' },
     { kind: 'circle', center: { x: 0.925, y: 0.75 }, radius: 0.1, label: 'T5' },
   ],
-  guideLines: [
-    { kind: 'objectBallPath', ball: 1, pocket: 'headLeft' },
-    { kind: 'ghostBall', ball: 1, pocket: 'headLeft' },
-  ],
+  guideLines: guides,
   recommendedContactPoint: { x: 0, y: 0 },
   recommendedSpin: 'center',
   recommendedSpeed: 'medium',
@@ -48,10 +51,55 @@ export const buF8GridTarget = {
     'Cue ball hits the 1 and heads for the corner too: too much follow on a near-straight shot.',
   ],
   rounds: [
-    { title: 'T1', zone: 0, spin: 'stun' },
-    { title: 'T2', zone: 1, spin: 'follow' },
-    { title: 'T3', zone: 2, spin: 'center' },
-    { title: 'T4', zone: 3, spin: 'stun' },
-    { title: 'T5', zone: 4, spin: 'draw' },
+    {
+      title: 'T1',
+      zone: 0,
+      spin: 'draw',
+      guideLines: guides,
+      contactPoint: { x: 0, y: -0.3 },
+      speed: 1.58,
+      rate: 33,
+      why: 'Draw at 1.58 m/s, the cue ball stops 14" off contact in T1.',
+    },
+    {
+      title: 'T2',
+      zone: 1,
+      spin: 'draw',
+      guideLines: guides,
+      contactPoint: { x: 0, y: -0.3 },
+      speed: 3.44,
+      rate: 2,
+      why: 'Draw at 3.44 m/s, the cue ball runs one rail into T2.',
+    },
+    {
+      title: 'T3',
+      zone: 2,
+      spin: 'draw',
+      guideLines: guides,
+      contactPoint: { x: 0, y: -0.5 },
+      speed: 2.74,
+      rate: 2,
+      why: 'Full draw at 2.74 m/s, the cue ball runs two rails into T3.',
+    },
+    {
+      title: 'T4',
+      zone: 3,
+      spin: 'draw',
+      guideLines: guides,
+      contactPoint: { x: 0, y: -0.5 },
+      speed: 1.9,
+      rate: 4,
+      why: 'Full draw at 1.90 m/s, the cue ball stops 38" off contact in T4.',
+    },
+    {
+      title: 'T5',
+      zone: 4,
+      spin: 'follow',
+      guideLines: guides,
+      contactPoint: { x: 0, y: 0.4 },
+      speed: 1.64,
+      rate: 19,
+      why: 'Follow at 1.64 m/s, the cue ball runs two rails into T5.',
+    },
   ],
 } satisfies PoolDrill;

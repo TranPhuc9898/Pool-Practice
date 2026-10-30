@@ -5,7 +5,7 @@ import { numberIn } from '@/components/home/training-areas';
 import { AppChip, AppIcon, AppText, makeStyles, MaterialCard, rankTone, type ChipTone } from '@/design-system';
 import { groupOf, SKILL_GROUPS } from '@/pool-engine/groups';
 import { levelOf } from '@/pool-engine/levels';
-import { drillStatus, type DrillProgress, type DrillStatus } from '@/pool-engine/progress';
+import { drillStatus, passLabel, type DrillProgress, type DrillStatus } from '@/pool-engine/progress';
 import type { PoolDrill } from '@/pool-engine/types';
 
 const statusMeta: Record<DrillStatus, { label: string; tone: ChipTone }> = {
@@ -36,9 +36,9 @@ export function DrillCard({
   const status = statusMeta[key];
   const n = number ?? numberIn(drill);
   const group = SKILL_GROUPS.find((g) => g.id === groupOf(drill))?.title ?? drill.skillLabel;
-  const best = progress?.best
-    ? `Best ${progress.best}/${drill.attemptCount}`
-    : `Pass ${drill.passCondition.required}/${drill.attemptCount}`;
+  // `best` của roundQuota là điểm đã chặn theo round, so với `required` chứ không với số cú.
+  const outOf = drill.passCondition.kind === 'roundQuota' ? drill.passCondition.required : drill.attemptCount;
+  const best = progress?.best ? `Best ${progress.best}/${outOf}` : `Pass ${passLabel(drill)}`;
 
   return (
     <MaterialCard

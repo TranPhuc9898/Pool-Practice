@@ -736,6 +736,135 @@ func drill85() {
   }
 }
 
+/// Drill 131, Short Straight-In Left/Right: bi 1 cách góc chân 28", bi cái thẳng sau nó 1 diamond (12.5"), gương hai phía.
+/// Toạ độ báo cáo (bi cái 0.25, 0.50) cắt 27° nên dời bi cái lên đúng đường bi 1 tới lỗ. Tip giữa, lực soft tới medium.
+func drill131() {
+  for (side, pk, one) in [("Left", "footLeft", inch(0.25, 0.25)), ("Right", "footRight", inch(0.75, 0.25))] {
+    let P = SP.pockets[pk]!, u = CGPoint(x: (one.x - P.x) / dist(one, P), y: (one.y - P.y) / dist(one, P))
+    let cue = CGPoint(x: one.x + u.x * 12.5, y: one.y + u.y * 12.5)
+    placed("131 \(side)", ball: 1, pocket: pk, cue: cue, left: [1: one], tips: [0, -0.1, -0.2], base: 0, speeds: grid(0.8, 2.4, 0.02)) { t, v, nom, g in
+      String(format: "Straight in from one diamond. %@ at %@ m/s rolls the cue ball %.0f\" past contact and stops it %.0f\" short of the pocket.",
+             tipWord(t), num(v), dist(nom.stop, g), nearestPocket(nom.stop))
+    }
+  }
+}
+
+// MARK: drill 132–138, hạng H
+
+/// Bi cái lùi `back` inch sau ghost ball, đường cơ lệch `deg` độ khỏi đường bi tới lỗ, `side` ±1 chọn phía.
+func cutCue(_ o: CGPoint, _ pk: String, deg: CGFloat, back: CGFloat, side: CGFloat) -> CGPoint {
+  let P = SP.pockets[pk]!, g = SP.ghost(o, P).g, a = atan2(o.y - P.y, o.x - P.x) + side * deg * .pi / 180
+  return CGPoint(x: g.x + cos(a) * back, y: g.y + sin(a) * back)
+}
+/// Số lần bi cái chạm băng sau va chạm: mỗi lần tâm bi vào dải sát băng tính một lần.
+func railHits(_ r: SP.Run) -> Int {
+  let e = SP.ballRadius + 0.3
+  var n = 0, on = false
+  for p in r.pts {
+    let at = p.x <= e || p.x >= 50 - e || p.y <= e || p.y >= 100 - e
+    if at && !on { n += 1 }
+    on = at
+  }
+  return n
+}
+/// Một round đặt lại bi cái có zone: mẫu đạt khi vào sạch, bi cái dừng trong zone, chạm băng không quá `rails` lần.
+@discardableResult
+func zoned(_ label: String, ball n: Int, pocket pk: String, cue: CGPoint, left: [Int: CGPoint], tips: [CGFloat], speeds: [CGFloat],
+           zone z: (c: CGPoint, r: CGFloat), rails: Int = 0) -> (tipY: CGFloat, speed: CGFloat, rate: Int, nom: SP.Run)? {
+  let ms = setup(cue, Shot(ball: n, pocket: pk, tipY: 0, speed: 0, zone: nil), left)
+  let P = SP.pockets[pk]!, g = SP.ghost(left[n]!, P).g
+  let ok = { (r: SP.Run) in clean(r, pk) && dist(r.stop, z.c) <= z.r && railHits(r) <= rails }
+  guard let b = pick(ms, tips: tips, speeds: speeds, keep: ok, { ok($0) ? "ok" : "miss" }) else {
+    print("\(label) bi \(n): không cú danh nghĩa nào vào zone"); return nil
+  }
+  print(String(format: "%@ bi %d→%@ cue %@ ob %@ cắt %.0f° D %.1f · tipY %+.2f speed %.2f rate=%d/45 · dừng %@ cách ghost %.1f\" băng %d %@",
+               label, n, pk, norm(cue), norm(left[n]!), cutDeg(cue, left[n]!, P), dist(cue, g), b.tipY, b.speed, b.rate,
+               norm(b.nom.stop), dist(b.nom.stop, g), railHits(b.nom), zs(z)))
+  return b
+}
+/// In chỗ dừng danh nghĩa theo lực để đặt zone, không chấm gì.
+func scan(_ label: String, ball n: Int, pocket pk: String, cue: CGPoint, left: [Int: CGPoint], tipY: CGFloat, speeds: [CGFloat]) {
+  let ms = setup(cue, Shot(ball: n, pocket: pk, tipY: 0, speed: 0, zone: nil), left)
+  for v in speeds {
+    let r = SP.runWith(ms, tipX: 0, tipY: tipY, speed: v)
+    print(String(format: "%@ tipY %+.2f v %.2f → %@ dừng %@ băng %d", label, tipY, v, clean(r, pk) ? "sạch" : SP.why(r), norm(r.stop), railHits(r)))
+  }
+}
+
+/// Drill 132–133, cắt mỏng hai phía: bi 1 ở (12.5", 25") và gương phải, bi cái lùi 18" sau ghost ball, lệch `deg` độ.
+func cutLR(_ id: String, deg: CGFloat) {
+  for (side, pk, o, sg) in [("Left", "footLeft", inch(0.25, 0.25), -1), ("Right", "footRight", inch(0.75, 0.25), 1)] as [(String, String, CGPoint, CGFloat)] {
+    let cue = cutCue(o, pk, deg: deg, back: 18, side: sg)
+    placed("\(id) \(side)", ball: 1, pocket: pk, cue: cue, left: [1: o], tips: [-0.4, -0.2, 0], base: -0.4, speeds: grid(1, 2.6, 0.02)) { t, v, nom, g in
+      String(format: "A %.0f° cut from 18\" behind the ghost ball. %@ at %@ m/s stops the cue ball %.0f\" from contact.", deg, tipWord(t), num(v), dist(nom.stop, g))
+    }
+  }
+}
+/// Drill 134–135, bi thẳng vào footLeft: follow lăn theo 6" về phía lỗ, draw kéo về 6".
+func drill134() {
+  let one = inch(0.25, 0.25), P = SP.pockets["footLeft"]!
+  let u = CGPoint(x: (one.x - P.x) / dist(one, P), y: (one.y - P.y) / dist(one, P)), g = SP.ghost(one, P).g
+  let at = { (d: CGFloat) in CGPoint(x: g.x + u.x * d, y: g.y + u.y * d) }
+  zoned("134", ball: 1, pocket: "footLeft", cue: at(18), left: [1: one], tips: [0.2, 0.3, 0.4], speeds: grid(0.5, 1.4, 0.02), zone: (at(-6), 6))
+  zoned("135", ball: 1, pocket: "footLeft", cue: at(12.5), left: [1: one], tips: [-0.5, -0.4, -0.6], speeds: grid(1, 2.4, 0.02), zone: (at(6), 6))
+}
+/// Drill 136: bi 1 ở (15", 40") thẳng vào footLeft, bi cái lùi 12.5", follow vào ba zone 6" lăn theo 4", 16", 28".
+func drill136() {
+  let o = inch(0.3, 0.4), P = SP.pockets["footLeft"]!
+  let u = CGPoint(x: (o.x - P.x) / dist(o, P), y: (o.y - P.y) / dist(o, P)), g = SP.ghost(o, P).g
+  let at = { (d: CGFloat) in CGPoint(x: g.x + u.x * d, y: g.y + u.y * d) }
+  for (name, d) in [("A", 4), ("B", 16), ("C", 28)] as [(String, CGFloat)] {
+    zoned("136 \(name)", ball: 1, pocket: "footLeft", cue: at(12.5), left: [1: o], tips: [0.2, 0.3, 0.4, 0.5], speeds: grid(0.5, 2.4, 0.02), zone: (at(-d), 6))
+  }
+}
+/// Drill 138: bi 1 ở (15", 30") cắt 12° vào footLeft, bi cái lùi 25", draw về zone 8" ở (23.5", 29").
+func drill138() {
+  let o = inch(0.3, 0.3), c = cutCue(o, "footLeft", deg: 12, back: 25, side: 1)
+  zoned("138", ball: 1, pocket: "footLeft", cue: c, left: [1: o], tips: [-0.4, -0.3, -0.5], speeds: grid(1.6, 2.6, 0.02), zone: (inch(0.47, 0.29), 8))
+}
+/// Drill 137: bi 1 vào footLeft, bi cái lăn vào zone, bi 2 vào footRight.
+func drill137() {
+  let one = inch(0.32, 0.32), two = inch(0.702, 0.111)
+  for back in [12.5] as [CGFloat] {
+    let c = cutCue(one, "footLeft", deg: 10, back: back, side: 1)
+    guard let b = zoned("137 back \(back)", ball: 1, pocket: "footLeft", cue: c, left: [1: one, 2: two], tips: [0, 0.2, 0.4], speeds: grid(0.6, 1.8, 0.02),
+                        zone: (inch(0.38, 0.23), 6)) else { continue }
+    chain("137 back \(back)", cue: c, balls: [1: one, 2: two], shots: [
+      Shot(ball: 1, pocket: "footLeft", tipY: b.tipY, speed: b.speed, zone: (inch(0.38, 0.23), 6)),
+      Shot(ball: 2, pocket: "footRight", tipY: 0, speed: 1.2, zone: nil),
+    ])
+  }
+}
+func drillH() { cutLR("132", deg: 10); cutLR("133", deg: 15); drill134(); drill136(); drill137(); drill138() }
+
+/// Drill 04, 06, 08, 52: một cú, mỗi round một zone. Quét tip × lực cho từng zone, in số chép sang `rounds`.
+func zoneRounds(_ id: String, cue: CGPoint, ob: CGPoint, pocket: String, zones: [(String, CGFloat, CGFloat, CGFloat)],
+                tips: [CGFloat], speeds: [CGFloat], rails: Int = 0) {
+  for (name, x, y, r) in zones {
+    zoned("\(id) \(name)", ball: 1, pocket: pocket, cue: inch(cue.x, cue.y), left: [1: inch(ob.x, ob.y)], tips: tips, speeds: speeds,
+          zone: (inch(x, y), r * 50), rails: rails)
+  }
+}
+func drillZ() {
+  zoneRounds("04", cue: CGPoint(x: 0.524, y: 0.7), ob: CGPoint(x: 0.3, y: 0.4), pocket: "footLeft",
+             zones: [("½", 0.272, 0.362, 0.055), ("1", 0.228, 0.304, 0.055), ("1½", 0.184, 0.245, 0.055), ("2", 0.14, 0.187, 0.055)],
+             tips: [0.2, 0.3, 0.4, 0.5], speeds: grid(0.5, 2.6, 0.02))
+  zoneRounds("06", cue: CGPoint(x: 0.825, y: 0.516), ob: CGPoint(x: 0.4, y: 0.25), pocket: "footLeft",
+             zones: [("½", 0.506, 0.316, 0.07), ("1", 0.584, 0.365, 0.06), ("1½", 0.662, 0.414, 0.05)],
+             tips: [-0.3, -0.4, -0.5, -0.6], speeds: grid(1, 3.4, 0.02))
+  zoneRounds("08", cue: CGPoint(x: 0.354, y: 0.459), ob: CGPoint(x: 0.3, y: 0.26), pocket: "footLeft",
+             zones: [("A", 0.737, 0.257, 0.07), ("B", 0.817, 0.07, 0.07), ("C", 0.523, 0.109, 0.07)],
+             tips: [-0.5, -0.3, 0], speeds: grid(0.6, 2.6, 0.02))
+  // Round C là follow: chỉ quét tip trên.
+  zoneRounds("08", cue: CGPoint(x: 0.354, y: 0.459), ob: CGPoint(x: 0.3, y: 0.26), pocket: "footLeft",
+             zones: [("C follow", 0.523, 0.109, 0.07)], tips: [0.1, 0.2, 0.3, 0.4], speeds: grid(0.5, 2.6, 0.02))
+  zoneRounds("52", cue: CGPoint(x: 0.525, y: 0.812), ob: CGPoint(x: 0.275, y: 0.875), pocket: "headLeft",
+             zones: [("T1", 0.125, 0.75, 0.1), ("T2", 0.125, 0.25, 0.1), ("T3", 0.925, 0.25, 0.1), ("T4", 0.525, 0.5, 0.1), ("T5", 0.925, 0.75, 0.1)],
+             tips: [-0.5, -0.3, 0, 0.2, 0.4], speeds: grid(0.6, 3.6, 0.02), rails: 3)
+}
+
+if ProcessInfo.processInfo.environment["ONLY"] == "Z" { drillZ(); exit(0) }
+if ProcessInfo.processInfo.environment["ONLY"] == "H" { drillH(); exit(0) }
 drill12()
 drill15()
 drill23()
@@ -763,3 +892,4 @@ drill110()
 drill113()
 drill120()
 drill121()
+drill131()

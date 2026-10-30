@@ -106,6 +106,11 @@ function lint(d) {
   if (noZone.length) add(3, 'cú engine thiếu zone bi cái', noZone);
   const zoneOut = pick((s) => typeof s.zone === 'number' && !d.cueBallTargetZones[s.zone]);
   if (zoneOut.length) add(3, 'zone trỏ ra ngoài cueBallTargetZones', zoneOut);
+  // Round có zone mà không mang bàn riêng: app giữ đủ zone, solver chọn zone đầu cho mọi round, bàn vẽ guide tay nét liền.
+  const flat = (d.rounds ?? []).flatMap((r, i) =>
+    d.cueBallTargetZones.length > 1 && typeof r.zone === 'number' && !(r.cueBall || r.objectBalls || r.guideLines) ? [i] : [],
+  );
+  if (flat.length) add(3, 'round có zone nhưng thiếu cueBall/objectBalls/guideLines, app không tách zone của round', flat);
   const noWhy = pick((s) => !s.why?.trim());
   if (noWhy.length) add(3, 'thiếu câu vì sao chọn cú', noWhy);
 

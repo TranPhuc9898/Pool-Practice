@@ -227,7 +227,12 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
       if drill.id.isEmpty {
         PoolEditorGuides(model: model, geometry: geometry)
       } else {
-        // Vùng đích không vẽ lên bàn: zone chỉ còn để giải cú và chấm, đích đọc từ objective.
+        // Mỗi zone một vòng nhỏ cỡ bi, đích của cú đang tập sáng: round đã tách, vùng đã chọn, hay zone của cú trong `shots`.
+        if props.showTarget {
+          let zone = currentZone(drill)
+          PoolZoneMarks(zones: drill.zoneMarks.isEmpty ? drill.cueBallTargetZones : drill.zoneMarks,
+                        current: zone?.center, geometry: geometry)
+        }
         // Đang chạy bàn: guide của drill chỉ đúng cho cú đầu, giấu đi cho khỏi lệch với bàn đang đổi.
         // Đã chọn vùng thì vệt mô phỏng thay cho tangent và đường bi cái vẽ tay của drill.
         // Cú chỉ có bi cái: drill không có guide, dùng đường dự đoán của bàn soạn.
@@ -295,6 +300,18 @@ struct PoolEditorView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {
       let f = g.frame(in: .named(Self.root))
       Color.clear.onAppear { tableFrame = f }.onChange(of: f) { tableFrame = $0 }
     })
+  }
+
+  private func currentZone(_ drill: DrillRecord) -> TargetZoneRecord? {
+    let zones = drill.cueBallTargetZones
+    if !props.drill.shots.isEmpty {
+      let i = model.rack != nil ? model.rack.flatMap { r in r.next > 0 && r.next <= r.steps.count ? r.steps[r.next - 1].shot : nil } : shownShot
+      guard let i, i < props.drill.shots.count, zones.indices.contains(props.drill.shots[i].zone) else { return nil }
+      return zones[props.drill.shots[i].zone]
+    }
+    if model.rack != nil { return nil }
+    if zones.count == 1 { return zones[0] }
+    return targetPick.flatMap { zones.indices.contains($0) ? zones[$0] : nil }
   }
 
   private var isPlanned: Bool {

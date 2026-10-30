@@ -68,6 +68,8 @@ struct DrillRecord: Record {
   @Field var targetPocket: String = ""
   @Field var cueBallTargetZones: [TargetZoneRecord] = []
   @Field var guideLines: [GuideLineRecord] = []
+  /// Round đã tách còn một zone: đủ zone của bài để bàn chấm nhỏ từng đích, đích của round sáng hơn.
+  @Field var zoneMarks: [TargetZoneRecord] = []
   @Field var rounds: [RoundRecord] = []
   /// Có thì Play shot chơi đúng các cú này thay vì planner.
   @Field var shots: [ShotRecord] = []
