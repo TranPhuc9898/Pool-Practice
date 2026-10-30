@@ -63,7 +63,6 @@ export default function RankScreen() {
   const { summaries, progress } = useLevelSummaries();
   const { benchmark, drills, passed, next } = summaries.get(rank)!;
   const tone = rankTone[rank];
-  const after = RANKS_WITH_DRILLS[RANKS_WITH_DRILLS.indexOf(rank) + 1];
 
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const offset = useScrollOffset(scrollRef);
@@ -287,34 +286,6 @@ export default function RankScreen() {
                   </Section>
                 ))}
 
-                {after && (
-                  <PressableScale
-                    onPress={async () => {
-                      await retargetRank(RANK_HERO, after);
-                      router.replace({ pathname: '/rank/[id]', params: { id: after } });
-                    }}
-                    haptic="selection"
-                    accessibilityRole="button"
-                    accessibilityLabel={`Next rank, ${rankTone[after].label}`}
-                    style={[
-                      s.nextRank,
-                      {
-                        borderColor: t.color.borderSubtle,
-                        experimental_backgroundImage: `radial-gradient(circle at 100% 50%, ${rankTone[after].glow}30 0%, transparent 65%)`,
-                      },
-                    ]}>
-                    <View style={s.flex}>
-                      <AppText variant="eyebrow" color="textTertiary">
-                        Next rank
-                      </AppText>
-                      <AppText variant="callout" color="textSecondary" numberOfLines={2}>
-                        {summaries.get(after)!.benchmark}
-                      </AppText>
-                    </View>
-                    <RankLetter rank={after} size={44} />
-                    <AppIcon name="chevron.right" size="small" color="textTertiary" weight="semibold" />
-                  </PressableScale>
-                )}
               </Animated.View>
             </Animated.ScrollView>
             <PressableScale
@@ -387,14 +358,4 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: 'rgba(0,0,0,0.32)',
   },
   list: { gap: t.space.xl, marginTop: t.space.md },
-  nextRank: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: t.space.md,
-    padding: t.space.lg,
-    borderRadius: t.radius.card,
-    borderWidth: t.border.hairline,
-    borderCurve: 'continuous',
-    overflow: 'hidden',
-  },
 }));
