@@ -6,7 +6,7 @@ Sinh từ `src/pool-engine/levels.ts` và `groups.ts` ngày 2026-10-29. Hạng l
 
 | Hạng | H | G | F | E | D | C− | C+ | B− | B+ | A− | A+ | PRO |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Số drill | 14 | 10 | 13 | 14 | 14 | 15 | 17 | 13 | 10 | 7 | 3 | 2 |
+| Số drill | 14 | 19 | 13 | 14 | 14 | 15 | 17 | 13 | 10 | 7 | 3 | 2 |
 
 Nhóm: Fundamentals 37, Cue Ball Control 24, Position Play 25, Kick 4, Bank 9, Spin 8, Advanced 25.
 
@@ -16,6 +16,7 @@ Ngưỡng gợi ý "Next" đề xuất: hạng qua khi pass ≥ 2/3 số drill c
 
 - 2026-10-30, phương án B (`plans/reports/brainstorm-261030-1012-level-h.md`): 36 → F, 49 → E, 03 G → H, thêm drill 131. Tổng giờ là 125 drill. 33 qua khi mỗi round vào 3/5 (`roundQuota`).
 - 2026-10-30, H lên 14 bài: thêm 132–138 theo deep-research-report, toạ độ dò lại trên harness `ONLY=H`. Bỏ 139 Safety vì engine chưa chấm chạm hợp lệ. Tổng giờ là 132 drill.
+- 2026-10-30, G lên 19 bài (`plans/261030-1642-drill-hang-g/plan.md`): 99 H → G, thêm 142, 145–150, 153. 139 Side Pocket Easy Cut nằm ở H. Bài báo cáo trùng bài đã có thì bỏ, kể cả 143 (trùng 138).
 
 - A+ chỉ 3 bài, PRO chỉ 2 bài. Phase 5 thêm Corner-5 4 băng vào A+, nhưng PRO vẫn mỏng.
 - Kick chỉ 4 bài cho tới khi phase 5 thêm 6 bài.
@@ -33,7 +34,6 @@ Mốc: Ten straight-ins in a row, cue ball stops dead
 | 3 | Follow | follow | 2 | 2 | Fundamentals |
 | 32 | 10 Straight-In in a Row | straightStroke | 1 | 1 | Fundamentals |
 | 33 | Short Stop / Follow / Draw | straightStroke | 1 | 1 | Fundamentals |
-| 99 | Stop and Go | stop | 1 | 1 | Fundamentals |
 | 131 | Short Straight-In Left/Right | straightStroke | 1 | 1 | Fundamentals |
 | 132 | Easy Cut 10° Left/Right | cutAngle | 1 | 1 | Fundamentals |
 | 133 | Easy Cut 15° Left/Right | cutAngle | 1 | 1 | Fundamentals |
@@ -42,8 +42,9 @@ Mốc: Ten straight-ins in a row, cue ball stops dead
 | 136 | Three-Zone Speed Control | speedControl | 2 | 2 | Cue Ball Control |
 | 137 | Two-Ball Rolling Sequence | pattern | 2 | 2 | Position Play |
 | 138 | Short Position Wide Zone | drawAngle | 2 | 2 | Cue Ball Control |
+| 139 | Side Pocket Easy Cut Left/Right | cutAngle | 1 | 1 | Fundamentals |
 
-### G · 10 drill
+### G · 19 drill
 
 Mốc: Easy cuts, stop and follow on demand
 
@@ -59,6 +60,15 @@ Mốc: Easy cuts, stop and follow on demand
 | 74 | RDS Levels 1–3 | test | 1 | 1 | Advanced |
 | 97 | Wide Zones: Stop, Follow, Draw | threePositions | 1 | 1 | Cue Ball Control |
 | 98 | Stun to the Second Ball | tangent | 1 | 1 | Cue Ball Control |
+| 99 | Stop and Go | stop | 1 | 1 | Fundamentals |
+| 142 | Stun-Follow to Zone | follow | 2 | 2 | Cue Ball Control |
+| 145 | One-Rail Position – Short | oneRail | 2 | 2 | Cue Ball Control |
+| 146 | One-Rail Position – Long | oneRail | 3 | 3 | Cue Ball Control |
+| 147 | Rail Cut with Position | cutAngle | 2 | 2 | Fundamentals |
+| 148 | Thin Cut with Containment | cutAngle | 2 | 2 | Fundamentals |
+| 149 | Back-Cut with Position | cutAngle | 3 | 3 | Fundamentals |
+| 150 | Side-Pocket Route | pattern | 2 | 2 | Position Play |
+| 153 | Two-Ball Route – Draw | pattern | 2 | 2 | Position Play |
 
 ### F · 13 drill
 

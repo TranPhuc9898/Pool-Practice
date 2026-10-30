@@ -406,10 +406,14 @@ func pick(_ ms: SP.Setup, tipX: CGFloat = 0, tips: [CGFloat], speeds: [CGFloat],
 /// có thì cú danh nghĩa phải là stop shot, bi cái dừng cách chỗ chạm không quá chừng đó. In một dòng chi tiết và một
 /// dòng chép sang `DrillRound`, `contactPoint` chỉ in khi tip khác `base` của bài.
 func placed(_ label: String, ball n: Int, pocket pk: String, cue: CGPoint, left: [Int: CGPoint], tipX: CGFloat = 0, tips: [CGFloat],
-            base: CGFloat, speeds: [CGFloat], stop: CGFloat? = nil, why: (CGFloat, CGFloat, SP.Run, CGPoint) -> String) {
+            base: CGFloat, speeds: [CGFloat], stop: CGFloat? = nil, back: CGFloat? = nil, why: (CGFloat, CGFloat, SP.Run, CGPoint) -> String) {
   let ms = setup(cue, Shot(ball: n, pocket: pk, tipY: 0, speed: 0, zone: nil), left)
   let P = SP.pockets[pk]!, g = SP.ghost(left[n]!, P).g
-  let keep = { (r: SP.Run) in clean(r, pk) && (stop.map { dist(r.stop, g) <= $0 } ?? true) }
+  // `back` có thì cú danh nghĩa là draw: bi cái dừng sau chỗ chạm, ngược hướng đánh, ít nhất chừng đó.
+  let behind = { (r: SP.Run) in (r.stop.x - g.x) * (g.x - cue.x) + (r.stop.y - g.y) * (g.y - cue.y) < 0 }
+  let keep = { (r: SP.Run) in
+    clean(r, pk) && (stop.map { dist(r.stop, g) <= $0 } ?? true) && (back.map { behind(r) && dist(r.stop, g) >= $0 } ?? true)
+  }
   guard let b = pick(ms, tipX: tipX, tips: tips, speeds: speeds, keep: keep, { clean($0, pk) ? "ok" : "miss" }) else {
     print("\(label) bi \(n): không cú danh nghĩa nào đạt"); exit(1)
   }
@@ -886,6 +890,145 @@ func drillZ() {
              tips: [-0.5, -0.3, 0, 0.2, 0.4], speeds: grid(0.6, 3.6, 0.02), rails: 3)
 }
 
+// MARK: hạng G
+
+/// Zone đặt ở chỗ bi cái dừng sau cú danh nghĩa: quét tip × lực, mỗi cú danh nghĩa sạch có số băng trong `rails` và chỗ
+/// dừng qua `want` thì lấy chỗ dừng làm tâm zone bán kính `r`, đếm mẫu vào sạch, dừng trong zone, số băng trong `rails`.
+/// Trả về cú có rate cao nhất, zone làm tròn tới 0.01 toạ độ chuẩn hoá.
+@discardableResult
+func auto(_ label: String, ball n: Int, pocket pk: String, cue: CGPoint, left: [Int: CGPoint], tips: [CGFloat], speeds: [CGFloat],
+          r: CGFloat, rails: ClosedRange<Int> = 0...0, want: (CGPoint) -> Bool = { _ in true })
+          -> (tipY: CGFloat, speed: CGFloat, rate: Int, nom: SP.Run, zone: (c: CGPoint, r: CGFloat))? {
+  let ms = setup(cue, Shot(ball: n, pocket: pk, tipY: 0, speed: 0, zone: nil), left)
+  let P = SP.pockets[pk]!, g = SP.ghost(left[n]!, P).g
+  var best: (tipY: CGFloat, speed: CGFloat, rate: Int, nom: SP.Run, zone: (c: CGPoint, r: CGFloat))?
+  for t in tips { for v in speeds {
+    let nom = SP.runWith(ms, tipX: 0, tipY: t, speed: v)
+    guard clean(nom, pk), rails.contains(railHits(nom)), want(nom.stop) else { continue }
+    let c = CGPoint(x: (nom.stop.x / 50 * 100).rounded() / 100 * 50, y: (nom.stop.y).rounded()), z = (c: c, r: r)
+    let ok = { (x: SP.Run) in clean(x, pk) && dist(x.stop, z.c) <= z.r && rails.contains(railHits(x)) }
+    guard ok(nom) else { continue }
+    let k = sample(ms, tipY: t, speed: v, aim: aimOf(nom)) { ok($0) ? "ok" : "miss" }["ok"] ?? 0
+    if k > (best?.rate ?? -1) { best = (t, v, k, nom, z) }
+  } }
+  guard let b = best else { print("\(label): không cú danh nghĩa nào đạt"); return nil }
+  print(String(format: "%@ bi %d→%@ cue %@ ob %@ cắt %.0f° D %.1f · tipY %+.2f speed %.2f rate=%d/45 · dừng %@ cách ghost %.1f\" băng %d %@",
+               label, n, pk, norm(cue), norm(left[n]!), cutDeg(cue, left[n]!, P), dist(cue, g), b.tipY, b.speed, b.rate,
+               norm(b.nom.stop), dist(b.nom.stop, g), railHits(b.nom), zs(b.zone)))
+  return b
+}
+/// Bi 2 đặt thẳng từ chỗ dừng `s` vào lỗ `pk`, cách lỗ `d` inch.
+func straightFrom(_ s: CGPoint, _ pk: String, _ d: CGFloat) -> CGPoint {
+  let P = SP.pockets[pk]!, l = dist(s, P)
+  return CGPoint(x: P.x + (s.x - P.x) / l * d, y: P.y + (s.y - P.y) / l * d)
+}
+func drill142() {
+  let o = inch(0.3, 0.3)
+  for deg in [15, 20] as [CGFloat] {
+    auto("142 \(Int(deg))°", ball: 1, pocket: "footLeft", cue: cutCue(o, "footLeft", deg: deg, back: 18, side: 1), left: [1: o],
+         tips: [0.2], speeds: grid(0.7, 2, 0.02), r: 6)
+  }
+}
+func drill145() {
+  let o = inch(0.3, 0.15)
+  auto("145", ball: 1, pocket: "footLeft", cue: cutCue(o, "footLeft", deg: 20, back: 15, side: -1), left: [1: o],
+       tips: [-0.2, 0, 0.2], speeds: grid(0.8, 2.2, 0.02), r: 6, rails: 1...1, want: { dist($0, o) < 25 })
+}
+func drill146() {
+  let o = inch(0.3, 0.15)
+  auto("146", ball: 1, pocket: "footLeft", cue: cutCue(o, "footLeft", deg: 20, back: 15, side: 1), left: [1: o],
+       tips: [0, 0.2, 0.3, 0.4], speeds: grid(1.2, 3, 0.02), r: 10, rails: 1...1, want: { $0.y > 50 })
+}
+func drill147() {
+  // Bi 1 cách băng dài trái 0.4" (tâm x = 1.525"), lỗ footLeft dọc băng, bi cái lùi 20" lệch 20°.
+  let o = CGPoint(x: 1.525, y: 30), c = CGPoint(x: o.x + sin(20 * .pi / 180) * 20, y: o.y + cos(20 * .pi / 180) * 20)
+  auto("147", ball: 1, pocket: "footLeft", cue: c, left: [1: o], tips: [-0.2, 0, 0.2], speeds: grid(0.6, 2, 0.02), r: 6, rails: 0...1)
+}
+func drill148() {
+  let o = inch(0.2, 0.15)
+  auto("148", ball: 1, pocket: "footLeft", cue: cutCue(o, "footLeft", deg: 40, back: 12, side: 1), left: [1: o],
+       tips: [-0.4, -0.2, 0], speeds: grid(0.3, 1.6, 0.02), r: 8, rails: 0...1)
+}
+func drill149() {
+  let o = inch(0.6, 0.12)
+  auto("149", ball: 1, pocket: "footLeft", cue: cutCue(o, "footLeft", deg: 25, back: 13, side: -1), left: [1: o],
+       tips: [-0.2, 0, 0.2], speeds: grid(0.6, 2, 0.02), r: 6, rails: 0...1)
+}
+func route(_ label: String, cue: CGPoint, one: CGPoint, pk1: String, pk2: String, d2: CGFloat, tips: [CGFloat], speeds: [CGFloat], r: CGFloat) {
+  guard let b = auto(label, ball: 1, pocket: pk1, cue: cue, left: [1: one], tips: tips, speeds: speeds, r: r) else { return }
+  let P = SP.pockets[pk2]!, l = dist(b.zone.c, P), two = straightFrom(b.zone.c, pk2, l - d2)
+  print("   bi 2 \(norm(two))")
+  chain(label, cue: cue, balls: [1: one, 2: two], shots: [
+    Shot(ball: 1, pocket: pk1, tipY: b.tipY, speed: b.speed, zone: b.zone),
+    Shot(ball: 2, pocket: pk2, tipY: 0, speed: 1.2, zone: nil),
+  ])
+}
+func drill150() {
+  let o = inch(0.25, 0.5)
+  route("150", cue: cutCue(o, "sideLeft", deg: 15, back: 18, side: 1), one: o, pk1: "sideLeft", pk2: "sideRight", d2: 16,
+        tips: [-0.3, 0, 0.2], speeds: grid(0.8, 2, 0.02), r: 6)
+}
+func drill153() {
+  let o = inch(0.3, 0.3)
+  route("153", cue: cutCue(o, "footLeft", deg: 10, back: 15, side: 1), one: o, pk1: "footLeft", pk2: "footRight", d2: 20,
+        tips: [-0.3, -0.4, -0.5], speeds: grid(1.2, 2.6, 0.02), r: 6)
+}
+func drillG() { drill142(); drill145(); drill146(); drill147(); drill148(); drill149(); drill150(); drill153() }
+
+// MARK: drill 37, 38, 39, 41, hạng G cũ: chỉ chấm bi vào, mỗi round một cú đặt lại bi cái.
+
+/// Drill 37, Long Diagonal Straight-In: bi cái góc headRight, bi 1 giữa đường chéo, thẳng footLeft. Bốn round theo tip của
+/// bài (stop, stop, follow, draw), lực bậc firm.
+func drill37() {
+  let lo = grid(1.2, 4.4, 0.02)
+  let rows: [(String, [CGFloat], CGFloat?, CGFloat?, [CGFloat])] = [
+    ("Stop", [-0.1, -0.2, -0.3, -0.4, -0.5], 1.125, nil, lo), ("Stop", [-0.1, -0.2, -0.3, -0.4, -0.5], 1.125, nil, lo),
+    ("Follow", [0.4], nil, nil, lo), ("Draw", [-0.4, -0.5, -0.6], nil, 12, grid(2.4, 6.4, 0.05)),
+  ]
+  for (name, tips, stop, back, speeds) in rows {
+    placed("37 \(name)", ball: 1, pocket: "footLeft", cue: inch(0.9375, 0.9375), left: [1: inch(0.4688, 0.4688)], tips: tips, base: -0.1,
+           speeds: speeds, stop: stop, back: back) { t, v, nom, g in
+      String(format: "Straight in down the diagonal. %@ at %@ m/s sends the cue ball %.0f\" from contact and stops it %.0f\" from the nearest pocket.",
+             tipWord(t), num(v), dist(nom.stop, g), nearestPocket(nom.stop))
+    }
+  }
+}
+
+/// Drill 38 và 41: bi 1 sát foot rail cắt vào footLeft, bi cái lên dần trên một đường dọc. Tip giữa, lực bậc medium.
+func cutLadder(_ id: String, x: CGFloat, one: CGPoint) {
+  for (i, y) in [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875].enumerated() {
+    let cue = inch(x, CGFloat(y))
+    placed("\(id) Spot \(i + 1)", ball: 1, pocket: "footLeft", cue: cue, left: [1: one], tips: [0], base: 0, speeds: grid(0.6, 2.4, 0.02)) { t, v, nom, g in
+      String(format: "%.0f° cut along the foot rail. %@ at %@ m/s, the cue ball stops %.0f\" from the nearest pocket.",
+             cutDeg(cue, one, SP.pockets["footLeft"]!), tipWord(t), num(v), nearestPocket(nom.stop))
+    }
+  }
+}
+func drill38() { cutLadder("38", x: 0.75, one: inch(0.25, 0.0375)) }
+func drill41() { cutLadder("41", x: 0.5, one: inch(0.2, 0.02125)) }
+
+/// Drill 39, BU F6: mười cú, mỗi cú một bi 1 và một lỗ, bi cái ở hai chỗ. Tip giữa, lực bậc medium.
+func drill39() {
+  let L = inch(0.25, 0.75), R = inch(0.75, 0.75)
+  let rows: [(CGPoint, CGPoint, String)] = [
+    (L, inch(0.25, 0.625), "sideLeft"), (L, inch(0.25, 0.625), "footLeft"), (L, inch(0.5, 0.25), "footRight"),
+    (L, inch(0.5, 0.5), "sideRight"), (L, inch(0.5, 0.5), "footRight"), (R, inch(0.75, 0.625), "sideRight"),
+    (R, inch(0.75, 0.625), "footRight"), (R, inch(0.5, 0.25), "footLeft"), (R, inch(0.5, 0.5), "sideLeft"), (R, inch(0.5, 0.5), "footLeft"),
+  ]
+  for (i, (cue, one, pk)) in rows.enumerated() {
+    placed("39 Shot \(i + 1)", ball: 1, pocket: pk, cue: cue, left: [1: one], tips: [0], base: 0, speeds: grid(0.6, 2.4, 0.02)) { t, v, nom, g in
+      String(format: "%.0f° cut into the %@. %@ at %@ m/s, the cue ball stops %.0f\" from the nearest pocket.",
+             cutDeg(cue, one, SP.pockets[pk]!), pk.hasPrefix("side") ? "side" : "corner", tipWord(t), num(v), nearestPocket(nom.stop))
+    }
+  }
+}
+
+if ProcessInfo.processInfo.environment["ONLY"] == "G0" { drill37(); drill38(); drill39(); drill41(); exit(0) }
+if let k = ProcessInfo.processInfo.environment["ONLY"], k.hasPrefix("G") {
+  switch k { case "G142": drill142(); case "G145": drill145(); case "G146": drill146(); case "G147": drill147()
+  case "G148": drill148(); case "G149": drill149(); case "G150": drill150(); case "G153": drill153(); default: drillG() }
+  exit(0)
+}
 if ProcessInfo.processInfo.environment["ONLY"] == "Z" { drillZ(); exit(0) }
 if ProcessInfo.processInfo.environment["ONLY"] == "139" { drill139(); exit(0) }
 if ProcessInfo.processInfo.environment["ONLY"] == "99" { drill099(); exit(0) }

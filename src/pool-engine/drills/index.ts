@@ -126,6 +126,14 @@ import { threeZoneSpeedControl } from './136-three-zone-speed-control';
 import { twoBallRollingSequence } from './137-two-ball-rolling-sequence';
 import { shortPositionWideZone } from './138-short-position-wide-zone';
 import { sidePocketEasyCutLeftRight } from './139-side-pocket-easy-cut-left-right';
+import { stunFollowToZone } from './142-stun-follow-to-zone';
+import { oneRailPositionShort } from './145-one-rail-position-short';
+import { oneRailPositionLong } from './146-one-rail-position-long';
+import { railCutWithPosition } from './147-rail-cut-with-position';
+import { thinCutWithContainment } from './148-thin-cut-with-containment';
+import { backCutWithPosition } from './149-back-cut-with-position';
+import { sidePocketRoute } from './150-side-pocket-route';
+import { twoBallRouteDraw } from './153-two-ball-route-draw';
 import { englishSpeedCheck } from './113-english-speed-check';
 import { oneLayoutThreeAnswers } from './112-one-layout-three-answers';
 import { railRowReturn } from './120-rail-row-return';
@@ -269,6 +277,14 @@ export const DRILLS: readonly PoolDrill[] = [
   twoBallRollingSequence,
   shortPositionWideZone,
   sidePocketEasyCutLeftRight,
+  stunFollowToZone,
+  oneRailPositionShort,
+  oneRailPositionLong,
+  railCutWithPosition,
+  thinCutWithContainment,
+  backCutWithPosition,
+  sidePocketRoute,
+  twoBallRouteDraw,
 ];
 
 export function drillByNumber(n: number): PoolDrill | undefined {
