@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Doto:wght@900&display=block"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* App tokens (mono dark). Màn hình app vẽ ở 1080x2348 = 402x874 pt x2.687, đặt trong iPhone thu 0.6 */
+      :root {
+        --bg: #000000;
+        --surface: #0d0d0d;
+        --surface-2: #161616;
+        --text: #ffffff;
+        --text-2: #bdbdbd;
+        --text-3: #8a8a8a;
+        --border: rgba(255, 255, 255, 0.1);
+        --gold: #c9a45c;
+        --sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+        --dot: "Doto", ui-monospace, monospace;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: var(--bg);
+        font-family: var(--sans);
+        color: var(--text);
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* chữ trồi lên trong mặt nạ */
+      .m {
+        display: block;
+        overflow: hidden;
+        padding: 0.12em 0;
+        margin: -0.12em 0;
+      }
+      .mi {
+        display: block;
+      }
+
+      /* ---------- camera + iPhone ---------- */
+      #cam {
+        position: absolute;
+        inset: 0;
+        transform-origin: 0 0;
+      }
+      /* thân máy 1122.8 x 2390.8: viền khung 8 + bezel 13.4 quanh màn 1080 x 2348 */
+      #phone {
+        position: absolute;
+        left: 203.16px;
+        top: 242.76px;
+        width: 1122.8px;
+        height: 2390.8px;
+        transform: scale(0.6);
+        transform-origin: 0 0;
+      }
+      #body {
+        position: absolute;
+        inset: 0;
+        border-radius: 170px;
+        background: #050505;
+        border: 8px solid #3a3a3c;
+        box-shadow: inset 0 0 0 2px #1c1c1e;
+      }
+      #screen {
+        position: absolute;
+        left: 21.4px;
+        top: 21.4px;
+        width: 1080px;
+        height: 2348px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #island {
+        z-index: 9;
+        position: absolute;
+        left: 372px;
+        top: 30px;
+        width: 336px;
+        height: 99px;
+        border-radius: 50px;
+        background: #000;
+      }
+      #homeInd {
+        z-index: 9;
+        position: absolute;
+        left: 360px;
+        top: 2314px;
+        width: 360px;
+        height: 13px;
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.85);
+      }
+
+      /* ---------- app shell ---------- */
+      .status {
+        z-index: 5;
+        position: absolute;
+        top: 52px;
+        left: 110px;
+        right: 96px;
+        display: flex;
+        justify-content: space-between;
+        font-weight: 600;
+        font-size: 46px;
+        letter-spacing: -0.5px;
+      }
+      .status .bars {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+      }
+      .status .batt {
+        width: 75px;
+        height: 36px;
+        border: 3px solid rgba(255, 255, 255, 0.4);
+        border-radius: 11px;
+        padding: 4px;
+      }
+      .status .batt i {
+        display: block;
+        width: 78%;
+        height: 100%;
+        background: #fff;
+        border-radius: 5px;
+      }
+      .status .sig {
+        display: flex;
+        gap: 5px;
+        align-items: flex-end;
+        height: 33px;
+      }
+      .status .sig i {
+        width: 9px;
+        background: #fff;
+        border-radius: 2px;
+      }
+      #skip {
+        z-index: 5;
+        position: absolute;
+        top: 177px;
+        right: 60px;
+        height: 132px;
+        display: flex;
+        align-items: center;
+        font-size: 48px;
+        font-weight: 500;
+        color: var(--text-3);
+      }
+      #track {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4320px;
+        height: 2348px;
+      }
+      .slide {
+        position: absolute;
+        top: 0;
+        width: 1080px;
+        height: 2348px;
+        padding: 360px 60px 420px;
+        display: flex;
+        flex-direction: column;
+      }
+      .art {
+        position: relative;
+        z-index: 1;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .copy {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        padding-top: 60px;
+      }
+      .kick {
+        font-size: 39px;
+        font-weight: 600;
+        letter-spacing: 3.6px;
+        color: var(--gold);
+      }
+      .title {
+        font-size: 84px;
+        line-height: 96px;
+        font-weight: 600;
+        letter-spacing: -1.8px;
+      }
+      .body {
+        font-size: 51px;
+        line-height: 72px;
+        color: var(--text-2);
+      }
+      .eyebrow {
+        font-size: 36px;
+        font-weight: 600;
+        letter-spacing: 4.2px;
+        color: var(--text-3);
+      }
+
+      /* footer: pips + PrimaryButton */
+      #pips {
+        position: absolute;
+        bottom: 318px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+      }
+      .pip {
+        width: 18px;
+        height: 18px;
+        border-radius: 9px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      #pip0 {
+        width: 60px;
+        background: #fff;
+      }
+      #next {
+        position: absolute;
+        left: 60px;
+        right: 60px;
+        bottom: 102px;
+        height: 156px;
+        border-radius: 36px;
+        background: #fff;
+        color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 51px;
+        font-weight: 600;
+        overflow: hidden;
+      }
+      /* dấu chạm 44 pt */
+      .touch {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 118px;
+        height: 118px;
+        margin: -59px 0 0 -59px;
+        border-radius: 50%;
+        background: rgba(120, 120, 120, 0.38);
+        border: 3px solid rgba(255, 255, 255, 0.55);
+        opacity: 0;
+      }
+
+      /* ---------- slide 1: count ---------- */
+      #rain {
+        position: absolute;
+        left: -60px;
+        top: -360px;
+        width: 1080px;
+        height: 1300px;
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 92%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 92%);
+      }
+      .big {
+        position: relative;
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 300px;
+        line-height: 290px;
+        letter-spacing: 12px;
+      }
+      .blocks {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+        width: 960px;
+        margin-top: 66px;
+      }
+      .block {
+        background: rgba(13, 13, 13, 0.92);
+        border: 3px solid var(--border);
+        border-radius: 36px;
+        padding: 36px 0 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      .block b {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 96px;
+        line-height: 96px;
+      }
+      .block span {
+        font-size: 30px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        color: var(--text-3);
+      }
+
+      /* ---------- slide 2: referee ---------- */
+      .board {
+        width: 960px;
+        background: var(--surface);
+        border: 3px solid var(--border);
+        border-radius: 60px;
+        padding: 54px 54px 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #refCount {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 220px;
+        line-height: 220px;
+      }
+      #refLabel {
+        margin-top: 18px;
+      }
+      .marks {
+        display: flex;
+        gap: 18px;
+        margin-top: 54px;
+      }
+      .mark {
+        position: relative;
+        width: 66px;
+        height: 66px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.18);
+      }
+      .mark.pass {
+        background: #fff;
+        border-color: #fff;
+      }
+      .mark.miss {
+        border-color: var(--text-3);
+      }
+      .mark.miss::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 8px;
+        bottom: 8px;
+        width: 5px;
+        margin-left: -2.5px;
+        background: var(--text-3);
+        transform: rotate(45deg);
+        border-radius: 3px;
+      }
+      .verdict {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        width: 960px;
+        margin-top: 48px;
+      }
+      .vbtn {
+        position: relative;
+        height: 156px;
+        border-radius: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 51px;
+        font-weight: 600;
+        overflow: hidden;
+      }
+      #btnMiss {
+        border: 3px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text);
+      }
+      #btnPass {
+        background: #fff;
+        color: #000;
+      }
+
+      /* ---------- slides 3-4: table ---------- */
+      .table {
+        width: 900px;
+        height: 485px;
+        overflow: visible;
+      }
+      .ladderHead {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        width: 900px;
+        margin-bottom: 42px;
+      }
+      .ladderHead .lvl {
+        display: flex;
+        align-items: baseline;
+        gap: 24px;
+      }
+      #ladderNum {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 132px;
+        line-height: 132px;
+      }
+      .reps {
+        display: flex;
+        gap: 18px;
+        padding-bottom: 18px;
+      }
+      .rep {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.2);
+      }
+      .rep.on {
+        background: var(--gold);
+        border-color: var(--gold);
+      }
+      .caption {
+        position: relative;
+        width: 900px;
+        height: 72px;
+        margin-bottom: 36px;
+      }
+      .caption .m {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        margin: 0;
+        font-size: 48px;
+        font-weight: 600;
+        line-height: 72px;
+        text-align: center;
+      }
+
+      /* ---------- icon + chữ kết ---------- */
+      #icon {
+        position: absolute;
+        left: 400px;
+        top: 820px;
+        width: 280px;
+        height: 280px;
+        border-radius: 62px;
+        overflow: hidden;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16);
+      }
+      #icon img {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      .k {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 930px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        visibility: hidden;
+      }
+      .k .num {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 300px;
+        line-height: 290px;
+        letter-spacing: 12px;
+      }
+      .k .word {
+        font-size: 160px;
+        line-height: 290px;
+        font-weight: 700;
+        letter-spacing: -4px;
+      }
+      .k .line {
+        font-size: 116px;
+        line-height: 136px;
+        font-weight: 600;
+        letter-spacing: -3px;
+      }
+      .k .eyebrow {
+        margin-top: 36px;
+        font-size: 40px;
+        letter-spacing: 6px;
+        color: var(--text-2);
+      }
+      #wordmark {
+        font-size: 120px;
+        line-height: 126px;
+        font-weight: 800;
+        letter-spacing: 9px;
+      }
+      #rule {
+        width: 150px;
+        height: 6px;
+        background: var(--gold);
+        border-radius: 3px;
+        margin: 60px 0 54px;
+      }
+      #tagline {
+        font-size: 60px;
+        line-height: 84px;
+        color: var(--text-2);
+        font-weight: 500;
+      }
+      #endMeta {
+        margin-top: 84px;
+      }
+      #endMeta .mi {
+        display: flex;
+        gap: 36px;
+        align-items: center;
+        justify-content: center;
+      }
+      #endMeta b {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 72px;
+        color: var(--text);
+      }
+      #wordmark .mi {
+        background: linear-gradient(105deg, #fff 0%, #fff 43%, #f3dfae 48%, #c9a45c 50%, #f3dfae 52%, #fff 57%, #fff 100%);
+        background-size: 300% 100%;
+        background-position: 100% 0;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      #k1 {
+        color: #000;
+      }
+      #k1 .eyebrow {
+        color: rgba(0, 0, 0, 0.72);
+      }
+      .wi {
+        display: inline-block;
+      }
+
+      /* ---------- lớp FX: sân khấu, thẻ chữ, confetti, film ---------- */
+      #stage {
+        z-index: 0;
+      }
+      #app {
+        z-index: 1;
+      }
+      #outro {
+        z-index: 2;
+      }
+      #fx {
+        z-index: 3;
+      }
+      #film {
+        z-index: 4;
+      }
+      .wrap {
+        position: absolute;
+        inset: 0;
+        transform-origin: 540px 960px;
+      }
+      #glow {
+        position: absolute;
+        left: -260px;
+        top: 160px;
+        width: 1600px;
+        height: 1600px;
+        background: radial-gradient(closest-side, rgba(201, 164, 92, 0.34), rgba(201, 164, 92, 0));
+        opacity: 0;
+      }
+      .bgRow {
+        position: absolute;
+        left: 0;
+        white-space: nowrap;
+        font-size: 300px;
+        line-height: 300px;
+        font-weight: 800;
+        letter-spacing: -8px;
+        color: transparent;
+        -webkit-text-stroke: 3px rgba(255, 255, 255, 0.1);
+        opacity: 0;
+      }
+      #bgRow1 {
+        top: 300px;
+      }
+      #bgRow2 {
+        top: 1320px;
+      }
+      .blk {
+        position: absolute;
+        inset: -80px;
+      }
+      #blkGold {
+        background: var(--gold);
+        clip-path: inset(100% 0% 0% 0%);
+      }
+      #blkFelt {
+        background: #0e3a2b;
+        clip-path: inset(0% 100% 0% 0%);
+      }
+      #blkInk {
+        background: #000;
+        clip-path: inset(0% 0% 0% 100%);
+      }
+      .card {
+        position: absolute;
+        inset: -40px;
+        padding: 0 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        transform-origin: 540px 960px;
+        visibility: hidden;
+      }
+      .card .tag {
+        font-size: 40px;
+        font-weight: 700;
+        letter-spacing: 8px;
+        margin-bottom: 44px;
+        opacity: 0.7;
+      }
+      .card .w {
+        font-size: 168px;
+        line-height: 160px;
+        font-weight: 800;
+        letter-spacing: -7px;
+      }
+      .card .w > span {
+        display: inline-block;
+        transform-origin: 0% 60%;
+        opacity: 0;
+      }
+      .card .dot {
+        font-family: var(--dot);
+        font-weight: 900;
+        letter-spacing: 4px;
+      }
+      #c1 {
+        background: var(--gold);
+        color: #000;
+      }
+      #c2 {
+        background: #fff;
+        color: #000;
+      }
+      #c3 {
+        background: #0e3a2b;
+        color: #fff;
+      }
+      #c3 .g {
+        color: var(--gold);
+      }
+      #conf {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1080px;
+        height: 1920px;
+      }
+      #flash {
+        position: absolute;
+        inset: -100px;
+        background: #fff;
+        opacity: 0;
+      }
+      #grain {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1080px;
+        height: 1920px;
+        opacity: 0;
+      }
+      #vig {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse 75% 62% at 50% 50%, rgba(0, 0, 0, 0) 58%, rgba(0, 0, 0, 0.42) 100%);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="30"
+      data-width="1080"
+      data-height="1920"
+      data-motion-blur="on"
+      data-motion-blur-events="on"
+    >
+      <!-- ====================== SÂN KHẤU: chữ nền, quầng sáng, khối màu đổi theo ô nhịp ====================== -->
+      <div id="stage" class="clip" data-start="0" data-duration="30" data-track-index="0" data-track-kind="graphics">
+        <div id="stageWrap" class="wrap">
+          <div id="glow"></div>
+          <div class="bgRow" id="bgRow1" data-layout-allow-overflow>POOL TRAINING · POOL TRAINING · POOL TRAINING · POOL TRAINING ·</div>
+          <div class="bgRow" id="bgRow2" data-layout-allow-overflow>120 SHOTS A DAY · 120 SHOTS A DAY · 120 SHOTS A DAY · 120 SHOTS A DAY ·</div>
+          <div class="blk" id="blkGold" data-layout-allow-overflow></div>
+          <div class="blk" id="blkFelt" data-layout-allow-overflow></div>
+          <div class="blk" id="blkInk" data-layout-allow-overflow></div>
+        </div>
+      </div>
+
+      <!-- ====================== APP trong iPhone ====================== -->
+      <div id="app" class="clip" data-start="0" data-duration="23" data-track-index="1" data-track-kind="graphics">
+        <div id="shot" class="wrap">
+        <div id="cam">
+          <div id="phone">
+            <div id="body"></div>
+            <div id="screen" style="left: 21.4px; top: 21.4px">
+              <div class="status">
+                <span>9:41</span>
+                <span class="bars">
+                  <span class="sig"><i style="height: 12px"></i><i style="height: 18px"></i><i style="height: 25px"></i><i style="height: 33px"></i></span>
+                  <span class="batt"><i></i></span>
+                </span>
+              </div>
+              <div id="skip">Skip</div>
+
+              <div id="track">
+                <!-- slide 1 -->
+                <section class="slide" id="s1" style="left: 0">
+                  <div class="art">
+                    <canvas id="rain" width="1080" height="1300"></canvas>
+                    <div class="big" id="count">120</div>
+                    <div class="eyebrow" style="position: relative; margin-top: 18px">SHOTS A DAY</div>
+                    <div class="blocks">
+                      <div class="block"><b id="blk0">30</b><span>STROKE</span></div>
+                      <div class="block"><b id="blk1">30</b><span>STOP</span></div>
+                      <div class="block"><b id="blk2">30</b><span>FOLLOW</span></div>
+                      <div class="block"><b id="blk3">30</b><span>DRAW</span></div>
+                    </div>
+                  </div>
+                  <div class="copy">
+                    <div class="kick m"><span class="mi">DAILY WORKOUT</span></div>
+                    <div class="title">
+                      <span class="m"><span class="mi">A gym session</span></span>
+                      <span class="m"><span class="mi">for your cue.</span></span>
+                    </div>
+                    <div class="body m"><span class="mi">Four blocks of 30 shots. Same plan every day, so you see yourself get better.</span></div>
+                  </div>
+                </section>
+
+                <!-- slide 2 -->
+                <section class="slide" id="s2" style="left: 1080px">
+                  <div class="art">
+                    <div class="board">
+                      <div id="refCount">0</div>
+                      <div class="eyebrow" id="refLabel">PASSED · NEED 7</div>
+                      <div class="marks">
+                        <div class="mark" id="m0"></div><div class="mark" id="m1"></div><div class="mark" id="m2"></div><div class="mark" id="m3"></div><div class="mark" id="m4"></div>
+                        <div class="mark" id="m5"></div><div class="mark" id="m6"></div><div class="mark" id="m7"></div><div class="mark" id="m8"></div><div class="mark" id="m9"></div>
+                      </div>
+                    </div>
+                    <div class="verdict">
+                      <div class="vbtn" id="btnMiss">Miss<i class="touch" id="tMiss"></i></div>
+                      <div class="vbtn" id="btnPass">Pass<i class="touch" id="tPass"></i></div>
+                    </div>
+                  </div>
+                  <div class="copy">
+                    <div class="kick m"><span class="mi">YOU'RE THE REFEREE</span></div>
+                    <div class="title">
+                      <span class="m"><span class="mi">Shoot. Tap Pass</span></span>
+                      <span class="m"><span class="mi">or Miss.</span></span>
+                    </div>
+                    <div class="body m"><span class="mi">No camera, no setup. Seven of ten clears the set.</span></div>
+                  </div>
+                </section>
+
+                <!-- slide 3 -->
+                <section class="slide" id="s3" style="left: 2160px">
+                  <div class="art">
+                    <div class="ladderHead">
+                      <div class="lvl"><span id="ladderNum">1</span><span class="eyebrow">DIAMOND BACK</span></div>
+                      <div class="reps"><div class="rep" id="rep0"></div><div class="rep" id="rep1"></div></div>
+                    </div>
+                    <svg class="table" viewBox="0 0 520 280">
+                      <rect x="0" y="0" width="520" height="280" rx="18" fill="#161616" />
+                      <rect x="20" y="20" width="480" height="240" fill="#3A3A3A" />
+                      <g fill="#8A8A8A">
+                        <circle cx="80" cy="10" r="2.2" /><circle cx="140" cy="10" r="2.2" /><circle cx="200" cy="10" r="2.2" /><circle cx="320" cy="10" r="2.2" /><circle cx="380" cy="10" r="2.2" /><circle cx="440" cy="10" r="2.2" />
+                        <circle cx="80" cy="270" r="2.2" /><circle cx="140" cy="270" r="2.2" /><circle cx="200" cy="270" r="2.2" /><circle cx="320" cy="270" r="2.2" /><circle cx="380" cy="270" r="2.2" /><circle cx="440" cy="270" r="2.2" />
+                        <circle cx="10" cy="80" r="2.2" /><circle cx="10" cy="140" r="2.2" /><circle cx="10" cy="200" r="2.2" />
+                        <circle cx="510" cy="80" r="2.2" /><circle cx="510" cy="140" r="2.2" /><circle cx="510" cy="200" r="2.2" />
+                      </g>
+                      <g fill="#000">
+                        <circle cx="20" cy="20" r="13" /><circle cx="500" cy="20" r="13" /><circle cx="20" cy="260" r="13" /><circle cx="500" cy="260" r="13" /><circle cx="260" cy="14" r="13" /><circle cx="260" cy="266" r="13" />
+                      </g>
+                      <line id="ladMark" x1="232" y1="120" x2="288" y2="120" stroke="#C9A45C" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.9" />
+                      <line id="ladAim" x1="260" y1="112" x2="260" y2="22" stroke="#fff" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.45" />
+                      <circle id="ladOb" cx="260" cy="60" r="8" fill="#000" stroke="#8A8A8A" stroke-width="1.5" />
+                      <circle id="ladCue" cx="260" cy="120" r="8" fill="#fff" />
+                      <circle id="ladFlash" cx="260" cy="14" r="6" fill="none" stroke="#C9A45C" stroke-width="2" opacity="0" />
+                    </svg>
+                  </div>
+                  <div class="copy">
+                    <div class="kick m"><span class="mi">IT GROWS WITH YOU</span></div>
+                    <div class="title">
+                      <span class="m"><span class="mi">Get better,</span></span>
+                      <span class="m"><span class="mi">it gets harder.</span></span>
+                    </div>
+                    <div class="body m"><span class="mi">Pot it and stop the cue ball dead. Do it twice and it starts one diamond farther back.</span></div>
+                  </div>
+                </section>
+
+                <!-- slide 4 -->
+                <section class="slide" id="s4" style="left: 3240px">
+                  <div class="art">
+                    <div class="caption">
+                      <div class="m" id="cap1"><span class="mi">Pot 1, land in the zone</span></div>
+                      <div class="m" id="cap2"><span class="mi">Ball 2 is now a <span style="color: var(--gold)">straight shot</span></span></div>
+                    </div>
+                    <svg class="table" viewBox="0 0 520 280">
+                      <rect x="0" y="0" width="520" height="280" rx="18" fill="#161616" />
+                      <rect x="20" y="20" width="480" height="240" fill="#3A3A3A" />
+                      <g fill="#8A8A8A">
+                        <circle cx="80" cy="10" r="2.2" /><circle cx="140" cy="10" r="2.2" /><circle cx="200" cy="10" r="2.2" /><circle cx="320" cy="10" r="2.2" /><circle cx="380" cy="10" r="2.2" /><circle cx="440" cy="10" r="2.2" />
+                        <circle cx="80" cy="270" r="2.2" /><circle cx="140" cy="270" r="2.2" /><circle cx="200" cy="270" r="2.2" /><circle cx="320" cy="270" r="2.2" /><circle cx="380" cy="270" r="2.2" /><circle cx="440" cy="270" r="2.2" />
+                        <circle cx="10" cy="80" r="2.2" /><circle cx="10" cy="140" r="2.2" /><circle cx="10" cy="200" r="2.2" />
+                        <circle cx="510" cy="80" r="2.2" /><circle cx="510" cy="140" r="2.2" /><circle cx="510" cy="200" r="2.2" />
+                      </g>
+                      <g fill="#000">
+                        <circle cx="20" cy="20" r="13" /><circle cx="500" cy="20" r="13" /><circle cx="20" cy="260" r="13" /><circle cx="500" cy="260" r="13" /><circle cx="260" cy="14" r="13" /><circle cx="260" cy="266" r="13" />
+                      </g>
+                      <circle id="zone" cx="239.6" cy="141.8" r="22" fill="rgba(201,164,92,0.16)" stroke="#C9A45C" stroke-width="1.6" stroke-dasharray="4 3" />
+                      <polyline id="aim1" points="380,110 308.3,93.7 260,14" fill="none" stroke="#fff" stroke-width="1.2" stroke-dasharray="4 4" opacity="0" />
+                      <line id="aimCue" x1="308.3" y1="93.7" x2="239.6" y2="141.8" stroke="#C9A45C" stroke-width="1.2" stroke-dasharray="4 4" opacity="0" />
+                      <polyline id="aim2" points="239.6,141.8 250,205 260,266" fill="none" stroke="#C9A45C" stroke-width="1.4" stroke-dasharray="4 4" opacity="0" />
+                      <g id="b1">
+                        <circle cx="300" cy="80" r="8" fill="#000" stroke="#8A8A8A" stroke-width="1.5" />
+                        <text x="300" y="83" text-anchor="middle" font-size="8" font-weight="700" fill="#fff" font-family="Be Vietnam Pro">1</text>
+                      </g>
+                      <g id="b2">
+                        <circle cx="250" cy="205" r="8" fill="#000" stroke="#8A8A8A" stroke-width="1.5" />
+                        <text x="250" y="208" text-anchor="middle" font-size="8" font-weight="700" fill="#fff" font-family="Be Vietnam Pro">2</text>
+                      </g>
+                      <circle id="posCue" cx="380" cy="110" r="8" fill="#fff" />
+                      <circle id="posFlash" cx="260" cy="14" r="6" fill="none" stroke="#C9A45C" stroke-width="2" opacity="0" />
+                    </svg>
+                  </div>
+                  <div class="copy">
+                    <div class="kick m"><span class="mi">THEN, POSITION</span></div>
+                    <div class="title">
+                      <span class="m"><span class="mi">Pot one, set up</span></span>
+                      <span class="m"><span class="mi">the next.</span></span>
+                    </div>
+                    <div class="body m"><span class="mi">Send the cue ball into the zone and ball 2 becomes an easy shot. The drill library takes it from here to full runouts.</span></div>
+                  </div>
+                </section>
+              </div>
+
+              <div id="pips">
+                <div class="pip" id="pip0"></div><div class="pip" id="pip1"></div><div class="pip" id="pip2"></div><div class="pip" id="pip3"></div>
+              </div>
+              <div id="next"><span id="nextLabel">Next</span><i class="touch" id="tNext"></i></div>
+              <div id="island"></div>
+              <div id="homeInd"></div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <!-- ====================== ICON (vật nối đầu-cuối) + chữ kết ====================== -->
+      <div id="outro" class="clip" data-start="0" data-duration="30" data-track-index="2" data-track-kind="graphics">
+        <div id="outWrap" class="wrap">
+        <div class="k" id="k1">
+          <div class="num m" data-layout-allow-overflow><span class="mi" id="k1num">120</span></div>
+          <div class="eyebrow m" data-layout-allow-overflow><span class="mi">SHOTS A DAY</span></div>
+        </div>
+        <div class="k" id="k3">
+          <div class="num m" data-layout-allow-overflow><span class="mi" id="k3num">7/10</span></div>
+          <div class="eyebrow m" data-layout-allow-overflow><span class="mi">CLEARS THE SET</span></div>
+        </div>
+        <div class="k" id="k4" style="top: 1000px">
+          <div class="line m" data-layout-allow-overflow><span class="mi">Get better,</span></div>
+          <div class="line m" data-layout-allow-overflow><span class="mi">it gets <span id="k4gold" style="color: var(--gold)">harder.</span></span></div>
+        </div>
+        <div class="k" id="endcard" style="top: 1000px">
+          <div id="wordmark" class="m" data-layout-allow-overflow><span class="mi">POOL TRAINING</span></div>
+          <div id="rule"></div>
+          <div id="tagline" class="m" data-layout-allow-overflow><span class="mi">A gym session for your cue.</span></div>
+          <div id="endMeta" class="eyebrow m" data-layout-allow-overflow><span class="mi"><b id="endNum">120</b><span>SHOTS A DAY</span><span>·</span><span>4 BLOCKS</span></span></div>
+        </div>
+        <div id="icon"><img src="assets/icon.png" alt="" /></div>
+        </div>
+      </div>
+
+      <!-- ====================== FX: confetti + chớp, nằm trên app và outro ====================== -->
+      <div id="fx" class="clip" data-start="0" data-duration="30" data-track-index="3" data-track-kind="graphics" data-layout-allow-overflow>
+        <canvas id="conf" width="1080" height="1920"></canvas>
+        <div id="flash" data-layout-allow-overflow></div>
+      </div>
+
+      <!-- ====================== NHẠC + SFX: SFX vào sớm 40 ms để đỉnh rơi đúng khung ====================== -->
+      <audio id="music" src="assets/music/bed.mp3" data-start="0" data-duration="30" data-volume="0.55"></audio>
+      <audio id="sOpen" src="assets/sfx/whoosh-short.mp3" data-start="0.5" data-duration="0.57" data-volume="0.35"></audio>
+      <audio id="sPage1" src="assets/sfx/whoosh-short.mp3" data-start="4.98" data-duration="0.57" data-volume="0.4"></audio>
+      <audio id="sTap0" src="assets/sfx/click.mp3" data-start="6.46" data-duration="0.3" data-volume="0.32"></audio>
+      <audio id="sTap1" src="assets/sfx/click.mp3" data-start="6.71" data-duration="0.3" data-volume="0.32"></audio>
+      <audio id="sTap2" src="assets/sfx/click-soft.mp3" data-start="6.96" data-duration="0.3" data-volume="0.28"></audio>
+      <audio id="sTap3" src="assets/sfx/click.mp3" data-start="7.21" data-duration="0.3" data-volume="0.32"></audio>
+      <audio id="sTap4" src="assets/sfx/click.mp3" data-start="7.46" data-duration="0.3" data-volume="0.32"></audio>
+      <audio id="sTap5" src="assets/sfx/click.mp3" data-start="7.71" data-duration="0.3" data-volume="0.32"></audio>
+      <audio id="sTap6" src="assets/sfx/click-soft.mp3" data-start="7.96" data-duration="0.3" data-volume="0.28"></audio>
+      <audio id="sTap7" src="assets/sfx/click.mp3" data-start="8.21" data-duration="0.3" data-volume="0.32"></audio>
+      <audio id="sTap8" src="assets/sfx/click-soft.mp3" data-start="8.46" data-duration="0.3" data-volume="0.28"></audio>
+      <audio id="sTap9" src="assets/sfx/click.mp3" data-start="8.71" data-duration="0.3" data-volume="0.32"></audio>
+      <audio id="sCleared" src="assets/sfx/sparkle.mp3" data-start="8.79" data-duration="1.8" data-volume="0.45"></audio>
+      <audio id="sPage2" src="assets/sfx/whoosh-short.mp3" data-start="10.48" data-duration="0.57" data-volume="0.4"></audio>
+      <audio id="sHit1" src="assets/sfx/click-soft.mp3" data-start="12.03" data-duration="0.36" data-volume="0.4"></audio>
+      <audio id="sPot1" src="assets/sfx/pop.mp3" data-start="12.33" data-duration="0.72" data-volume="0.35"></audio>
+      <audio id="sHit2" src="assets/sfx/click-soft.mp3" data-start="13.28" data-duration="0.36" data-volume="0.4"></audio>
+      <audio id="sPot2" src="assets/sfx/pop.mp3" data-start="13.58" data-duration="0.72" data-volume="0.35"></audio>
+      <audio id="sLevel" src="assets/sfx/ping.mp3" data-start="13.96" data-duration="1.32" data-volume="0.45"></audio>
+      <audio id="sPage3" src="assets/sfx/whoosh-short.mp3" data-start="15.48" data-duration="0.57" data-volume="0.4"></audio>
+      <audio id="sHit3" src="assets/sfx/click-soft.mp3" data-start="18.01" data-duration="0.36" data-volume="0.4"></audio>
+      <audio id="sPot3" src="assets/sfx/pop.mp3" data-start="18.39" data-duration="0.72" data-volume="0.35"></audio>
+      <audio id="sZone" src="assets/sfx/chime.mp3" data-start="18.81" data-duration="2.5" data-volume="0.4"></audio>
+      <audio id="sClose" src="assets/sfx/whoosh-cinematic.mp3" data-start="21.95" data-duration="1.1" data-media-start="1.9" data-fade-out="0.4" data-volume="0.5"></audio>
+      <audio id="sBeat1" src="assets/sfx/whoosh-short.mp3" data-start="22.96" data-duration="0.57" data-volume="0.22"></audio>
+      <audio id="sBeat2" src="assets/sfx/whoosh-short.mp3" data-start="24.21" data-duration="0.57" data-volume="0.22"></audio>
+      <audio id="sBeat3" src="assets/sfx/whoosh-short.mp3" data-start="25.46" data-duration="0.57" data-volume="0.22"></audio>
+      <audio id="sRiser" src="assets/sfx/riser.mp3" data-start="23.93" data-duration="3.036" data-fade-in="1" data-volume="0.45"></audio>
+      <audio id="sImpact" src="assets/sfx/impact-bass-1.mp3" data-start="26.96" data-duration="2.1" data-volume="0.8"></audio>
+      <audio id="sHitClear" src="assets/sfx/impact-bass-1.mp3" data-start="8.73" data-duration="0.6" data-fade-out="0.3" data-volume="0.35"></audio>
+      <audio id="sHitLevel" src="assets/sfx/impact-bass-1.mp3" data-start="13.98" data-duration="0.6" data-fade-out="0.3" data-volume="0.35"></audio>
+      <audio id="sHitZone" src="assets/sfx/impact-bass-1.mp3" data-start="18.83" data-duration="0.5" data-fade-out="0.3" data-volume="0.28"></audio>
+      <audio id="sHome" src="assets/sfx/whoosh-short.mp3" data-start="29.25" data-duration="0.57" data-volume="0.25"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+
+      // ---------- deterministic helpers ----------
+      function hash(a, b, c) {
+        let x = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(c | 0, 1274126177);
+        x = Math.imul(x ^ (x >>> 13), 1274126177);
+        x ^= x >>> 16;
+        return (x >>> 0) / 4294967296;
+      }
+      const clamp01 = (v) => Math.max(0, Math.min(1, v));
+      const lerp = (a, b, k) => a + (b - a) * k;
+      // value noise mượt, -1..1
+      function noise(x, seed) {
+        const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f);
+        return lerp(hash(i, seed, 9), hash(i + 1, seed, 9), u) * 2 - 1;
+      }
+      const DIGITS = "0123456789";
+      // Chữ số chốt dần từ trái sang phải, chữ chưa chốt nhảy 30 lần/giây theo hash
+      function scramble(final, p, t, seed) {
+        if (p >= 1) return final;
+        if (p <= 0) return final.replace(/[0-9]/g, (_, i) => DIGITS[Math.floor(hash(seed, i, Math.floor(t * 30)) * 10)]);
+        let out = "";
+        for (let i = 0; i < final.length; i++) {
+          const settle = (i + 1) / (final.length + 1);
+          const ch = final[i];
+          out += p > settle || !/[0-9]/.test(ch) ? ch : DIGITS[Math.floor(hash(seed, i, Math.floor(t * 30)) * 10)];
+        }
+        return out;
+      }
+
+      // ---------- slide 1: glyph rain (Doto, CELL 13x16 pt, tail 9, ~8% gold) ----------
+      const rain = document.getElementById("rain");
+      const ctx = rain.getContext("2d");
+      const CW = 39, CH = 48, TAIL = 9;
+      const COLS = Math.ceil(1080 / CW), ROWS = Math.ceil(1300 / CH);
+      const GLYPHS = "0123456789+-:.";
+      function drawRain(t) {
+        ctx.clearRect(0, 0, 1080, 1300);
+        if (t > 5.6) return;
+        ctx.font = "900 34px Doto";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const span = ROWS + TAIL + 6;
+        for (let c = 0; c < COLS; c++) {
+          const speed = 5 + 9 * hash(c, 1, 3);
+          const head = (hash(c, 2, 5) * span + speed * t) % span;
+          for (let k = 0; k <= TAIL; k++) {
+            const r = Math.floor(head) - k;
+            if (r < 0 || r >= ROWS) continue;
+            const a = Math.pow(1 - k / (TAIL + 1), 1.6) * (k === 0 ? 0.5 : 0.26);
+            const g = GLYPHS[Math.floor(hash(c, r, Math.floor(t * 12) + k) * GLYPHS.length)];
+            const gold = hash(c * 31 + r, 7, 11) < 0.08;
+            ctx.fillStyle = gold ? `rgba(201,164,92,${a * 1.6})` : `rgba(255,255,255,${a})`;
+            ctx.fillText(g, c * CW + CW / 2, r * CH + CH / 2);
+          }
+        }
+      }
+
+      // ---------- các mốc, 120 BPM ----------
+      const SEQ = [1, 1, 0, 1, 1, 1, 0, 1, 0, 1];
+      const TAP0 = 6.5, TAP = 0.25;
+      const CLEAR = TAP0 + 9 * TAP;
+      const SHOT1 = 11.75, SHOT2 = 13.0, LEVEL = 14.0;
+      const POT1 = SHOT1 + 0.62, POT2 = SHOT2 - 0.05 + 0.62, POT3 = 18.43, ZONE = 18.85;
+      const PAGES = [5.0, 10.5, 15.5];
+      const DROP = 27.0;
+
+      // rung: [lúc, biên độ px, dài]; tắt dần bậc hai
+      const SHAKES = [
+        [1.3, 8, 0.4], [1.7, 8, 0.35], [CLEAR, 16, 0.6], [POT1, 6, 0.3], [POT2, 6, 0.3], [LEVEL, 18, 0.6],
+        [POT3, 6, 0.3], [ZONE, 12, 0.5], [22.75, 8, 0.35], [23.0, 14, 0.45], [24.25, 14, 0.45], [25.5, 14, 0.45], [DROP, 30, 0.8],
+      ];
+      // đá zoom: [lúc, biên độ scale]
+      const KICKS = [
+        [1.7, 0.04], [2.5, 0.015], [2.58, 0.015], [2.66, 0.015], [2.74, 0.015],
+        ...SEQ.map((_, i) => [TAP0 + i * TAP, 0.022]),
+        [CLEAR, 0.06], [POT1, 0.03], [POT2, 0.03], [LEVEL, 0.06], [POT3, 0.03], [ZONE, 0.05],
+        [23.0, 0.05], [24.25, 0.05], [25.5, 0.05], [DROP, 0.08],
+      ];
+      function shakeAt(t) {
+        let x = 0, y = 0, r = 0;
+        for (let i = 0; i < SHAKES.length; i++) {
+          const [s, a, d] = SHAKES[i];
+          const p = (t - s) / d;
+          if (p < 0 || p >= 1) continue;
+          const e = a * (1 - p) * (1 - p);
+          x += e * noise(t * 30, 11 + i * 3);
+          y += e * noise(t * 30, 12 + i * 3);
+          r += e * 0.05 * noise(t * 24, 13 + i * 3);
+        }
+        return [x, y, r];
+      }
+      function kickAt(t) {
+        let k = 0;
+        for (const [s, a] of KICKS) {
+          const dt = t - s;
+          if (dt < 0 || dt > 0.8) continue;
+          k = Math.max(k, a * (dt < 0.05 ? dt / 0.05 : Math.exp(-9 * (dt - 0.05))));
+        }
+        return k;
+      }
+      // lật trang kiểu whip: 0..1..0 trong 0.45 s
+      function whipAt(t) {
+        for (const p0 of PAGES) {
+          const p = (t - p0) / 0.45;
+          if (p > 0 && p < 1) return Math.sin(Math.PI * p);
+        }
+        return 0;
+      }
+      // lò xo: vọt quá rồi tắt
+      const spring = (dt, a) => (dt < 0 || dt > 1.2 ? 0 : a * Math.exp(-6 * dt) * Math.cos(17 * dt));
+
+      // ---------- confetti dạng nghiệm đóng ----------
+      const conf = document.getElementById("conf");
+      const cctx = conf.getContext("2d");
+      const BURSTS = [
+        { t: CLEAR, x: 40, y: 1760, ang: -62, spread: 22, n: 70, v: [1900, 2900], seed: 1 },
+        { t: CLEAR, x: 1040, y: 1760, ang: -118, spread: 22, n: 70, v: [1900, 2900], seed: 2 },
+        { t: ZONE, x: 540, y: 980, ang: -90, spread: 180, n: 44, v: [700, 1300], seed: 3 },
+        { t: DROP, x: 540, y: 1060, ang: -90, spread: 75, n: 150, v: [1300, 2500], seed: 4 },
+      ];
+      const CONF_COL = ["#c9a45c", "#ffffff", "#f3dfae", "#c9a45c"];
+      const DRAG = 2.2;
+      function drawConfetti(t) {
+        cctx.clearRect(0, 0, 1080, 1920);
+        for (const b of BURSTS) {
+          const dt = t - b.t;
+          if (dt < 0 || dt > 1.8) continue;
+          const go = (1 - Math.exp(-DRAG * dt)) / DRAG;
+          for (let i = 0; i < b.n; i++) {
+            const life = 1.8 * (0.65 + 0.35 * hash(i, b.seed, 3));
+            if (dt > life) continue;
+            const a = ((b.ang + (hash(i, b.seed, 1) * 2 - 1) * b.spread) * Math.PI) / 180;
+            const v = lerp(b.v[0], b.v[1], hash(i, b.seed, 2));
+            const x = b.x + Math.cos(a) * v * go + Math.sin(dt * 6 + i) * 18;
+            const y = b.y + Math.sin(a) * v * go + 700 * dt * dt;
+            const w = 12 + 10 * hash(i, b.seed, 6);
+            cctx.save();
+            cctx.globalAlpha = dt > life * 0.7 ? 1 - (dt - life * 0.7) / (life * 0.3) : 1;
+            cctx.translate(x, y);
+            cctx.rotate(hash(i, b.seed, 4) * 6.28 + dt * (6 + 8 * hash(i, b.seed, 5)));
+            cctx.scale(1, Math.cos(dt * 9 + i));
+            cctx.fillStyle = CONF_COL[i % 4];
+            cctx.fillRect(-w / 2, -w * 0.28, w, w * 0.55);
+            cctx.restore();
+          }
+        }
+      }
+
+      const marks = SEQ.map((_, i) => document.getElementById("m" + i));
+      const refCount = document.getElementById("refCount");
+      const refLabel = document.getElementById("refLabel");
+      const ladderNum = document.getElementById("ladderNum");
+      const rep0 = document.getElementById("rep0");
+      const rep1 = document.getElementById("rep1");
+      const countEl = document.getElementById("count");
+      const blk = [0, 1, 2, 3].map((i) => document.getElementById("blk" + i));
+      const nextLabel = document.getElementById("nextLabel");
+      const k1num = document.getElementById("k1num");
+      const k3num = document.getElementById("k3num");
+      const endNum = document.getElementById("endNum");
+      const shot = document.getElementById("shot");
+      const outWrap = document.getElementById("outWrap");
+      const track = document.getElementById("track");
+      const glow = document.getElementById("glow");
+      const bgRow1 = document.getElementById("bgRow1");
+      const bgRow2 = document.getElementById("bgRow2");
+      const flashEl = document.getElementById("flash");
+
+      // Mọi trạng thái dạng chữ/canvas/rung là hàm thuần của t, seek tới đâu ra đúng khung đó
+      function render(t) {
+        drawRain(t);
+        drawConfetti(t);
+        countEl.textContent = scramble("120", clamp01((t - 0.7) / 1.0), t, 101);
+        for (let i = 0; i < 4; i++) {
+          blk[i].textContent = scramble("30", clamp01((t - 2.5 - i * 0.08) / 0.6), t, 200 + i);
+        }
+
+        const n = t < TAP0 ? 0 : Math.min(10, Math.floor((t - TAP0) / TAP + 1e-6) + 1);
+        let passed = 0, lastPass = -9;
+        for (let i = 0; i < 10; i++) {
+          const state = i < n ? (SEQ[i] ? "pass" : "miss") : "";
+          marks[i].className = "mark" + (state ? " " + state : "");
+          if (i < n && SEQ[i]) {
+            passed++;
+            lastPass = TAP0 + i * TAP;
+          }
+        }
+        refCount.textContent = String(passed);
+        const cleared = passed >= 7;
+        refCount.style.color = cleared ? "#C9A45C" : "#FFFFFF";
+        refCount.style.transform = `scale(${(1 + spring(t - lastPass, 0.35) + spring(t - CLEAR, 0.6)).toFixed(4)})`;
+        refLabel.textContent = cleared ? "SET CLEARED · 7 OF 10" : "PASSED · NEED 7";
+        refLabel.style.color = cleared ? "#C9A45C" : "#8A8A8A";
+
+        ladderNum.textContent = t < LEVEL ? "1" : "2";
+        const reps = t < POT1 ? 0 : t < POT2 ? 1 : t < LEVEL ? 2 : 0;
+        rep0.className = "rep" + (reps >= 1 ? " on" : "");
+        rep1.className = "rep" + (reps >= 2 ? " on" : "");
+
+        nextLabel.textContent = t < 15.85 ? "Next" : "Start";
+        k1num.textContent = scramble("120", clamp01((t - 23.0) / 0.5), t, 303);
+        k3num.textContent = scramble("7/10", clamp01((t - 24.25) / 0.5), t, 404);
+        endNum.textContent = String(Math.round(120 * (1 - Math.pow(1 - clamp01((t - 27.45) / 0.8), 3))));
+
+        // ống kính: rung + đá zoom + whip lúc lật trang
+        const [sx, sy, sr] = shakeAt(t);
+        const w = whipAt(t);
+        const tr = `translate(${sx.toFixed(2)}px,${sy.toFixed(2)}px) rotate(${sr.toFixed(3)}deg) scale(${(1 + kickAt(t) - 0.07 * w).toFixed(4)})`;
+        shot.style.transform = tr;
+        outWrap.style.transform = tr;
+        track.style.filter = w > 0.01 ? `blur(${(12 * w).toFixed(2)}px)` : "";
+
+        // sân khấu chỉ lộ khi iPhone còn nhỏ trong khung
+        const stageOn = t < 2.2 || (t > 20.9 && t < 23.2) ? 1 : 0;
+        glow.style.opacity = (stageOn * (0.55 + 0.45 * Math.exp(-7 * (t % 0.5)))).toFixed(3);
+        bgRow1.style.opacity = stageOn;
+        bgRow2.style.opacity = stageOn;
+        bgRow1.style.transform = `translateX(${(-300 - t * 70).toFixed(1)}px)`;
+        bgRow2.style.transform = `translateX(${(-1400 + t * 70).toFixed(1)}px)`;
+
+        let fl = 0;
+        const dd = t - DROP;
+        if (dd >= 0 && dd < 0.35) fl = 0.85 * (dd < 0.04 ? dd / 0.04 : 1 - (dd - 0.04) / 0.31);
+        const dc = t - CLEAR;
+        if (dc >= 0 && dc < 0.25) fl = Math.max(fl, 0.2 * (1 - dc / 0.25));
+        flashEl.style.opacity = fl.toFixed(3);
+      }
+
+      const tl = gsap.timeline({ paused: true });
+      const clock = { t: 0 };
+      tl.to(clock, { t: 30, duration: 30, ease: "none", onUpdate: () => render(clock.t) }, 0);
+
+      // ---------- camera: #cam gốc 0 0, giữ tâm ngang 540; vy là toạ độ video đặt vào giữa khung ----------
+      // APP (1.5, 840) thấy hình + chữ của slide, cắt nút dưới; ART đẩy sát vào hình; punch là cú đâm vào khoảnh khắc
+      function cam(at, dur, s, vy, ease) {
+        tl.to("#cam", { scale: s, x: 540 - s * 540, y: 960 - s * vy, duration: dur, ease: ease || "expo.inOut" }, at);
+      }
+      function drift(at, dur, s, vy) {
+        const s2 = s * (1 + 0.012 * dur);
+        tl.to("#cam", { scale: s2, x: 540 - s2 * 540, y: 960 - s2 * vy, duration: dur, ease: "none" }, at);
+      }
+      function punch(at, s, vy, hold) {
+        cam(at, 0.32, s, vy, "expo.out");
+        drift(at + 0.32, hold, s, vy);
+      }
+      const APP_S = 1.5, APP_Y = 840;
+      tl.set("#cam", { transformOrigin: "0 0", scale: 1, x: 0, y: 0 }, 0);
+
+      // ---------- chữ trồi trong mặt nạ, có vọt nhẹ ----------
+      function rise(sel, at, stagger) {
+        tl.fromTo(sel, { yPercent: 115 }, { yPercent: 0, duration: 0.5, ease: "back.out(1.5)", stagger: stagger || 0.08 }, at);
+      }
+      function sink(sel, at) {
+        tl.to(sel, { yPercent: -115, duration: 0.26, ease: "power2.in", stagger: { each: 0.06, from: "end" } }, at);
+      }
+      function copyIn(s, at) {
+        rise(`${s} .kick .mi`, at);
+        rise(`${s} .title .mi`, at + 0.08);
+        rise(`${s} .body .mi`, at + 0.28);
+      }
+
+      // ---------- tap: dấu chạm hiện 0.07 s trước phách, nút lún rồi bật lò xo ----------
+      function press(sel, at) {
+        tl.to(sel, { scale: 0.9, duration: 0.06, ease: "power2.out", overwrite: "auto" }, at);
+        tl.to(sel, { scale: 1, duration: 0.18, ease: "back.out(3)" }, at + 0.06);
+      }
+      function tap(btn, mark, at) {
+        tl.fromTo(mark, { opacity: 0, scale: 1.3 }, { opacity: 1, scale: 1, duration: 0.07, ease: "power2.out", immediateRender: false }, at - 0.07);
+        tl.to(mark, { opacity: 0, scale: 1.1, duration: 0.1, ease: "power1.out" }, at + 0.08);
+        press(btn, at);
+      }
+      function page(i, at) {
+        tl.to("#track", { x: -1080 * i, duration: 0.45, ease: "expo.inOut" }, at);
+        tl.to("#pip" + (i - 1), { width: 18, backgroundColor: "rgba(255,255,255,0.1)", duration: 0.35, ease: "power2.inOut" }, at + 0.05);
+        tl.to("#pip" + i, { width: 60, backgroundColor: "#ffffff", duration: 0.35, ease: "power2.inOut" }, at + 0.05);
+        copyIn(`#s${i + 1}`, at + 0.35);
+      }
+
+      // ---------- mở: icon nở thành màn hình iPhone ----------
+      const ICON_CLIP = "inset(940.67px 306.67px 940.67px 306.67px round 104px)";
+      const FULL_CLIP = "inset(0px 0px 0px 0px round 148px)";
+      tl.set("#screen", { clipPath: ICON_CLIP }, 0);
+      tl.set("#body", { opacity: 0 }, 0);
+      tl.to("#screen", { clipPath: FULL_CLIP, duration: 0.8, ease: "expo.inOut" }, 0.5);
+      tl.to("#icon", { opacity: 0, scale: 1.08, duration: 0.25, ease: "power1.in" }, 0.55);
+      tl.to("#body", { opacity: 1, duration: 0.45, ease: "power2.out" }, 0.85);
+      drift(0.3, 1.2, 1, 960);
+
+      // ---------- slide 1: 120 lăn số rồi bật, bốn khối nảy, chữ lên ----------
+      cam(1.5, 0.6, 1.75, 760);
+      tl.fromTo("#count", { scale: 1.3 }, { scale: 1, duration: 0.8, ease: "elastic.out(1, 0.4)", immediateRender: false }, 1.7);
+      tl.fromTo("#count", { color: "#C9A45C" }, { color: "#FFFFFF", duration: 0.6, ease: "power1.inOut", immediateRender: false }, 1.9);
+      tl.from("#s1 .block", { opacity: 0, y: 70, scale: 0.6, duration: 0.6, stagger: 0.08, ease: "back.out(2)" }, 2.5);
+      drift(2.1, 0.9, 1.75, 760);
+      cam(3.0, 0.55, APP_S, APP_Y);
+      copyIn("#s1", 3.05);
+      drift(3.55, 1.45, APP_S, APP_Y);
+      page(1, 5.0);
+
+      // ---------- slide 2: trọng tài, mười chạm theo móc đơn, CLEAR là cú đâm ----------
+      drift(5.0, 0.9, APP_S, APP_Y);
+      cam(5.9, 0.5, 1.7, 800);
+      for (let i = 0; i < SEQ.length; i++) {
+        const at = TAP0 + i * TAP;
+        tap(SEQ[i] ? "#btnPass" : "#btnMiss", SEQ[i] ? "#tPass" : "#tMiss", at);
+        tl.fromTo("#m" + i, { scale: 0.3 }, { scale: 1, duration: 0.35, ease: "back.out(3)", immediateRender: false }, at);
+      }
+      tl.to("#s2 .board", { borderColor: "#C9A45C", duration: 0.3, ease: "power2.out" }, CLEAR);
+      punch(CLEAR, 2.2, 700, 0.5);
+      cam(9.6, 0.55, APP_S, APP_Y);
+      page(2, 10.5);
+
+      // ---------- slide 3: pot, stop dead, hai lần, LEVEL là cú đâm ----------
+      cam(11.1, 0.5, 1.7, 780);
+      function flash(sel, at) {
+        tl.fromTo(sel, { attr: { r: 6 }, opacity: 0.8 }, { attr: { r: 28 }, opacity: 0, duration: 0.4, ease: "expo.out", immediateRender: false }, at);
+      }
+      function stopShot(at, cueY) {
+        // bi cái lăn tới điểm chạm (OB.y + 2R) rồi đứng; bi mục tiêu vào lỗ giữa
+        tl.to("#ladAim", { opacity: 0, duration: 0.15 }, at);
+        tl.to("#ladCue", { attr: { cy: 76 }, duration: 0.32, ease: "power1.in" }, at);
+        tl.to("#ladOb", { attr: { cy: 14 }, duration: 0.3, ease: "power2.out" }, at + 0.32);
+        tl.to("#ladOb", { attr: { r: 4 }, opacity: 0, duration: 0.12 }, at + 0.62);
+        flash("#ladFlash", at + 0.62);
+        tl.to("#ladCue", { opacity: 0, duration: 0.15 }, at + 0.85);
+        tl.set("#ladCue", { attr: { cy: cueY } }, at + 1.0);
+        tl.set("#ladOb", { attr: { cy: 60, r: 8 } }, at + 1.0);
+        tl.set("#ladAim", { attr: { y1: cueY - 8 } }, at + 1.0);
+        tl.to(["#ladCue", "#ladOb", "#ladAim"], { opacity: (i) => (i === 2 ? 0.45 : 1), duration: 0.2 }, at + 1.0);
+      }
+      stopShot(SHOT1, 120);
+      stopShot(SHOT2 - 0.05, 120);
+      tl.fromTo(".rep", { scale: 1 }, { scale: 1, duration: 0.01 }, 11.0);
+      tl.fromTo("#rep0", { scale: 1.8 }, { scale: 1, duration: 0.5, ease: "back.out(3)", immediateRender: false }, POT1);
+      tl.fromTo("#rep1", { scale: 1.8 }, { scale: 1, duration: 0.5, ease: "back.out(3)", immediateRender: false }, POT2);
+      // hai lần sạch: lùi một diamond, số mới vọt vào gold rồi nguội về trắng
+      tl.to(["#ladCue", "#ladMark"], { attr: { cy: 180, y1: 180, y2: 180 }, duration: 0.5, ease: "expo.inOut" }, LEVEL);
+      tl.to("#ladAim", { attr: { y1: 172 }, duration: 0.5, ease: "expo.inOut" }, LEVEL);
+      tl.fromTo("#ladderNum", { scale: 1.9, color: "#C9A45C" }, { scale: 1, color: "#FFFFFF", duration: 1.0, ease: "elastic.out(1, 0.4)", immediateRender: false }, LEVEL);
+      punch(LEVEL, 1.95, 730, 0.5);
+      cam(14.85, 0.55, APP_S, APP_Y);
+      page(3, 15.5);
+
+      // ---------- slide 4: vị trí, zone là cú đâm ----------
+      cam(16.2, 0.5, 1.75, 760);
+      tl.to("#aim1", { opacity: 0.55, duration: 0.4 }, 16.9);
+      tl.to("#aim1", { attr: { "stroke-dashoffset": -24 }, duration: 0.8, ease: "none" }, 16.9);
+      tl.to("#aim1", { opacity: 0, duration: 0.2 }, 17.7);
+      // bi cái tới vị trí bóng ma, bi 1 vào lỗ trên, bi cái trôi theo tiếp tuyến vào zone
+      tl.to("#posCue", { attr: { cx: 308.3, cy: 93.7 }, duration: 0.35, ease: "power1.in" }, 17.7);
+      tl.to("#b1", { x: -40, y: -66, duration: 0.38, ease: "power2.out" }, 18.05);
+      tl.to("#b1", { opacity: 0, scale: 0.5, transformOrigin: "50% 50%", duration: 0.12 }, 18.38);
+      flash("#posFlash", POT3);
+      tl.to("#posCue", { attr: { cx: 239.6, cy: 141.8 }, duration: 0.8, ease: "power3.out" }, 18.05);
+      tl.to("#aimCue", { opacity: 0.8, duration: 0.3 }, 18.1);
+      tl.to("#aimCue", { opacity: 0, duration: 0.3 }, 19.1);
+      rise("#cap1 .mi", 18.25);
+      tl.fromTo("#zone", { scale: 1.6 }, { scale: 1, transformOrigin: "50% 50%", duration: 0.8, ease: "elastic.out(1, 0.35)", immediateRender: false }, ZONE);
+      tl.to("#zone", { attr: { fill: "rgba(201,164,92,0.38)" }, duration: 0.3 }, ZONE);
+      punch(ZONE, 2.1, 720, 1.0);
+      sink("#cap1 .mi", 19.3);
+      rise("#cap2 .mi", 19.55);
+      tl.to("#aim2", { opacity: 0.9, duration: 0.4 }, 19.5);
+      tl.to("#aim2", { attr: { "stroke-dashoffset": -32 }, duration: 1.4, ease: "none" }, 19.5);
+      tl.fromTo("#b2", { scale: 1.6 }, { scale: 1, transformOrigin: "50% 50%", duration: 0.6, ease: "back.out(3)", immediateRender: false }, 19.65);
+      cam(20.2, 0.5, APP_S, APP_Y);
+
+      // ---------- đóng: lùi ra toàn máy, màn hình thu về icon ----------
+      cam(21.0, 0.75, 1, 960);
+      tl.to("#screen", { clipPath: ICON_CLIP, duration: 0.8, ease: "expo.inOut" }, 21.95);
+      tl.to("#body", { opacity: 0, duration: 0.4, ease: "power2.in" }, 21.95);
+      tl.fromTo("#icon", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2.5)", immediateRender: false }, 22.45);
+      tl.to("#icon", { y: -260, duration: 0.45, ease: "expo.inOut" }, 22.72);
+
+      // ---------- ba nhịp chữ, mỗi nhịp một khối màu quét vào ----------
+      tl.to("#blkGold", { clipPath: "inset(0% 0% 0% 0%)", duration: 0.35, ease: "expo.out" }, 23.0);
+      tl.to("#blkFelt", { clipPath: "inset(0% 0% 0% 0%)", duration: 0.35, ease: "expo.out" }, 24.25);
+      tl.to("#blkInk", { clipPath: "inset(0% 0% 0% 0%)", duration: 0.35, ease: "expo.out" }, 25.5);
+      function beat(id, at, hold) {
+        tl.set(`#${id}`, { visibility: "visible" }, at);
+        rise(`#${id} .mi`, at);
+        sink(`#${id} .mi`, at + (hold || 1.0));
+        tl.set(`#${id}`, { visibility: "hidden" }, at + (hold || 1.0) + 0.4);
+      }
+      beat("k1", 23.0);
+      beat("k3", 24.25);
+      tl.fromTo("#k3num", { color: "#C9A45C" }, { color: "#FFFFFF", duration: 0.4, immediateRender: false }, 24.75);
+      beat("k4", 25.5);
+
+      // ---------- drop: chớp trắng, wordmark đập xuống, ánh vàng quét qua ----------
+      tl.set("#endcard", { visibility: "visible" }, DROP);
+      tl.fromTo("#wordmark", { scale: 1.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "expo.out", immediateRender: false }, DROP);
+      tl.fromTo("#wordmark .mi", { backgroundPosition: "100% 0%" }, { backgroundPosition: "0% 0%", duration: 0.9, ease: "power2.inOut", immediateRender: false }, 27.5);
+      tl.from("#rule", { scaleX: 0, duration: 0.5, ease: "back.out(2)" }, 27.2);
+      rise("#tagline .mi", 27.25);
+      rise("#endMeta .mi", 27.45);
+      sink(["#wordmark .mi", "#tagline .mi", "#endMeta .mi"], 29.0);
+      tl.to("#rule", { scaleX: 0, duration: 0.22, ease: "power2.in" }, 29.0);
+      tl.set("#endcard", { visibility: "hidden" }, 29.4);
+      tl.to("#icon", { y: 0, duration: 0.65, ease: "expo.inOut" }, 29.25);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

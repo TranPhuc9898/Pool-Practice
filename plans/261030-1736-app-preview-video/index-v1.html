@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Doto:wght@900&display=block"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* App tokens (mono dark) x3 cho 1080 px = 360 pt */
+      :root {
+        --bg: #000000;
+        --surface: #0d0d0d;
+        --surface-2: #161616;
+        --text: #ffffff;
+        --text-2: #bdbdbd;
+        --text-3: #8a8a8a;
+        --border: rgba(255, 255, 255, 0.1);
+        --gold: #c9a45c;
+        --sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+        --dot: "Doto", ui-monospace, monospace;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: var(--bg);
+        font-family: var(--sans);
+        color: var(--text);
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* ---------- app shell ---------- */
+      #app {
+        overflow: hidden;
+        background: var(--bg);
+      }
+      .status {
+        z-index: 5;
+        position: absolute;
+        top: 54px;
+        left: 96px;
+        right: 96px;
+        display: flex;
+        justify-content: space-between;
+        font-weight: 600;
+        font-size: 48px;
+        letter-spacing: -0.5px;
+      }
+      .status .bars {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+      }
+      .status .batt {
+        width: 75px;
+        height: 36px;
+        border: 3px solid rgba(255, 255, 255, 0.4);
+        border-radius: 11px;
+        padding: 4px;
+      }
+      .status .batt i {
+        display: block;
+        width: 78%;
+        height: 100%;
+        background: #fff;
+        border-radius: 5px;
+      }
+      .status .sig {
+        display: flex;
+        gap: 5px;
+        align-items: flex-end;
+        height: 33px;
+      }
+      .status .sig i {
+        width: 9px;
+        background: #fff;
+        border-radius: 2px;
+      }
+      #skip {
+        z-index: 5;
+        position: absolute;
+        top: 177px;
+        right: 60px;
+        height: 132px;
+        display: flex;
+        align-items: center;
+        font-size: 48px;
+        font-weight: 500;
+        color: var(--text-3);
+      }
+      #track {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4320px;
+        height: 1920px;
+      }
+      .slide {
+        position: absolute;
+        top: 0;
+        width: 1080px;
+        height: 1920px;
+        padding: 330px 60px 408px;
+        display: flex;
+        flex-direction: column;
+      }
+      .art {
+        position: relative;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .copy {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        padding-top: 60px;
+      }
+      .kick {
+        font-size: 39px;
+        font-weight: 600;
+        letter-spacing: 3.6px;
+        color: var(--gold);
+      }
+      .title {
+        font-size: 84px;
+        line-height: 96px;
+        font-weight: 600;
+        letter-spacing: -1.8px;
+      }
+      .body {
+        font-size: 51px;
+        line-height: 72px;
+        color: var(--text-2);
+      }
+      .eyebrow {
+        font-size: 36px;
+        font-weight: 600;
+        letter-spacing: 4.2px;
+        color: var(--text-3);
+      }
+
+      /* footer: pips + PrimaryButton */
+      #pips {
+        position: absolute;
+        bottom: 318px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+      }
+      .pip {
+        width: 18px;
+        height: 18px;
+        border-radius: 9px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      #pip0 {
+        width: 60px;
+        background: #fff;
+      }
+      #next {
+        position: absolute;
+        left: 60px;
+        right: 60px;
+        bottom: 102px;
+        height: 156px;
+        border-radius: 36px;
+        background: #fff;
+        color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 51px;
+        font-weight: 600;
+        overflow: hidden;
+      }
+      .touch {
+        position: absolute;
+        width: 150px;
+        height: 150px;
+        margin: -75px 0 0 -75px;
+        border-radius: 50%;
+        background: rgba(128, 128, 128, 0.45);
+        border: 4px solid rgba(255, 255, 255, 0.7);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* ---------- slide 1: count ---------- */
+      #rain {
+        position: absolute;
+        left: -60px;
+        top: -330px;
+        width: 1080px;
+        height: 1300px;
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 92%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 92%);
+      }
+      .big {
+        position: relative;
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 300px;
+        line-height: 290px;
+        letter-spacing: 12px;
+      }
+      .blocks {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+        width: 960px;
+        margin-top: 66px;
+      }
+      .block {
+        background: rgba(13, 13, 13, 0.92);
+        border: 3px solid var(--border);
+        border-radius: 36px;
+        padding: 36px 0 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      .block b {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 96px;
+        line-height: 96px;
+      }
+      .block span {
+        font-size: 30px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        color: var(--text-3);
+      }
+
+      /* ---------- slide 2: referee ---------- */
+      .board {
+        width: 960px;
+        background: var(--surface);
+        border: 3px solid var(--border);
+        border-radius: 60px;
+        padding: 54px 54px 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #refCount {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 220px;
+        line-height: 220px;
+      }
+      #refLabel {
+        margin-top: 18px;
+      }
+      .marks {
+        display: flex;
+        gap: 18px;
+        margin-top: 54px;
+      }
+      .mark {
+        position: relative;
+        width: 66px;
+        height: 66px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.18);
+      }
+      .mark.pass {
+        background: #fff;
+        border-color: #fff;
+      }
+      .mark.miss {
+        border-color: var(--text-3);
+      }
+      .mark.miss::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 8px;
+        bottom: 8px;
+        width: 5px;
+        margin-left: -2.5px;
+        background: var(--text-3);
+        transform: rotate(45deg);
+        border-radius: 3px;
+      }
+      .verdict {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        width: 960px;
+        margin-top: 48px;
+      }
+      .vwrap {
+        position: relative;
+      }
+      .vbtn {
+        position: relative;
+        height: 156px;
+        border-radius: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 51px;
+        font-weight: 600;
+        overflow: hidden;
+      }
+      #btnMiss {
+        border: 3px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text);
+      }
+      #btnPass {
+        background: #fff;
+        color: #000;
+      }
+
+      /* ---------- slides 3-4: table ---------- */
+      .table {
+        width: 900px;
+        height: 485px;
+        overflow: visible;
+      }
+      .ladderHead {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        width: 900px;
+        margin-bottom: 42px;
+      }
+      .ladderHead .lvl {
+        display: flex;
+        align-items: baseline;
+        gap: 24px;
+      }
+      #ladderNum {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 132px;
+        line-height: 132px;
+      }
+      .reps {
+        display: flex;
+        gap: 18px;
+        padding-bottom: 18px;
+      }
+      .rep {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.2);
+      }
+      .rep.on {
+        background: var(--gold);
+        border-color: var(--gold);
+      }
+      .caption {
+        position: relative;
+        width: 900px;
+        height: 72px;
+        margin-bottom: 36px;
+      }
+      .caption div {
+        position: absolute;
+        inset: 0;
+        font-size: 48px;
+        font-weight: 600;
+        line-height: 72px;
+        text-align: center;
+        opacity: 0;
+      }
+
+      /* ---------- outro ---------- */
+      #outro {
+        background: #000;
+        opacity: 0;
+      }
+      #logo {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 560px;
+        margin: -218px 0 0 -280px;
+      }
+      #endcard {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      #endLogo {
+        width: 260px;
+        margin-bottom: 84px;
+      }
+      #wordmark {
+        font-size: 126px;
+        line-height: 126px;
+        font-weight: 800;
+        letter-spacing: 9px;
+      }
+      #rule {
+        width: 150px;
+        height: 6px;
+        background: var(--gold);
+        border-radius: 3px;
+        margin: 60px 0 54px;
+      }
+      #tagline {
+        font-size: 60px;
+        line-height: 84px;
+        color: var(--text-2);
+        font-weight: 500;
+      }
+      #endMeta {
+        margin-top: 120px;
+        display: flex;
+        gap: 36px;
+        align-items: center;
+      }
+      #endMeta b {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 72px;
+        color: var(--text);
+      }
+      #endMeta i {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--gold);
+      }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-coex"
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="30"
+      data-width="1080"
+      data-height="1920"
+    >
+      <!-- ====================== APP: onboarding ====================== -->
+      <div data-hf-id="hf-9p84" id="app" class="clip" data-start="0" data-duration="22.9" data-track-index="0">
+        <div data-hf-id="hf-8kim" class="status">
+          <span data-hf-id="hf-zwmt">9:41</span>
+          <span data-hf-id="hf-41uz" class="bars">
+            <span data-hf-id="hf-zh8g" class="sig"><i data-hf-id="hf-bbw7" style="height: 12px"></i><i data-hf-id="hf-wn99" style="height: 18px"></i><i data-hf-id="hf-zbbd" style="height: 25px"></i><i data-hf-id="hf-vrv0" style="height: 33px"></i></span>
+            <span data-hf-id="hf-7g6e" class="batt"><i data-hf-id="hf-wt6k"></i></span>
+          </span>
+        </div>
+        <div data-hf-id="hf-ml4z" id="skip">Skip</div>
+
+        <div data-hf-id="hf-r7ju" id="track">
+          <!-- slide 1 -->
+          <section data-hf-id="hf-6ilu" class="slide" id="s1" style="left: 0">
+            <div data-hf-id="hf-y0ev" class="art">
+              <canvas data-hf-id="hf-uafy" id="rain" width="1080" height="1300"></canvas>
+              <div data-hf-id="hf-qnja" class="big" id="count">120</div>
+              <div data-hf-id="hf-21cs" class="eyebrow" style="position: relative; margin-top: 18px">SHOTS A DAY</div>
+              <div data-hf-id="hf-kcai" class="blocks">
+                <div data-hf-id="hf-rs4b" class="block"><b data-hf-id="hf-epz6" id="blk0">30</b><span data-hf-id="hf-ihp5">STROKE</span></div>
+                <div data-hf-id="hf-qusb" class="block"><b data-hf-id="hf-btdv" id="blk1">30</b><span data-hf-id="hf-9bz5">STOP</span></div>
+                <div data-hf-id="hf-qgha" class="block"><b data-hf-id="hf-pk28" id="blk2">30</b><span data-hf-id="hf-yvxo">FOLLOW</span></div>
+                <div data-hf-id="hf-q269" class="block"><b data-hf-id="hf-kesp" id="blk3">30</b><span data-hf-id="hf-3smn">DRAW</span></div>
+              </div>
+            </div>
+            <div data-hf-id="hf-bdx3" class="copy">
+              <div data-hf-id="hf-eqf8" class="kick">DAILY WORKOUT</div>
+              <div data-hf-id="hf-9jdr" class="title">A gym session for your cue.</div>
+              <div data-hf-id="hf-ac5e" class="body">Four blocks of 30 shots. Same plan every day, so you see yourself get better.</div>
+            </div>
+          </section>
+
+          <!-- slide 2 -->
+          <section data-hf-id="hf-xrt4" class="slide" id="s2" style="left: 1080px">
+            <div data-hf-id="hf-kadz" class="art">
+              <div data-hf-id="hf-vhiw" class="board">
+                <div data-hf-id="hf-8b47" id="refCount">0</div>
+                <div data-hf-id="hf-rq5a" class="eyebrow" id="refLabel">PASSED · NEED 7</div>
+                <div data-hf-id="hf-v8m2" class="marks">
+                  <div data-hf-id="hf-6wsm" class="mark" id="m0"></div><div data-hf-id="hf-auwn" class="mark" id="m1"></div><div data-hf-id="hf-270s" class="mark" id="m2"></div><div data-hf-id="hf-2yol" class="mark" id="m3"></div><div data-hf-id="hf-lqea" class="mark" id="m4"></div>
+                  <div data-hf-id="hf-poib" class="mark" id="m5"></div><div data-hf-id="hf-h0mg" class="mark" id="m6"></div><div data-hf-id="hf-hsa9" class="mark" id="m7"></div><div data-hf-id="hf-fh72" class="mark" id="m8"></div><div data-hf-id="hf-jfb3" class="mark" id="m9"></div>
+                </div>
+              </div>
+              <div data-hf-id="hf-6vur" class="verdict">
+                <div data-hf-id="hf-w0hu" class="vwrap"><div data-hf-id="hf-pqiw" class="vbtn" id="btnMiss">Miss</div><div data-hf-id="hf-ty3y" class="touch" id="tMiss" style="left: 50%; top: 50%"></div></div>
+                <div data-hf-id="hf-m3fq" class="vwrap"><div data-hf-id="hf-11q6" class="vbtn" id="btnPass">Pass</div><div data-hf-id="hf-egad" class="touch" id="tPass" style="left: 50%; top: 50%"></div></div>
+              </div>
+            </div>
+            <div data-hf-id="hf-r8s7" class="copy">
+              <div data-hf-id="hf-zr1g" class="kick">YOU'RE THE REFEREE</div>
+              <div data-hf-id="hf-udeg" class="title">Shoot. Tap Pass or Miss.</div>
+              <div data-hf-id="hf-capy" class="body">No camera, no setup. Seven of ten clears the set.</div>
+            </div>
+          </section>
+
+          <!-- slide 3 -->
+          <section data-hf-id="hf-grbt" class="slide" id="s3" style="left: 2160px">
+            <div data-hf-id="hf-jw2y" class="art">
+              <div data-hf-id="hf-2fkq" class="ladderHead">
+                <div data-hf-id="hf-9myq" class="lvl"><span data-hf-id="hf-sw9h" id="ladderNum">1</span><span data-hf-id="hf-ki3l" class="eyebrow">DIAMOND BACK</span></div>
+                <div data-hf-id="hf-68xs" class="reps"><div data-hf-id="hf-m4q4" class="rep" id="rep0"></div><div data-hf-id="hf-mwdx" class="rep" id="rep1"></div></div>
+              </div>
+              <svg data-hf-id="hf-whan" class="table" viewBox="0 0 520 280">
+                <rect data-hf-id="hf-5izj" x="0" y="0" width="520" height="280" rx="18" fill="#161616" />
+                <rect data-hf-id="hf-dmnd" x="20" y="20" width="480" height="240" fill="#3A3A3A" />
+                <g data-hf-id="hf-h2tz" fill="#8A8A8A">
+                  <circle data-hf-id="hf-crb3" cx="80" cy="10" r="2.2" /><circle data-hf-id="hf-a33q" cx="140" cy="10" r="2.2" /><circle data-hf-id="hf-qgjp" cx="200" cy="10" r="2.2" /><circle data-hf-id="hf-4j6i" cx="320" cy="10" r="2.2" /><circle data-hf-id="hf-fx1k" cx="380" cy="10" r="2.2" /><circle data-hf-id="hf-mgrr" cx="440" cy="10" r="2.2" />
+                  <circle data-hf-id="hf-ytix" cx="80" cy="270" r="2.2" /><circle data-hf-id="hf-nrlu" cx="140" cy="270" r="2.2" /><circle data-hf-id="hf-lv23" cx="200" cy="270" r="2.2" /><circle data-hf-id="hf-oqhy" cx="320" cy="270" r="2.2" /><circle data-hf-id="hf-digo" cx="380" cy="270" r="2.2" /><circle data-hf-id="hf-i569" cx="440" cy="270" r="2.2" />
+                  <circle data-hf-id="hf-kv93" cx="10" cy="80" r="2.2" /><circle data-hf-id="hf-saay" cx="10" cy="140" r="2.2" /><circle data-hf-id="hf-u0p5" cx="10" cy="200" r="2.2" />
+                  <circle data-hf-id="hf-todi" cx="510" cy="80" r="2.2" /><circle data-hf-id="hf-tz8l" cx="510" cy="140" r="2.2" /><circle data-hf-id="hf-q75y" cx="510" cy="200" r="2.2" />
+                </g>
+                <g data-hf-id="hf-6h36" fill="#000">
+                  <circle data-hf-id="hf-eql2" cx="20" cy="20" r="13" /><circle data-hf-id="hf-8cfn" cx="500" cy="20" r="13" /><circle data-hf-id="hf-t4wy" cx="20" cy="260" r="13" /><circle data-hf-id="hf-dw3l" cx="500" cy="260" r="13" /><circle data-hf-id="hf-8urr" cx="260" cy="14" r="13" /><circle data-hf-id="hf-jciq" cx="260" cy="266" r="13" />
+                </g>
+                <line data-hf-id="hf-pkrp" id="ladMark" x1="232" y1="120" x2="288" y2="120" stroke="#C9A45C" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.9" />
+                <line data-hf-id="hf-59jl" id="ladAim" x1="260" y1="112" x2="260" y2="22" stroke="#fff" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.45" />
+                <circle data-hf-id="hf-q20k" id="ladOb" cx="260" cy="60" r="8" fill="#000" stroke="#8A8A8A" stroke-width="1.5" />
+                <circle data-hf-id="hf-7geo" id="ladCue" cx="260" cy="120" r="8" fill="#fff" />
+              </svg>
+            </div>
+            <div data-hf-id="hf-quh6" class="copy">
+              <div data-hf-id="hf-3c7i" class="kick">IT GROWS WITH YOU</div>
+              <div data-hf-id="hf-itya" class="title">Get better, it gets harder.</div>
+              <div data-hf-id="hf-zsxw" class="body">Pot it and stop the cue ball dead. Do it twice and it starts one diamond farther back.</div>
+            </div>
+          </section>
+
+          <!-- slide 4 -->
+          <section data-hf-id="hf-prr6" class="slide" id="s4" style="left: 3240px">
+            <div data-hf-id="hf-jhrx" class="art">
+              <div data-hf-id="hf-gsc6" class="caption">
+                <div data-hf-id="hf-x9l3" id="cap1">Pot 1, land in the zone</div>
+                <div data-hf-id="hf-1yvr" id="cap2">Ball 2 is now a <span data-hf-id="hf-0ufv" style="color: var(--gold)">straight shot</span></div>
+              </div>
+              <svg data-hf-id="hf-nir3" class="table" viewBox="0 0 520 280">
+                <rect data-hf-id="hf-ct7j" x="0" y="0" width="520" height="280" rx="18" fill="#161616" />
+                <rect data-hf-id="hf-gxjx" x="20" y="20" width="480" height="240" fill="#3A3A3A" />
+                <g data-hf-id="hf-imjb" fill="#8A8A8A">
+                  <circle data-hf-id="hf-s18f" cx="80" cy="10" r="2.2" /><circle data-hf-id="hf-bp96" cx="140" cy="10" r="2.2" /><circle data-hf-id="hf-qg0p" cx="200" cy="10" r="2.2" /><circle data-hf-id="hf-aibi" cx="320" cy="10" r="2.2" /><circle data-hf-id="hf-gs5c" cx="380" cy="10" r="2.2" /><circle data-hf-id="hf-0v0n" cx="440" cy="10" r="2.2" />
+                  <circle data-hf-id="hf-cte5" cx="80" cy="270" r="2.2" /><circle data-hf-id="hf-1886" cx="140" cy="270" r="2.2" /><circle data-hf-id="hf-eqm3" cx="200" cy="270" r="2.2" /><circle data-hf-id="hf-s8fe" cx="320" cy="270" r="2.2" /><circle data-hf-id="hf-xf9s" cx="380" cy="270" r="2.2" /><circle data-hf-id="hf-34px" cx="440" cy="270" r="2.2" />
+                  <circle data-hf-id="hf-7mt3" cx="10" cy="80" r="2.2" /><circle data-hf-id="hf-h81a" cx="10" cy="140" r="2.2" /><circle data-hf-id="hf-g931" cx="10" cy="200" r="2.2" />
+                  <circle data-hf-id="hf-k1t6" cx="510" cy="80" r="2.2" /><circle data-hf-id="hf-tmgp" cx="510" cy="140" r="2.2" /><circle data-hf-id="hf-fyru" cx="510" cy="200" r="2.2" />
+                </g>
+                <g data-hf-id="hf-fm1y" fill="#000">
+                  <circle data-hf-id="hf-f75m" cx="20" cy="20" r="13" /><circle data-hf-id="hf-wndf" cx="500" cy="20" r="13" /><circle data-hf-id="hf-2tqe" cx="20" cy="260" r="13" /><circle data-hf-id="hf-vdn9" cx="500" cy="260" r="13" /><circle data-hf-id="hf-mg9z" cx="260" cy="14" r="13" /><circle data-hf-id="hf-dzwm" cx="260" cy="266" r="13" />
+                </g>
+                <circle data-hf-id="hf-ir0v" id="zone" cx="239.6" cy="141.8" r="22" fill="rgba(201,164,92,0.16)" stroke="#C9A45C" stroke-width="1.6" stroke-dasharray="4 3" />
+                <polyline data-hf-id="hf-s4ut" id="aim1" points="380,110 308.3,93.7 260,14" fill="none" stroke="#fff" stroke-width="1.2" stroke-dasharray="4 4" opacity="0" />
+                <line data-hf-id="hf-sof0" id="aimCue" x1="308.3" y1="93.7" x2="239.6" y2="141.8" stroke="#C9A45C" stroke-width="1.2" stroke-dasharray="4 4" opacity="0" />
+                <polyline data-hf-id="hf-wy8m" id="aim2" points="239.6,141.8 250,205 260,266" fill="none" stroke="#C9A45C" stroke-width="1.4" stroke-dasharray="4 4" opacity="0" />
+                <g data-hf-id="hf-7tsk" id="b1">
+                  <circle data-hf-id="hf-uu4r" cx="300" cy="80" r="8" fill="#000" stroke="#8A8A8A" stroke-width="1.5" />
+                  <text data-hf-id="hf-ufk8" x="300" y="83" text-anchor="middle" font-size="8" font-weight="700" fill="#fff" font-family="Be Vietnam Pro">1</text>
+                </g>
+                <g data-hf-id="hf-ipa7" id="b2">
+                  <circle data-hf-id="hf-u7yq" cx="250" cy="205" r="8" fill="#000" stroke="#8A8A8A" stroke-width="1.5" />
+                  <text data-hf-id="hf-ekm0" x="250" y="208" text-anchor="middle" font-size="8" font-weight="700" fill="#fff" font-family="Be Vietnam Pro">2</text>
+                </g>
+                <circle data-hf-id="hf-x49n" id="posCue" cx="380" cy="110" r="8" fill="#fff" />
+              </svg>
+            </div>
+            <div data-hf-id="hf-qg65" class="copy">
+              <div data-hf-id="hf-jaha" class="kick">THEN, POSITION</div>
+              <div data-hf-id="hf-8vee" class="title">Pot one, set up the next.</div>
+              <div data-hf-id="hf-477h" class="body">Send the cue ball into the zone and ball 2 becomes an easy shot. The drill library takes it from here to full runouts.</div>
+            </div>
+          </section>
+        </div>
+
+        <div data-hf-id="hf-63z3" id="pips">
+          <div data-hf-id="hf-dcqc" class="pip" id="pip0"></div><div data-hf-id="hf-e4e5" class="pip" id="pip1"></div><div data-hf-id="hf-i2i6" class="pip" id="pip2"></div><div data-hf-id="hf-m0m7" class="pip" id="pip3"></div>
+        </div>
+        <div data-hf-id="hf-knde" id="next"><span data-hf-id="hf-bhrc" id="nextLabel">Next</span><div data-hf-id="hf-mnax" class="touch" id="tNext" style="left: 50%; top: 50%"></div></div>
+      </div>
+
+      <!-- ====================== OUTRO ====================== -->
+      <div data-hf-id="hf-pk79" id="outro" class="clip" data-start="21.9" data-duration="8.1" data-track-index="1">
+        <img data-hf-id="hf-eu19" id="logo" src="assets/logo.png" alt="" />
+        <div data-hf-id="hf-3q5y" id="endcard">
+          <img data-hf-id="hf-qn2o" id="endLogo" src="assets/logo.png" alt="" />
+          <div data-hf-id="hf-ad3y" id="wordmark">POOL TRAINING</div>
+          <div data-hf-id="hf-8e4z" id="rule"></div>
+          <div data-hf-id="hf-ej0u" id="tagline">A gym session for your cue.</div>
+          <div data-hf-id="hf-2h6p" id="endMeta" class="eyebrow"><b data-hf-id="hf-cij2">120</b><span data-hf-id="hf-sjev">SHOTS A DAY</span><i data-hf-id="hf-zeb8"></i><span data-hf-id="hf-pr2j">4 BLOCKS</span></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+
+      // ---------- deterministic helpers ----------
+      function hash(a, b, c) {
+        let x = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(c | 0, 1274126177);
+        x = Math.imul(x ^ (x >>> 13), 1274126177);
+        x ^= x >>> 16;
+        return (x >>> 0) / 4294967296;
+      }
+      const clamp01 = (v) => Math.max(0, Math.min(1, v));
+      const DIGITS = "0123456789";
+      // Chữ số chốt dần từ trái sang phải, chữ chưa chốt nhảy 30 lần/giây theo hash
+      function scramble(final, p, t, seed) {
+        if (p >= 1) return final;
+        if (p <= 0) return final.replace(/./g, (_, i) => DIGITS[Math.floor(hash(seed, i, Math.floor(t * 30)) * 10)]);
+        let out = "";
+        for (let i = 0; i < final.length; i++) {
+          const settle = (i + 1) / (final.length + 1);
+          out += p > settle ? final[i] : DIGITS[Math.floor(hash(seed, i, Math.floor(t * 30)) * 10)];
+        }
+        return out;
+      }
+
+      // ---------- slide 1: glyph rain (Doto, CELL 13x16 pt, tail 9, ~8% gold) ----------
+      const rain = document.getElementById("rain");
+      const ctx = rain.getContext("2d");
+      const CW = 39, CH = 48, TAIL = 9;
+      const COLS = Math.ceil(1080 / CW), ROWS = Math.ceil(1300 / CH);
+      const GLYPHS = "0123456789+-:.";
+      function drawRain(t) {
+        ctx.clearRect(0, 0, 1080, 1300);
+        ctx.font = "900 34px Doto";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const span = ROWS + TAIL + 6;
+        for (let c = 0; c < COLS; c++) {
+          const speed = 5 + 9 * hash(c, 1, 3);
+          const head = (hash(c, 2, 5) * span + speed * t) % span;
+          for (let k = 0; k <= TAIL; k++) {
+            const r = Math.floor(head) - k;
+            if (r < 0 || r >= ROWS) continue;
+            const a = Math.pow(1 - k / (TAIL + 1), 1.6) * (k === 0 ? 0.5 : 0.26);
+            const g = GLYPHS[Math.floor(hash(c, r, Math.floor(t * 12) + k) * GLYPHS.length)];
+            const gold = hash(c * 31 + r, 7, 11) < 0.08;
+            ctx.fillStyle = gold ? `rgba(201,164,92,${a * 1.6})` : `rgba(255,255,255,${a})`;
+            ctx.fillText(g, c * CW + CW / 2, r * CH + CH / 2);
+          }
+        }
+      }
+
+      // ---------- slide 2: referee taps ----------
+      const SEQ = [1, 1, 0, 1, 1, 1, 0, 1, 0, 1];
+      const TAP0 = 6.55, TAP = 0.42;
+      const marks = SEQ.map((_, i) => document.getElementById("m" + i));
+      const refCount = document.getElementById("refCount");
+      const refLabel = document.getElementById("refLabel");
+
+      // ---------- slide 3: ladder ----------
+      const ladderNum = document.getElementById("ladderNum");
+      const rep0 = document.getElementById("rep0");
+      const rep1 = document.getElementById("rep1");
+
+      const countEl = document.getElementById("count");
+      const blk = [0, 1, 2, 3].map((i) => document.getElementById("blk" + i));
+      const nextLabel = document.getElementById("nextLabel");
+
+      // Mọi trạng thái dạng chữ/canvas là hàm thuần của t, seek tới đâu ra đúng khung đó
+      function render(t) {
+        drawRain(t);
+        countEl.textContent = scramble("120", clamp01((t - 0.35) / 1.1), t, 101);
+        for (let i = 0; i < 4; i++) {
+          blk[i].textContent = scramble("30", clamp01((t - 0.6 - i * 0.14) / 0.8), t, 200 + i);
+        }
+
+        const n = t < TAP0 ? 0 : Math.min(10, Math.floor((t - TAP0) / TAP) + 1);
+        let passed = 0;
+        for (let i = 0; i < 10; i++) {
+          const state = i < n ? (SEQ[i] ? "pass" : "miss") : "";
+          marks[i].className = "mark" + (state ? " " + state : "");
+          if (i < n && SEQ[i]) passed++;
+        }
+        refCount.textContent = String(passed);
+        const cleared = passed >= 7;
+        refCount.style.color = cleared ? "#C9A45C" : "#FFFFFF";
+        refLabel.textContent = cleared ? "SET CLEARED · 7 OF 10" : "PASSED · NEED 7";
+        refLabel.style.color = cleared ? "#C9A45C" : "#8A8A8A";
+
+        ladderNum.textContent = t < 14.55 ? "1" : "2";
+        const reps = t < 13.0 ? 0 : t < 14.15 ? 1 : t < 14.55 ? 2 : t < 16.05 ? 0 : 1;
+        rep0.className = "rep" + (reps >= 1 ? " on" : "");
+        rep1.className = "rep" + (reps >= 2 ? " on" : "");
+
+        nextLabel.textContent = t < 16.95 ? "Next" : "Start";
+      }
+
+      const tl = gsap.timeline({ paused: true });
+      const clock = { t: 0 };
+      tl.to(clock, { t: 30, duration: 30, ease: "none", onUpdate: () => render(clock.t) }, 0);
+
+      tl.set([".touch"], { opacity: 0, scale: 0.5 }, 0);
+
+      // ---------- open ----------
+      tl.from("#app", { opacity: 0, scale: 1.04, duration: 0.7, ease: "power2.out" }, 0);
+      tl.from("#s1 .copy > *", { opacity: 0, y: 40, duration: 0.6, stagger: 0.12, ease: "power3.out" }, 0.45);
+      tl.from("#s1 .block", { opacity: 0, y: 30, duration: 0.5, stagger: 0.1, ease: "power3.out" }, 0.5);
+
+      // ---------- tap + pager ----------
+      function tap(touchSel, btnSel, at) {
+        tl.fromTo(touchSel, { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.14, ease: "power2.out", immediateRender: false }, at);
+        tl.to(touchSel, { opacity: 0, scale: 1.5, duration: 0.3, ease: "power1.out" }, at + 0.16);
+        tl.to(btnSel, { scale: 0.96, duration: 0.1, ease: "power2.out" }, at);
+        tl.to(btnSel, { scale: 1, duration: 0.22, ease: "back.out(2)" }, at + 0.12);
+      }
+      function page(i, at) {
+        tl.to("#track", { x: -1080 * i, duration: 0.6, ease: "power3.inOut" }, at);
+        tl.to("#pip" + (i - 1), { width: 18, backgroundColor: "rgba(255,255,255,0.1)", duration: 0.35, ease: "power2.inOut" }, at + 0.1);
+        tl.to("#pip" + i, { width: 60, backgroundColor: "#ffffff", duration: 0.35, ease: "power2.inOut" }, at + 0.1);
+        tl.from(`#s${i + 1} .copy > *`, { opacity: 0, x: 80, duration: 0.55, stagger: 0.08, ease: "power3.out" }, at + 0.25);
+      }
+
+      tap("#tNext", "#next", 5.15);
+      page(1, 5.4);
+
+      // ---------- slide 2: verdict taps ----------
+      for (let i = 0; i < SEQ.length; i++) {
+        const at = TAP0 + i * TAP - 0.06;
+        const btn = SEQ[i] ? "#btnPass" : "#btnMiss";
+        const tch = SEQ[i] ? "#tPass" : "#tMiss";
+        tl.fromTo(tch, { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.1, ease: "power2.out", immediateRender: false }, at);
+        tl.to(tch, { opacity: 0, scale: 1.4, duration: 0.22, ease: "power1.out" }, at + 0.12);
+        tl.to(btn, { scale: 0.95, duration: 0.08 }, at);
+        tl.to(btn, { scale: 1, duration: 0.2, ease: "back.out(2)" }, at + 0.1);
+        tl.fromTo("#m" + i, { scale: 0.4 }, { scale: 1, duration: 0.3, ease: "back.out(3)", immediateRender: false }, at + 0.06);
+      }
+      tl.fromTo("#refCount", { scale: 1 }, { scale: 1.12, duration: 0.18, yoyo: true, repeat: 1, ease: "power2.out" }, TAP0 + 9 * TAP);
+
+      tap("#tNext", "#next", 10.95);
+      page(2, 11.2);
+
+      // ---------- slide 3: pot, stop dead, twice, then one diamond back ----------
+      function stopShot(at, cueY) {
+        // bi cái lăn tới điểm chạm (OB.y + 2R) rồi đứng; bi mục tiêu vào lỗ giữa
+        tl.to("#ladAim", { opacity: 0, duration: 0.15 }, at);
+        tl.to("#ladCue", { attr: { cy: 76 }, duration: 0.32, ease: "power1.in" }, at);
+        tl.to("#ladOb", { attr: { cy: 14 }, duration: 0.3, ease: "power2.out" }, at + 0.32);
+        tl.to("#ladOb", { attr: { r: 4 }, opacity: 0, duration: 0.12 }, at + 0.62);
+        // dựng lại thế bi
+        tl.to("#ladCue", { opacity: 0, duration: 0.15 }, at + 0.85);
+        tl.set("#ladCue", { attr: { cy: cueY } }, at + 1.0);
+        tl.set("#ladOb", { attr: { cy: 60, r: 8 } }, at + 1.0);
+        tl.set("#ladAim", { attr: { y1: cueY - 8 } }, at + 1.0);
+        tl.to(["#ladCue", "#ladOb", "#ladAim"], { opacity: (i) => (i === 2 ? 0.45 : 1), duration: 0.2 }, at + 1.0);
+      }
+      stopShot(12.15, 120);
+      stopShot(13.3, 120);
+      // hai lần sạch: lùi một diamond
+      tl.to(["#ladCue", "#ladMark"], { attr: { cy: 180, y1: 180, y2: 180 }, duration: 0.5, ease: "power3.inOut" }, 14.55);
+      tl.to("#ladAim", { attr: { y1: 172 }, duration: 0.5, ease: "power3.inOut" }, 14.55);
+      tl.fromTo("#ladderNum", { scale: 1.3, color: "#C9A45C" }, { scale: 1, color: "#FFFFFF", duration: 0.6, ease: "power3.out" }, 14.55);
+      tl.to("#ladAim", { opacity: 0, duration: 0.15 }, 15.3);
+      tl.to("#ladCue", { attr: { cy: 76 }, duration: 0.45, ease: "power1.in" }, 15.3);
+      tl.to("#ladOb", { attr: { cy: 14 }, duration: 0.3, ease: "power2.out" }, 15.75);
+      tl.to("#ladOb", { attr: { r: 4 }, opacity: 0, duration: 0.12 }, 16.05);
+
+      tap("#tNext", "#next", 16.45);
+      page(3, 16.7);
+
+      // ---------- slide 4: position ----------
+      tl.to("#aim1", { opacity: 0.55, duration: 0.4 }, 17.4);
+      tl.to("#aim1", { attr: { "stroke-dashoffset": -24 }, duration: 0.8, ease: "none" }, 17.4);
+      tl.to("#aim1", { opacity: 0, duration: 0.2 }, 18.2);
+      // bi cái tới vị trí bóng ma, bi 1 vào lỗ trên, bi cái trôi theo tiếp tuyến vào zone
+      tl.to("#posCue", { attr: { cx: 308.3, cy: 93.7 }, duration: 0.35, ease: "power1.in" }, 18.2);
+      tl.to("#b1", { x: -40, y: -66, duration: 0.38, ease: "power2.out" }, 18.55);
+      tl.to("#b1", { opacity: 0, scale: 0.5, transformOrigin: "50% 50%", duration: 0.12 }, 18.88);
+      tl.to("#posCue", { attr: { cx: 239.6, cy: 141.8 }, duration: 0.8, ease: "power3.out" }, 18.55);
+      tl.to("#aimCue", { opacity: 0.8, duration: 0.3 }, 18.6);
+      tl.to("#aimCue", { opacity: 0, duration: 0.3 }, 19.6);
+      tl.fromTo("#cap1", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 18.75);
+      tl.fromTo("#zone", { scale: 1 }, { scale: 1.22, transformOrigin: "50% 50%", duration: 0.2, yoyo: true, repeat: 1, ease: "power2.out", immediateRender: false }, 19.35);
+      tl.to("#zone", { attr: { fill: "rgba(201,164,92,0.32)" }, duration: 0.3 }, 19.35);
+      tl.to("#cap1", { opacity: 0, y: -20, duration: 0.3, ease: "power2.in" }, 19.9);
+      tl.fromTo("#cap2", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 20.2);
+      tl.to("#aim2", { opacity: 0.9, duration: 0.4 }, 20.15);
+      tl.to("#aim2", { attr: { "stroke-dashoffset": -32 }, duration: 1.4, ease: "none" }, 20.15);
+      tl.fromTo("#b2", { scale: 1 }, { scale: 1.25, transformOrigin: "50% 50%", duration: 0.2, yoyo: true, repeat: 1 }, 20.3);
+
+      // ---------- Start -> logo outro ----------
+      tap("#tNext", "#next", 21.55);
+      tl.to("#app", { opacity: 0, scale: 0.94, duration: 0.5, ease: "power2.in" }, 21.95);
+      tl.to("#outro", { opacity: 1, duration: 0.01 }, 21.9);
+      tl.set("#endcard", { opacity: 0 }, 21.9);
+      tl.fromTo(
+        "#logo",
+        { opacity: 0, scale: 0.86, clipPath: "circle(0% at 50% 50%)", filter: "blur(18px)" },
+        { opacity: 1, scale: 1, clipPath: "circle(75% at 50% 50%)", filter: "blur(0px)", duration: 1.1, ease: "power3.out" },
+        22.35
+      );
+      // hold 500 ms rồi phóng 7x, ease-in-cubic 560 ms, mờ dần
+      tl.to("#logo", { scale: 7, opacity: 0, duration: 0.56, ease: "power3.in" }, 23.95);
+      tl.to("#endcard", { opacity: 1, duration: 0.01 }, 24.35);
+      tl.from("#endLogo", { opacity: 0, scale: 0.7, duration: 0.7, ease: "back.out(1.6)" }, 24.4);
+      tl.from("#wordmark", { opacity: 0, y: 60, duration: 0.9, ease: "power3.out" }, 24.55);
+      tl.from("#rule", { scaleX: 0, duration: 0.6, ease: "power3.out" }, 24.95);
+      tl.from("#tagline", { opacity: 0, y: 30, duration: 0.7, ease: "power3.out" }, 25.1);
+      tl.from("#endMeta", { opacity: 0, y: 30, duration: 0.7, ease: "power3.out" }, 25.4);
+      tl.to("#endcard", { scale: 1.03, duration: 4.6, ease: "none" }, 25.4);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

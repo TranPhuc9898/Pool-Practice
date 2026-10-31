@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Doto:wght@900&display=block"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* App tokens (mono dark) x3 cho 1080 px = 360 pt */
+      :root {
+        --bg: #000000;
+        --surface: #0d0d0d;
+        --surface-2: #161616;
+        --text: #ffffff;
+        --text-2: #bdbdbd;
+        --text-3: #8a8a8a;
+        --border: rgba(255, 255, 255, 0.1);
+        --gold: #c9a45c;
+        --sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+        --dot: "Doto", ui-monospace, monospace;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: var(--bg);
+        font-family: var(--sans);
+        color: var(--text);
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* ---------- app shell ---------- */
+      #app {
+        overflow: hidden;
+        background: var(--bg);
+      }
+      .status {
+        z-index: 5;
+        position: absolute;
+        top: 54px;
+        left: 96px;
+        right: 96px;
+        display: flex;
+        justify-content: space-between;
+        font-weight: 600;
+        font-size: 48px;
+        letter-spacing: -0.5px;
+      }
+      .status .bars {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+      }
+      .status .batt {
+        width: 75px;
+        height: 36px;
+        border: 3px solid rgba(255, 255, 255, 0.4);
+        border-radius: 11px;
+        padding: 4px;
+      }
+      .status .batt i {
+        display: block;
+        width: 78%;
+        height: 100%;
+        background: #fff;
+        border-radius: 5px;
+      }
+      .status .sig {
+        display: flex;
+        gap: 5px;
+        align-items: flex-end;
+        height: 33px;
+      }
+      .status .sig i {
+        width: 9px;
+        background: #fff;
+        border-radius: 2px;
+      }
+      #skip {
+        z-index: 5;
+        position: absolute;
+        top: 177px;
+        right: 60px;
+        height: 132px;
+        display: flex;
+        align-items: center;
+        font-size: 48px;
+        font-weight: 500;
+        color: var(--text-3);
+      }
+      #track {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4320px;
+        height: 1920px;
+      }
+      .slide {
+        position: absolute;
+        top: 0;
+        width: 1080px;
+        height: 1920px;
+        padding: 330px 60px 408px;
+        display: flex;
+        flex-direction: column;
+      }
+      .art {
+        position: relative;
+        z-index: 1;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .copy {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        padding-top: 60px;
+      }
+      .kick {
+        font-size: 39px;
+        font-weight: 600;
+        letter-spacing: 3.6px;
+        color: var(--gold);
+      }
+      .title {
+        font-size: 84px;
+        line-height: 96px;
+        font-weight: 600;
+        letter-spacing: -1.8px;
+      }
+      .body {
+        font-size: 51px;
+        line-height: 72px;
+        color: var(--text-2);
+      }
+      .eyebrow {
+        font-size: 36px;
+        font-weight: 600;
+        letter-spacing: 4.2px;
+        color: var(--text-3);
+      }
+
+      /* footer: pips + PrimaryButton */
+      #pips {
+        position: absolute;
+        bottom: 318px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+      }
+      .pip {
+        width: 18px;
+        height: 18px;
+        border-radius: 9px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      #pip0 {
+        width: 60px;
+        background: #fff;
+      }
+      #next {
+        position: absolute;
+        left: 60px;
+        right: 60px;
+        bottom: 102px;
+        height: 156px;
+        border-radius: 36px;
+        background: #fff;
+        color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 51px;
+        font-weight: 600;
+        overflow: hidden;
+      }
+      #cam {
+        position: absolute;
+        inset: 0;
+        transform-origin: 0 0;
+      }
+      .copy {
+        position: relative;
+      }
+      .w {
+        display: inline-block;
+      }
+      /* quầng gold toả từ tâm, không dùng linear gradient trên nền tối */
+      .glow {
+        position: absolute;
+        width: 1200px;
+        height: 1200px;
+        margin: -600px 0 0 -600px;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(201, 164, 92, 0.42), rgba(201, 164, 92, 0.12) 50%, rgba(201, 164, 92, 0) 100%);
+        opacity: 0.45;
+        pointer-events: none;
+      }
+      #flood2 {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 50% 32%, rgba(201, 164, 92, 0.34), rgba(201, 164, 92, 0.1) 55%, rgba(201, 164, 92, 0.04) 100%);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* ---------- slide 1: count ---------- */
+      #rain {
+        position: absolute;
+        left: -60px;
+        top: -330px;
+        width: 1080px;
+        height: 1300px;
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 92%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 92%);
+      }
+      .big {
+        position: relative;
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 300px;
+        line-height: 290px;
+        letter-spacing: 12px;
+      }
+      .blocks {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+        width: 960px;
+        margin-top: 66px;
+      }
+      .block {
+        background: rgba(13, 13, 13, 0.92);
+        border: 3px solid var(--border);
+        border-radius: 36px;
+        padding: 36px 0 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      .block b {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 96px;
+        line-height: 96px;
+      }
+      .block span {
+        font-size: 30px;
+        font-weight: 600;
+        letter-spacing: 3px;
+        color: var(--text-3);
+      }
+
+      /* ---------- slide 2: referee ---------- */
+      .board {
+        width: 960px;
+        background: var(--surface);
+        border: 3px solid var(--border);
+        border-radius: 60px;
+        padding: 54px 54px 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #refCount {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 220px;
+        line-height: 220px;
+      }
+      #refLabel {
+        margin-top: 18px;
+      }
+      .marks {
+        display: flex;
+        gap: 18px;
+        margin-top: 54px;
+      }
+      .mark {
+        position: relative;
+        width: 66px;
+        height: 66px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.18);
+      }
+      .mark.pass {
+        background: #fff;
+        border-color: #fff;
+      }
+      .mark.miss {
+        border-color: var(--text-3);
+      }
+      .mark.miss::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 8px;
+        bottom: 8px;
+        width: 5px;
+        margin-left: -2.5px;
+        background: var(--text-3);
+        transform: rotate(45deg);
+        border-radius: 3px;
+      }
+      .verdict {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        width: 960px;
+        margin-top: 48px;
+      }
+      .vwrap {
+        position: relative;
+      }
+      .vbtn {
+        position: relative;
+        height: 156px;
+        border-radius: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 51px;
+        font-weight: 600;
+        overflow: hidden;
+      }
+      #btnMiss {
+        border: 3px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text);
+      }
+      #btnPass {
+        background: #fff;
+        color: #000;
+      }
+
+      /* ---------- slides 3-4: table ---------- */
+      .table {
+        width: 900px;
+        height: 485px;
+        overflow: visible;
+      }
+      .ladderHead {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        width: 900px;
+        margin-bottom: 42px;
+      }
+      .ladderHead .lvl {
+        display: flex;
+        align-items: baseline;
+        gap: 24px;
+      }
+      #ladderNum {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 132px;
+        line-height: 132px;
+      }
+      .reps {
+        display: flex;
+        gap: 18px;
+        padding-bottom: 18px;
+      }
+      .rep {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.2);
+      }
+      .rep.on {
+        background: var(--gold);
+        border-color: var(--gold);
+      }
+      .caption {
+        position: relative;
+        width: 900px;
+        height: 72px;
+        margin-bottom: 36px;
+      }
+      .caption div {
+        position: absolute;
+        inset: 0;
+        font-size: 48px;
+        font-weight: 600;
+        line-height: 72px;
+        text-align: center;
+        opacity: 0;
+      }
+
+      /* ---------- outro ---------- */
+      #outro {
+        background: #000;
+      }
+      #owhite {
+        position: absolute;
+        inset: 0;
+        background: #fff;
+      }
+      #oglow {
+        left: 540px;
+        top: 900px;
+        width: 1500px;
+        height: 1500px;
+        margin: -750px 0 0 -750px;
+        opacity: 0;
+      }
+      .k {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        padding-bottom: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        opacity: 0;
+      }
+      .k .num {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 340px;
+        line-height: 330px;
+        letter-spacing: 14px;
+      }
+      .k .word {
+        font-size: 168px;
+        line-height: 180px;
+        font-weight: 700;
+        letter-spacing: -4px;
+      }
+      .k .line {
+        font-size: 120px;
+        line-height: 138px;
+        font-weight: 600;
+        letter-spacing: -3px;
+      }
+      .k .eyebrow {
+        margin-top: 42px;
+        font-size: 42px;
+        letter-spacing: 6px;
+        color: var(--gold);
+      }
+      #endcard {
+        position: absolute;
+        inset: 0;
+        padding-bottom: 150px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      #endLogo {
+        width: 280px;
+        margin-bottom: 78px;
+      }
+      #wordmark {
+        font-size: 126px;
+        line-height: 126px;
+        font-weight: 800;
+        letter-spacing: 9px;
+      }
+      #rule {
+        width: 150px;
+        height: 6px;
+        background: var(--gold);
+        border-radius: 3px;
+        margin: 60px 0 54px;
+      }
+      #tagline {
+        font-size: 60px;
+        line-height: 84px;
+        color: var(--text-2);
+        font-weight: 500;
+      }
+      #endMeta {
+        margin-top: 96px;
+        display: flex;
+        gap: 36px;
+        align-items: center;
+      }
+      #endMeta b {
+        font-family: var(--dot);
+        font-weight: 900;
+        font-size: 72px;
+        color: var(--text);
+      }
+      #endMeta i {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--gold);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="30"
+      data-width="1080"
+      data-height="1920"
+      data-motion-blur="on"
+      data-motion-blur-events="on"
+    >
+      <!-- ====================== APP: onboarding ====================== -->
+      <div id="app" class="clip" data-start="0" data-duration="22.3" data-track-index="0" data-track-kind="graphics">
+        <div id="cam">
+        <div class="status">
+          <span>9:41</span>
+          <span class="bars">
+            <span class="sig"><i style="height: 12px"></i><i style="height: 18px"></i><i style="height: 25px"></i><i style="height: 33px"></i></span>
+            <span class="batt"><i></i></span>
+          </span>
+        </div>
+        <div id="skip">Skip</div>
+
+        <div id="track">
+          <!-- slide 1 -->
+          <section class="slide" id="s1" style="left: 0">
+            <div class="glow" id="glow1" style="left: 540px; top: 475px"></div>
+            <div class="art">
+              <canvas id="rain" width="1080" height="1300"></canvas>
+              <div class="big" id="count">120</div>
+              <div class="eyebrow" style="position: relative; margin-top: 18px">SHOTS A DAY</div>
+              <div class="blocks">
+                <div class="block"><b id="blk0">30</b><span>STROKE</span></div>
+                <div class="block"><b id="blk1">30</b><span>STOP</span></div>
+                <div class="block"><b id="blk2">30</b><span>FOLLOW</span></div>
+                <div class="block"><b id="blk3">30</b><span>DRAW</span></div>
+              </div>
+            </div>
+            <div class="copy">
+              <div class="kick">DAILY WORKOUT</div>
+              <div class="title"><span class="w">A</span> <span class="w">gym</span> <span class="w">session</span> <span class="w">for</span> <span class="w">your</span> <span class="w">cue.</span></div>
+              <div class="body">Four blocks of 30 shots. Same plan every day, so you see yourself get better.</div>
+            </div>
+          </section>
+
+          <!-- slide 2 -->
+          <section class="slide" id="s2" style="left: 1080px">
+            <div id="flood2"></div>
+            <div class="glow" id="glow2" style="left: 540px; top: 592px"></div>
+            <div class="art">
+              <div class="board">
+                <div id="refCount">0</div>
+                <div class="eyebrow" id="refLabel">PASSED · NEED 7</div>
+                <div class="marks">
+                  <div class="mark" id="m0"></div><div class="mark" id="m1"></div><div class="mark" id="m2"></div><div class="mark" id="m3"></div><div class="mark" id="m4"></div>
+                  <div class="mark" id="m5"></div><div class="mark" id="m6"></div><div class="mark" id="m7"></div><div class="mark" id="m8"></div><div class="mark" id="m9"></div>
+                </div>
+              </div>
+              <div class="verdict">
+                <div class="vwrap"><div class="vbtn" id="btnMiss">Miss</div></div>
+                <div class="vwrap"><div class="vbtn" id="btnPass">Pass</div></div>
+              </div>
+            </div>
+            <div class="copy">
+              <div class="kick">YOU'RE THE REFEREE</div>
+              <div class="title"><span class="w">Shoot.</span> <span class="w">Tap</span> <span class="w">Pass</span> <span class="w">or</span> <span class="w">Miss.</span></div>
+              <div class="body">No camera, no setup. Seven of ten clears the set.</div>
+            </div>
+          </section>
+
+          <!-- slide 3 -->
+          <section class="slide" id="s3" style="left: 2160px">
+            <div class="glow" id="glow3" style="left: 540px; top: 746px"></div>
+            <div class="art">
+              <div class="ladderHead">
+                <div class="lvl"><span id="ladderNum">1</span><span class="eyebrow">DIAMOND BACK</span></div>
+                <div class="reps"><div class="rep" id="rep0"></div><div class="rep" id="rep1"></div></div>
+              </div>
+              <svg class="table" viewBox="0 0 520 280">
+                <rect x="0" y="0" width="520" height="280" rx="18" fill="#161616" />
+                <rect x="20" y="20" width="480" height="240" fill="#3A3A3A" />
+                <g fill="#8A8A8A">
+                  <circle cx="80" cy="10" r="2.2" /><circle cx="140" cy="10" r="2.2" /><circle cx="200" cy="10" r="2.2" /><circle cx="320" cy="10" r="2.2" /><circle cx="380" cy="10" r="2.2" /><circle cx="440" cy="10" r="2.2" />
+                  <circle cx="80" cy="270" r="2.2" /><circle cx="140" cy="270" r="2.2" /><circle cx="200" cy="270" r="2.2" /><circle cx="320" cy="270" r="2.2" /><circle cx="380" cy="270" r="2.2" /><circle cx="440" cy="270" r="2.2" />
+                  <circle cx="10" cy="80" r="2.2" /><circle cx="10" cy="140" r="2.2" /><circle cx="10" cy="200" r="2.2" />
+                  <circle cx="510" cy="80" r="2.2" /><circle cx="510" cy="140" r="2.2" /><circle cx="510" cy="200" r="2.2" />
+                </g>
+                <g fill="#000">
+                  <circle cx="20" cy="20" r="13" /><circle cx="500" cy="20" r="13" /><circle cx="20" cy="260" r="13" /><circle cx="500" cy="260" r="13" /><circle cx="260" cy="14" r="13" /><circle cx="260" cy="266" r="13" />
+                </g>
+                <line id="ladMark" x1="232" y1="120" x2="288" y2="120" stroke="#C9A45C" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.9" />
+                <line id="ladAim" x1="260" y1="112" x2="260" y2="22" stroke="#fff" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.45" />
+                <circle id="ladOb" cx="260" cy="60" r="8" fill="#000" stroke="#8A8A8A" stroke-width="1.5" />
+                <circle id="ladCue" cx="260" cy="120" r="8" fill="#fff" />
+                <circle id="ladFlash" cx="260" cy="14" r="6" fill="none" stroke="#C9A45C" stroke-width="2" opacity="0" />
+              </svg>
+            </div>
+            <div class="copy">
+              <div class="kick">IT GROWS WITH YOU</div>
+              <div class="title"><span class="w">Get</span> <span class="w">better,</span> <span class="w">it</span> <span class="w">gets</span> <span class="w">harder.</span></div>
+              <div class="body">Pot it and stop the cue ball dead. Do it twice and it starts one diamond farther back.</div>
+            </div>
+          </section>
+
+          <!-- slide 4 -->
+          <section class="slide" id="s4" style="left: 3240px">
+            <div class="glow" id="glow4" style="left: 505px; top: 683px"></div>
+            <div class="art">
+              <div class="caption">
+                <div id="cap1">Pot 1, land in the zone</div>
+                <div id="cap2">Ball 2 is now a <span style="color: var(--gold)">straight shot</span></div>
+              </div>
+              <svg class="table" viewBox="0 0 520 280">
+                <rect x="0" y="0" width="520" height="280" rx="18" fill="#161616" />
+                <rect x="20" y="20" width="480" height="240" fill="#3A3A3A" />
+                <g fill="#8A8A8A">
+                  <circle cx="80" cy="10" r="2.2" /><circle cx="140" cy="10" r="2.2" /><circle cx="200" cy="10" r="2.2" /><circle cx="320" cy="10" r="2.2" /><circle cx="380" cy="10" r="2.2" /><circle cx="440" cy="10" r="2.2" />
+                  <circle cx="80" cy="270" r="2.2" /><circle cx="140" cy="270" r="2.2" /><circle cx="200" cy="270" r="2.2" /><circle cx="320" cy="270" r="2.2" /><circle cx="380" cy="270" r="2.2" /><circle cx="440" cy="270" r="2.2" />
+                  <circle cx="10" cy="80" r="2.2" /><circle cx="10" cy="140" r="2.2" /><circle cx="10" cy="200" r="2.2" />
+                  <circle cx="510" cy="80" r="2.2" /><circle cx="510" cy="140" r="2.2" /><circle cx="510" cy="200" r="2.2" />
+                </g>
+                <g fill="#000">
+                  <circle cx="20" cy="20" r="13" /><circle cx="500" cy="20" r="13" /><circle cx="20" cy="260" r="13" /><circle cx="500" cy="260" r="13" /><circle cx="260" cy="14" r="13" /><circle cx="260" cy="266" r="13" />
+                </g>
+                <circle id="zone" cx="239.6" cy="141.8" r="22" fill="rgba(201,164,92,0.16)" stroke="#C9A45C" stroke-width="1.6" stroke-dasharray="4 3" />
+                <polyline id="aim1" points="380,110 308.3,93.7 260,14" fill="none" stroke="#fff" stroke-width="1.2" stroke-dasharray="4 4" opacity="0" />
+                <line id="aimCue" x1="308.3" y1="93.7" x2="239.6" y2="141.8" stroke="#C9A45C" stroke-width="1.2" stroke-dasharray="4 4" opacity="0" />
+                <polyline id="aim2" points="239.6,141.8 250,205 260,266" fill="none" stroke="#C9A45C" stroke-width="1.4" stroke-dasharray="4 4" opacity="0" />
+                <g id="b1">
+                  <circle cx="300" cy="80" r="8" fill="#000" stroke="#8A8A8A" stroke-width="1.5" />
+                  <text x="300" y="83" text-anchor="middle" font-size="8" font-weight="700" fill="#fff" font-family="Be Vietnam Pro">1</text>
+                </g>
+                <g id="b2">
+                  <circle cx="250" cy="205" r="8" fill="#000" stroke="#8A8A8A" stroke-width="1.5" />
+                  <text x="250" y="208" text-anchor="middle" font-size="8" font-weight="700" fill="#fff" font-family="Be Vietnam Pro">2</text>
+                </g>
+                <circle id="posCue" cx="380" cy="110" r="8" fill="#fff" />
+                <circle id="posFlash" cx="260" cy="14" r="6" fill="none" stroke="#C9A45C" stroke-width="2" opacity="0" />
+              </svg>
+            </div>
+            <div class="copy">
+              <div class="kick">THEN, POSITION</div>
+              <div class="title"><span class="w">Pot</span> <span class="w">one,</span> <span class="w">set</span> <span class="w">up</span> <span class="w">the</span> <span class="w">next.</span></div>
+              <div class="body">Send the cue ball into the zone and ball 2 becomes an easy shot. The drill library takes it from here to full runouts.</div>
+            </div>
+          </section>
+        </div>
+
+        <div id="pips">
+          <div class="pip" id="pip0"></div><div class="pip" id="pip1"></div><div class="pip" id="pip2"></div><div class="pip" id="pip3"></div>
+        </div>
+        <div id="next"><span id="nextLabel">Next</span></div>
+        </div>
+      </div>
+
+      <!-- ====================== OUTRO: zoom xuyên nút Start, bốn nhịp chữ, logo ====================== -->
+      <div id="outro" class="clip" data-start="22.1" data-duration="7.9" data-track-index="1" data-track-kind="graphics">
+        <div id="owhite"></div>
+        <div class="glow" id="oglow"></div>
+        <div class="k" id="k1"><div class="num" id="k1num">120</div><div class="eyebrow">SHOTS A DAY</div></div>
+        <div class="k" id="k2"><div class="word">4 blocks</div><div class="eyebrow">STROKE · STOP · FOLLOW · DRAW</div></div>
+        <div class="k" id="k3"><div class="num">7/10</div><div class="eyebrow">CLEARS THE SET</div></div>
+        <div class="k" id="k4">
+          <div class="line"><span class="w">Get</span> <span class="w">better,</span></div>
+          <div class="line"><span class="w">it</span> <span class="w">gets</span> <span class="w" style="color: var(--gold)">harder.</span></div>
+        </div>
+        <div id="endcard">
+          <img id="endLogo" src="assets/logo.png" alt="" />
+          <div id="wordmark"><span class="w">POOL</span> <span class="w">TRAINING</span></div>
+          <div id="rule"></div>
+          <div id="tagline"><span class="w">A</span> <span class="w">gym</span> <span class="w">session</span> <span class="w">for</span> <span class="w">your</span> <span class="w">cue.</span></div>
+          <div id="endMeta" class="eyebrow"><b>120</b><span>SHOTS A DAY</span><i></i><span>4 BLOCKS</span></div>
+        </div>
+      </div>
+
+      <!-- ====================== SFX: peak rơi 1 khung sau hình ====================== -->
+      <audio id="sNext1" src="assets/sfx/click.mp3" data-start="5.112" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="sNext2" src="assets/sfx/click.mp3" data-start="10.912" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="sNext3" src="assets/sfx/click.mp3" data-start="16.412" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="sNext4" src="assets/sfx/click.mp3" data-start="21.512" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="sPage1" src="assets/sfx/whoosh-short.mp3" data-start="5.498" data-duration="0.57" data-volume="0.45"></audio>
+      <audio id="sPage2" src="assets/sfx/whoosh.mp3" data-start="11.298" data-duration="0.57" data-volume="0.45"></audio>
+      <audio id="sPage3" src="assets/sfx/whoosh-short.mp3" data-start="16.798" data-duration="0.57" data-volume="0.45"></audio>
+      <audio id="sTap0" src="assets/sfx/click.mp3" data-start="6.452" data-duration="0.36" data-volume="0.32"></audio>
+      <audio id="sTap1" src="assets/sfx/click.mp3" data-start="6.872" data-duration="0.36" data-volume="0.32"></audio>
+      <audio id="sTap2" src="assets/sfx/click-soft.mp3" data-start="7.292" data-duration="0.36" data-volume="0.28"></audio>
+      <audio id="sTap3" src="assets/sfx/click.mp3" data-start="7.712" data-duration="0.36" data-volume="0.32"></audio>
+      <audio id="sTap4" src="assets/sfx/click.mp3" data-start="8.132" data-duration="0.36" data-volume="0.32"></audio>
+      <audio id="sTap5" src="assets/sfx/click.mp3" data-start="8.552" data-duration="0.36" data-volume="0.32"></audio>
+      <audio id="sTap6" src="assets/sfx/click-soft.mp3" data-start="8.972" data-duration="0.36" data-volume="0.28"></audio>
+      <audio id="sTap7" src="assets/sfx/click.mp3" data-start="9.392" data-duration="0.36" data-volume="0.32"></audio>
+      <audio id="sTap8" src="assets/sfx/click-soft.mp3" data-start="9.812" data-duration="0.36" data-volume="0.28"></audio>
+      <audio id="sTap9" src="assets/sfx/click.mp3" data-start="10.232" data-duration="0.36" data-volume="0.32"></audio>
+      <audio id="sCleared" src="assets/sfx/sparkle.mp3" data-start="10.338" data-duration="1.8" data-volume="0.5"></audio>
+      <audio id="sHit1" src="assets/sfx/click-soft.mp3" data-start="12.432" data-duration="0.36" data-volume="0.4"></audio>
+      <audio id="sHit2" src="assets/sfx/click-soft.mp3" data-start="13.582" data-duration="0.36" data-volume="0.4"></audio>
+      <audio id="sHit3" src="assets/sfx/click-soft.mp3" data-start="15.712" data-duration="0.36" data-volume="0.4"></audio>
+      <audio id="sHit4" src="assets/sfx/click-soft.mp3" data-start="18.512" data-duration="0.36" data-volume="0.4"></audio>
+      <audio id="sPot1" src="assets/sfx/pop.mp3" data-start="12.686" data-duration="0.72" data-volume="0.35"></audio>
+      <audio id="sPot2" src="assets/sfx/pop.mp3" data-start="13.836" data-duration="0.72" data-volume="0.35"></audio>
+      <audio id="sPot3" src="assets/sfx/pop.mp3" data-start="15.966" data-duration="0.72" data-volume="0.35"></audio>
+      <audio id="sPot4" src="assets/sfx/pop.mp3" data-start="18.846" data-duration="0.72" data-volume="0.35"></audio>
+      <audio id="sLevel" src="assets/sfx/ping.mp3" data-start="14.260" data-duration="1.32" data-volume="0.45"></audio>
+      <audio id="sZone" src="assets/sfx/chime.mp3" data-start="18.925" data-duration="2.5" data-volume="0.45"></audio>
+      <audio id="sBeat1" src="assets/sfx/whoosh-short.mp3" data-start="23.543" data-duration="0.57" data-volume="0.3"></audio>
+      <audio id="sBeat2" src="assets/sfx/whoosh-short.mp3" data-start="24.593" data-duration="0.57" data-volume="0.3"></audio>
+      <audio id="sBeat3" src="assets/sfx/whoosh-short.mp3" data-start="25.643" data-duration="0.57" data-volume="0.3"></audio>
+      <audio id="sImpact" src="assets/sfx/impact-bass-1.mp3" data-start="26.960" data-duration="2.1" data-volume="0.9"></audio>
+      <audio id="sZoom" src="assets/sfx/whoosh-cinematic.mp3" data-start="21.531" data-duration="1.3" data-media-start="1.9" data-fade-out="0.5" data-volume="0.6"></audio>
+      <audio id="sRiser" src="assets/sfx/riser.mp3" data-start="23.997" data-duration="3.036" data-fade-in="1" data-volume="0.55"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+
+      // ---------- deterministic helpers ----------
+      function hash(a, b, c) {
+        let x = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(c | 0, 1274126177);
+        x = Math.imul(x ^ (x >>> 13), 1274126177);
+        x ^= x >>> 16;
+        return (x >>> 0) / 4294967296;
+      }
+      const clamp01 = (v) => Math.max(0, Math.min(1, v));
+      const DIGITS = "0123456789";
+      // Chữ số chốt dần từ trái sang phải, chữ chưa chốt nhảy 30 lần/giây theo hash
+      function scramble(final, p, t, seed) {
+        if (p >= 1) return final;
+        if (p <= 0) return final.replace(/./g, (_, i) => DIGITS[Math.floor(hash(seed, i, Math.floor(t * 30)) * 10)]);
+        let out = "";
+        for (let i = 0; i < final.length; i++) {
+          const settle = (i + 1) / (final.length + 1);
+          out += p > settle ? final[i] : DIGITS[Math.floor(hash(seed, i, Math.floor(t * 30)) * 10)];
+        }
+        return out;
+      }
+
+      // ---------- slide 1: glyph rain (Doto, CELL 13x16 pt, tail 9, ~8% gold) ----------
+      const rain = document.getElementById("rain");
+      const ctx = rain.getContext("2d");
+      const CW = 39, CH = 48, TAIL = 9;
+      const COLS = Math.ceil(1080 / CW), ROWS = Math.ceil(1300 / CH);
+      const GLYPHS = "0123456789+-:.";
+      function drawRain(t) {
+        ctx.clearRect(0, 0, 1080, 1300);
+        ctx.font = "900 34px Doto";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const span = ROWS + TAIL + 6;
+        for (let c = 0; c < COLS; c++) {
+          const speed = 5 + 9 * hash(c, 1, 3);
+          const head = (hash(c, 2, 5) * span + speed * t) % span;
+          for (let k = 0; k <= TAIL; k++) {
+            const r = Math.floor(head) - k;
+            if (r < 0 || r >= ROWS) continue;
+            const a = Math.pow(1 - k / (TAIL + 1), 1.6) * (k === 0 ? 0.5 : 0.26);
+            const g = GLYPHS[Math.floor(hash(c, r, Math.floor(t * 12) + k) * GLYPHS.length)];
+            const gold = hash(c * 31 + r, 7, 11) < 0.08;
+            ctx.fillStyle = gold ? `rgba(201,164,92,${a * 1.6})` : `rgba(255,255,255,${a})`;
+            ctx.fillText(g, c * CW + CW / 2, r * CH + CH / 2);
+          }
+        }
+      }
+
+      // ---------- slide 2: referee taps ----------
+      const SEQ = [1, 1, 0, 1, 1, 1, 0, 1, 0, 1];
+      const TAP0 = 6.55, TAP = 0.42;
+      const marks = SEQ.map((_, i) => document.getElementById("m" + i));
+      const refCount = document.getElementById("refCount");
+      const refLabel = document.getElementById("refLabel");
+
+      // ---------- slide 3: ladder ----------
+      const ladderNum = document.getElementById("ladderNum");
+      const rep0 = document.getElementById("rep0");
+      const rep1 = document.getElementById("rep1");
+
+      const countEl = document.getElementById("count");
+      const blk = [0, 1, 2, 3].map((i) => document.getElementById("blk" + i));
+      const nextLabel = document.getElementById("nextLabel");
+      const k1num = document.getElementById("k1num");
+
+      // Mọi trạng thái dạng chữ/canvas là hàm thuần của t, seek tới đâu ra đúng khung đó
+      function render(t) {
+        drawRain(t);
+        countEl.textContent = scramble("120", clamp01((t - 0.35) / 1.1), t, 101);
+        for (let i = 0; i < 4; i++) {
+          blk[i].textContent = scramble("30", clamp01((t - 1.9 - i * 0.08) / 0.6), t, 200 + i);
+        }
+
+        const n = t < TAP0 ? 0 : Math.min(10, Math.floor((t - TAP0) / TAP) + 1);
+        let passed = 0;
+        for (let i = 0; i < 10; i++) {
+          const state = i < n ? (SEQ[i] ? "pass" : "miss") : "";
+          marks[i].className = "mark" + (state ? " " + state : "");
+          if (i < n && SEQ[i]) passed++;
+        }
+        refCount.textContent = String(passed);
+        const cleared = passed >= 7;
+        refCount.style.color = cleared ? "#C9A45C" : "#FFFFFF";
+        refLabel.textContent = cleared ? "SET CLEARED · 7 OF 10" : "PASSED · NEED 7";
+        refLabel.style.color = cleared ? "#C9A45C" : "#8A8A8A";
+
+        ladderNum.textContent = t < 14.55 ? "1" : "2";
+        const reps = t < 13.0 ? 0 : t < 14.15 ? 1 : t < 14.55 ? 2 : t < 16.05 ? 0 : 1;
+        rep0.className = "rep" + (reps >= 1 ? " on" : "");
+        rep1.className = "rep" + (reps >= 2 ? " on" : "");
+
+        nextLabel.textContent = t < 16.95 ? "Next" : "Start";
+        k1num.textContent = scramble("120", clamp01((t - 22.6) / 0.6), t, 303);
+      }
+
+      const tl = gsap.timeline({ paused: true });
+      const clock = { t: 0 };
+      tl.to(clock, { t: 30, duration: 30, ease: "none", onUpdate: () => render(clock.t) }, 0);
+
+      // ---------- camera: một khung #cam, gốc 0 0; x = 540 - s*px, y = sy - s*py ----------
+      function cam(at, dur, s, px, py, sy, ease) {
+        tl.to("#cam", { scale: s, x: s === 1 ? 0 : 540 - s * px, y: s === 1 ? 0 : sy - s * py, duration: dur, ease: ease || "power2.inOut" }, at);
+      }
+      tl.set("#cam", { transformOrigin: "0 0", scale: 1.3, x: -162, y: 142.5 }, 0);
+
+      // ---------- hook: frame 0 là con số 120 cận cảnh ----------
+      tl.fromTo("#glow1", { opacity: 0.95 }, { opacity: 0.45, duration: 1.4, ease: "power2.inOut", immediateRender: false }, 0.2);
+      cam(1.45, 0.7, 1);
+      tl.from("#s1 .block", { opacity: 0, y: 50, filter: "blur(8px)", duration: 0.5, stagger: 0.08, ease: "expo.out" }, 1.9);
+      tl.from("#s1 .kick", { opacity: 0, y: 24, filter: "blur(4px)", duration: 0.4, ease: "expo.out" }, 2.3);
+      tl.from("#s1 .title .w", { opacity: 0, y: 24, filter: "blur(6px)", duration: 0.3, stagger: 0.067, ease: "expo.out" }, 2.4);
+      tl.from("#s1 .body", { opacity: 0, y: 24, filter: "blur(4px)", duration: 0.4, ease: "expo.out" }, 2.8);
+
+      // ---------- tap + pager ----------
+      function press(sel, at, depth) {
+        tl.to(sel, { scale: depth || 0.96, duration: 0.08, ease: "power2.out" }, at);
+        tl.to(sel, { scale: 1, duration: 0.2, ease: "power2.out" }, at + 0.08);
+      }
+      function page(i, at) {
+        // whip 0.45 s, đỉnh tốc độ ở at + 0.225
+        tl.to("#track", { x: -1080 * i, duration: 0.45, ease: "power3.inOut" }, at);
+        tl.to("#pip" + (i - 1), { width: 18, backgroundColor: "rgba(255,255,255,0.1)", duration: 0.35, ease: "power2.inOut" }, at + 0.05);
+        tl.to("#pip" + i, { width: 60, backgroundColor: "#ffffff", duration: 0.35, ease: "power2.inOut" }, at + 0.05);
+        const s = `#s${i + 1}`;
+        tl.from(`${s} .kick`, { opacity: 0, y: 24, filter: "blur(4px)", duration: 0.4, ease: "expo.out" }, at + 0.35);
+        tl.from(`${s} .title .w`, { opacity: 0, y: 24, filter: "blur(6px)", duration: 0.3, stagger: 0.067, ease: "expo.out" }, at + 0.42);
+        tl.from(`${s} .body`, { opacity: 0, y: 24, filter: "blur(4px)", duration: 0.4, ease: "expo.out" }, at + 0.75);
+      }
+
+      press("#next", 5.15);
+      page(1, 5.4);
+
+      // ---------- slide 2: trọng tài ----------
+      cam(6.0, 0.45, 1.1, 540, 694, 880);
+      for (let i = 0; i < SEQ.length; i++) {
+        const at = TAP0 + i * TAP - 0.06;
+        press(SEQ[i] ? "#btnPass" : "#btnMiss", at, 0.95);
+        tl.fromTo("#m" + i, { scale: 0.4 }, { scale: 1, duration: 0.3, ease: "expo.out", immediateRender: false }, at + 0.06);
+      }
+      // lần chạm thứ 10: đủ 7, cả slide ngập gold
+      const CLEAR = TAP0 + 9 * TAP;
+      tl.fromTo("#refCount", { scale: 1.2 }, { scale: 1, duration: 0.5, ease: "expo.out", immediateRender: false }, CLEAR);
+      tl.to("#flood2", { opacity: 1, duration: 0.4, ease: "power2.inOut" }, CLEAR);
+      tl.to("#s2 .board", { borderColor: "#C9A45C", duration: 0.4, ease: "power2.inOut" }, CLEAR);
+      tl.to("#glow2", { opacity: 0.9, duration: 0.4, ease: "power2.inOut" }, CLEAR);
+      cam(10.55, 0.35, 1);
+
+      press("#next", 10.95);
+      page(2, 11.2);
+      tl.to("#flood2", { opacity: 0, duration: 0.3 }, 11.7);
+
+      // ---------- slide 3: pot, stop dead, hai lần, lùi một diamond ----------
+      cam(11.65, 0.45, 1.06, 540, 700, 760);
+      function flash(sel, at) {
+        tl.fromTo(sel, { attr: { r: 6 }, opacity: 0.8 }, { attr: { r: 28 }, opacity: 0, duration: 0.4, ease: "expo.out", immediateRender: false }, at);
+      }
+      function stopShot(at, cueY) {
+        // bi cái lăn tới điểm chạm (OB.y + 2R) rồi đứng; bi mục tiêu vào lỗ giữa
+        tl.to("#ladAim", { opacity: 0, duration: 0.15 }, at);
+        tl.to("#ladCue", { attr: { cy: 76 }, duration: 0.32, ease: "power1.in" }, at);
+        tl.to("#ladOb", { attr: { cy: 14 }, duration: 0.3, ease: "power2.out" }, at + 0.32);
+        tl.to("#ladOb", { attr: { r: 4 }, opacity: 0, duration: 0.12 }, at + 0.62);
+        flash("#ladFlash", at + 0.62);
+        // dựng lại thế bi
+        tl.to("#ladCue", { opacity: 0, duration: 0.15 }, at + 0.85);
+        tl.set("#ladCue", { attr: { cy: cueY } }, at + 1.0);
+        tl.set("#ladOb", { attr: { cy: 60, r: 8 } }, at + 1.0);
+        tl.set("#ladAim", { attr: { y1: cueY - 8 } }, at + 1.0);
+        tl.to(["#ladCue", "#ladOb", "#ladAim"], { opacity: (i) => (i === 2 ? 0.45 : 1), duration: 0.2 }, at + 1.0);
+      }
+      stopShot(12.15, 120);
+      stopShot(13.3, 120);
+      // hai lần sạch: camera đẩy vào, lùi một diamond
+      cam(14.5, 0.5, 1.1, 540, 700, 770);
+      tl.to(["#ladCue", "#ladMark"], { attr: { cy: 180, y1: 180, y2: 180 }, duration: 0.5, ease: "power3.inOut" }, 14.55);
+      tl.to("#ladAim", { attr: { y1: 172 }, duration: 0.5, ease: "power3.inOut" }, 14.55);
+      tl.fromTo("#ladderNum", { scale: 1.3, color: "#C9A45C" }, { scale: 1, color: "#FFFFFF", duration: 0.6, ease: "expo.out", immediateRender: false }, 14.55);
+      tl.fromTo("#glow3", { opacity: 1 }, { opacity: 0.45, duration: 0.9, ease: "power2.inOut", immediateRender: false }, 14.55);
+      tl.to("#ladAim", { opacity: 0, duration: 0.15 }, 15.3);
+      tl.to("#ladCue", { attr: { cy: 76 }, duration: 0.45, ease: "power1.in" }, 15.3);
+      tl.to("#ladOb", { attr: { cy: 14 }, duration: 0.3, ease: "power2.out" }, 15.75);
+      tl.to("#ladOb", { attr: { r: 4 }, opacity: 0, duration: 0.12 }, 16.05);
+      flash("#ladFlash", 16.05);
+      cam(15.95, 0.45, 1);
+
+      press("#next", 16.45);
+      page(3, 16.7);
+
+      // ---------- slide 4: vị trí ----------
+      cam(17.1, 0.45, 1.08, 540, 640, 700);
+      tl.to("#aim1", { opacity: 0.55, duration: 0.4 }, 17.4);
+      tl.to("#aim1", { attr: { "stroke-dashoffset": -24 }, duration: 0.8, ease: "none" }, 17.4);
+      tl.to("#aim1", { opacity: 0, duration: 0.2 }, 18.2);
+      // bi cái tới vị trí bóng ma, bi 1 vào lỗ trên, bi cái trôi theo tiếp tuyến vào zone
+      tl.to("#posCue", { attr: { cx: 308.3, cy: 93.7 }, duration: 0.35, ease: "power1.in" }, 18.2);
+      tl.to("#b1", { x: -40, y: -66, duration: 0.38, ease: "power2.out" }, 18.55);
+      tl.to("#b1", { opacity: 0, scale: 0.5, transformOrigin: "50% 50%", duration: 0.12 }, 18.88);
+      flash("#posFlash", 18.93);
+      tl.to("#posCue", { attr: { cx: 239.6, cy: 141.8 }, duration: 0.8, ease: "power3.out" }, 18.55);
+      tl.to("#aimCue", { opacity: 0.8, duration: 0.3 }, 18.6);
+      tl.to("#aimCue", { opacity: 0, duration: 0.3 }, 19.6);
+      tl.fromTo("#cap1", { opacity: 0, y: 20, filter: "blur(4px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "expo.out" }, 18.75);
+      // bi cái vào zone: zone bừng sáng
+      tl.fromTo("#zone", { scale: 1.25 }, { scale: 1, transformOrigin: "50% 50%", duration: 0.5, ease: "expo.out", immediateRender: false }, 19.35);
+      tl.to("#zone", { attr: { fill: "rgba(201,164,92,0.38)" }, duration: 0.3 }, 19.35);
+      tl.fromTo("#glow4", { opacity: 1 }, { opacity: 0.6, duration: 0.9, ease: "power2.inOut", immediateRender: false }, 19.35);
+      tl.to("#cap1", { opacity: 0, y: -20, filter: "blur(4px)", duration: 0.25, ease: "power3.in" }, 19.9);
+      tl.fromTo("#cap2", { opacity: 0, y: 20, filter: "blur(4px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "expo.out" }, 20.2);
+      tl.to("#aim2", { opacity: 0.9, duration: 0.4 }, 20.15);
+      tl.to("#aim2", { attr: { "stroke-dashoffset": -32 }, duration: 1.4, ease: "none" }, 20.15);
+      tl.fromTo("#b2", { scale: 1.25 }, { scale: 1, transformOrigin: "50% 50%", duration: 0.5, ease: "expo.out", immediateRender: false }, 20.3);
+
+      // ---------- Start: camera bám nút, bấm, zoom xuyên nút ----------
+      cam(21.0, 0.5, 1.25, 540, 1740, 960);
+      tl.to("#next", { scale: 0.96, duration: 0.08, ease: "power2.out" }, 21.5);
+      tl.to("#next", { scale: 1, duration: 0.2, ease: "power2.out" }, 21.58);
+      tl.to("#nextLabel", { opacity: 0, duration: 0.12 }, 21.75);
+      tl.to("#next", { scale: 14, duration: 0.32, ease: "power3.in" }, 21.78);
+
+      // ---------- outro: trắng ngập về đen, bốn nhịp chữ ----------
+      tl.to("#owhite", { opacity: 0, duration: 0.4, ease: "power2.inOut" }, 22.2);
+      function beatIn(sel, at) {
+        tl.fromTo(sel, { opacity: 0, y: 60, filter: "blur(12px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.3, ease: "expo.out", immediateRender: false }, at);
+      }
+      function beatOut(sel, at) {
+        tl.to(sel, { opacity: 0, y: -80, filter: "blur(10px)", duration: 0.2, ease: "power3.in" }, at);
+      }
+      beatIn("#k1", 22.6);
+      beatOut("#k1", 23.45);
+      beatIn("#k2", 23.65);
+      beatOut("#k2", 24.5);
+      beatIn("#k3", 24.7);
+      beatOut("#k3", 25.55);
+      tl.set("#k4", { opacity: 1 }, 25.75);
+      tl.from("#k4 .w", { opacity: 0, y: 40, filter: "blur(6px)", duration: 0.3, stagger: 0.067, ease: "expo.out" }, 25.75);
+      beatOut("#k4", 26.55);
+
+      // ---------- logo: dồn sáng rồi đập vào ở 27.0 ----------
+      tl.to("#oglow", { opacity: 0.55, duration: 0.4, ease: "power2.in" }, 26.6);
+      tl.from("#endLogo", { opacity: 0, scale: 1.5, filter: "blur(20px)", duration: 0.35, ease: "expo.out" }, 27.0);
+      tl.fromTo("#oglow", { opacity: 1 }, { opacity: 0.4, duration: 0.8, ease: "power2.out", immediateRender: false }, 27.0);
+      tl.from("#wordmark .w", { opacity: 0, y: 40, filter: "blur(6px)", duration: 0.3, stagger: 0.067, ease: "expo.out" }, 27.35);
+      tl.from("#rule", { scaleX: 0, duration: 0.4, ease: "expo.out" }, 27.55);
+      tl.from("#tagline .w", { opacity: 0, y: 24, filter: "blur(6px)", duration: 0.3, stagger: 0.067, ease: "expo.out" }, 27.7);
+      tl.from("#endMeta", { opacity: 0, y: 24, filter: "blur(4px)", duration: 0.4, ease: "expo.out" }, 27.9);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
